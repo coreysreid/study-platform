@@ -1,0 +1,59 @@
+{% extends 'study/base.html' %}
+
+{% block title %}{{ course.name }} - Study Platform{% endblock %}
+
+{% block content %}
+<div>
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'course_list' %}" style="color: #667eea; text-decoration: none;">← Back to Courses</a>
+    </div>
+    
+    <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white; margin-bottom: 2rem;">
+        <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">{{ course.name }}</h1>
+        {% if course.code %}
+            <p style="opacity: 0.9; font-size: 1.1rem; margin-bottom: 1rem;">{{ course.code }}</p>
+        {% endif %}
+        {% if course.description %}
+            <p style="opacity: 0.9;">{{ course.description }}</p>
+        {% endif %}
+    </div>
+    
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+        <h2 style="color: #667eea;">Topics</h2>
+        <a href="{% url 'admin:study_topic_add' %}?course={{ course.id }}" class="btn">+ Add Topic</a>
+    </div>
+    
+    {% if topics %}
+        <div style="display: grid; gap: 1rem;">
+            {% for topic in topics %}
+                <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
+                    <div style="flex: 1;">
+                        <h3 style="color: #333; font-size: 1.2rem; margin-bottom: 0.5rem;">
+                            {{ topic.name }}
+                        </h3>
+                        <p style="color: #666; margin-bottom: 0.5rem;">
+                            {{ topic.description|truncatewords:20 }}
+                        </p>
+                        <small style="color: #999;">
+                            {{ topic.flashcard_count }} flashcard{{ topic.flashcard_count|pluralize }}
+                        </small>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="{% url 'topic_detail' topic.id %}" class="btn btn-secondary">View</a>
+                        {% if topic.flashcard_count > 0 %}
+                            <a href="{% url 'study_session' topic.id %}" class="btn">Study</a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 10px;">
+            <p style="font-size: 1.1rem; color: #666; margin-bottom: 1.5rem;">
+                No topics yet. Add topics to start studying!
+            </p>
+            <a href="{% url 'admin:study_topic_add' %}?course={{ course.id }}" class="btn">Add First Topic</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

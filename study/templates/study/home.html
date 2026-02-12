@@ -1,0 +1,70 @@
+{% extends 'study/base.html' %}
+
+{% block title %}Home - Study Platform{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 2rem 0;">
+    <h1 style="font-size: 2.5rem; color: #667eea; margin-bottom: 1rem;">
+        Welcome to Your Study Platform
+    </h1>
+    <p style="font-size: 1.2rem; color: #666; margin-bottom: 2rem;">
+        Interactive learning tool for Electrical Engineering and beyond
+    </p>
+    
+    {% if user.is_authenticated %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white;">
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">📚 Courses</h3>
+                <p style="font-size: 2rem; font-weight: bold; margin-bottom: 1rem;">{{ courses.count }}</p>
+                <a href="{% url 'course_list' %}" class="btn" style="background: white; color: #667eea;">View Courses</a>
+            </div>
+            
+            <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 2rem; border-radius: 10px; color: white;">
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">📝 Study Sessions</h3>
+                <p style="font-size: 2rem; font-weight: bold; margin-bottom: 1rem;">{{ recent_sessions.count }}</p>
+                <a href="{% url 'statistics' %}" class="btn" style="background: white; color: #f5576c;">View Stats</a>
+            </div>
+            
+            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 2rem; border-radius: 10px; color: white;">
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">🎯 Quick Start</h3>
+                <p style="margin-bottom: 1rem;">Jump into studying</p>
+                <a href="{% url 'admin:index' %}" class="btn" style="background: white; color: #4facfe;">Manage Content</a>
+            </div>
+        </div>
+        
+        {% if recent_sessions %}
+        <div style="margin-top: 3rem; text-align: left;">
+            <h2 style="color: #667eea; margin-bottom: 1rem;">Recent Study Sessions</h2>
+            <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px;">
+                {% for session in recent_sessions %}
+                    <div style="padding: 1rem; border-bottom: 1px solid #dee2e6;">
+                        <strong>{{ session.topic.name }}</strong> - {{ session.started_at|date:"M d, Y H:i" }}
+                        <br>
+                        <small style="color: #666;">{{ session.cards_studied }} cards studied</small>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    {% else %}
+        <div style="margin-top: 2rem;">
+            <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
+                Get started by creating an account or logging in
+            </p>
+            <a href="{% url 'register' %}" class="btn" style="margin-right: 1rem;">Register</a>
+            <a href="{% url 'login' %}" class="btn btn-secondary">Login</a>
+        </div>
+        
+        <div style="margin-top: 3rem; text-align: left; background: #f8f9fa; padding: 2rem; border-radius: 10px;">
+            <h2 style="color: #667eea; margin-bottom: 1rem;">Features</h2>
+            <ul style="list-style: none; padding: 0;">
+                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Create and organize courses by subject</li>
+                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Build flashcard decks for active recall</li>
+                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Track your study progress and statistics</li>
+                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Take notes on topics</li>
+                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Spaced repetition learning system</li>
+            </ul>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
