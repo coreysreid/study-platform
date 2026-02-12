@@ -1,0 +1,45 @@
+{% extends 'study/base.html' %}
+
+{% block title %}My Courses - Study Platform{% endblock %}
+
+{% block content %}
+<div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="color: #667eea;">My Courses</h1>
+        <a href="{% url 'admin:study_course_add' %}" class="btn">+ Add New Course</a>
+    </div>
+    
+    {% if courses %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+            {% for course in courses %}
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 10px; color: white; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+                    <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem;">{{ course.name }}</h3>
+                    {% if course.code %}
+                        <p style="opacity: 0.9; margin-bottom: 1rem;">{{ course.code }}</p>
+                    {% endif %}
+                    <div style="background: rgba(255,255,255,0.2); padding: 0.75rem; border-radius: 5px; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Topics:</span>
+                            <strong>{{ course.topic_count }}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Flashcards:</span>
+                            <strong>{{ course.flashcard_count }}</strong>
+                        </div>
+                    </div>
+                    <a href="{% url 'course_detail' course.id %}" class="btn" style="background: white; color: #667eea; width: 100%; text-align: center; display: block;">
+                        View Course
+                    </a>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 10px;">
+            <p style="font-size: 1.2rem; color: #666; margin-bottom: 1.5rem;">
+                You haven't created any courses yet.
+            </p>
+            <a href="{% url 'admin:study_course_add' %}" class="btn">Create Your First Course</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

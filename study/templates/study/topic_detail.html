@@ -1,0 +1,95 @@
+{% extends 'study/base.html' %}
+
+{% block title %}{{ topic.name }} - Study Platform{% endblock %}
+
+{% block content %}
+<div>
+    <div style="margin-bottom: 2rem;">
+        <a href="{% url 'course_detail' topic.course.id %}" style="color: #667eea; text-decoration: none;">
+            ← Back to {{ topic.course.name }}
+        </a>
+    </div>
+    
+    <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 2rem; border-radius: 10px; color: white; margin-bottom: 2rem;">
+        <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">{{ topic.name }}</h1>
+        <p style="opacity: 0.9;">{{ topic.course.name }}</p>
+        {% if topic.description %}
+            <p style="opacity: 0.9; margin-top: 1rem;">{{ topic.description }}</p>
+        {% endif %}
+    </div>
+    
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 2rem;">
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: #667eea;">Flashcards ({{ flashcards.count }})</h2>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{% url 'admin:study_flashcard_add' %}?topic={{ topic.id }}" class="btn btn-secondary">+ Add Flashcard</a>
+                    {% if flashcards %}
+                        <a href="{% url 'study_session' topic.id %}" class="btn">Start Studying</a>
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if flashcards %}
+                <div style="display: grid; gap: 1rem;">
+                    {% for flashcard in flashcards %}
+                        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px;">
+                            <div style="margin-bottom: 1rem;">
+                                <strong style="color: #667eea;">Question:</strong>
+                                <p style="margin-top: 0.5rem;">{{ flashcard.question }}</p>
+                            </div>
+                            <div>
+                                <strong style="color: #4facfe;">Answer:</strong>
+                                <p style="margin-top: 0.5rem;">{{ flashcard.answer }}</p>
+                            </div>
+                            {% if flashcard.hint %}
+                                <div style="margin-top: 1rem; padding: 0.75rem; background: #fff3cd; border-radius: 5px;">
+                                    <strong style="color: #856404;">Hint:</strong>
+                                    <p style="color: #856404; margin-top: 0.25rem;">{{ flashcard.hint }}</p>
+                                </div>
+                            {% endif %}
+                            <div style="margin-top: 1rem;">
+                                <span style="padding: 0.25rem 0.75rem; background: 
+                                    {% if flashcard.difficulty == 'easy' %}#d4edda
+                                    {% elif flashcard.difficulty == 'medium' %}#fff3cd
+                                    {% else %}#f8d7da{% endif %}; 
+                                    border-radius: 15px; font-size: 0.9rem;">
+                                    {{ flashcard.get_difficulty_display }}
+                                </span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 10px;">
+                    <p style="color: #666; margin-bottom: 1rem;">No flashcards yet.</p>
+                    <a href="{% url 'admin:study_flashcard_add' %}?topic={{ topic.id }}" class="btn">Add First Flashcard</a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: #667eea;">Notes</h2>
+                <a href="{% url 'admin:study_note_add' %}?topic={{ topic.id }}&user={{ user.id }}" class="btn btn-secondary" style="font-size: 0.9rem;">+ Add</a>
+            </div>
+            
+            {% if notes %}
+                <div style="display: grid; gap: 1rem;">
+                    {% for note in notes %}
+                        <div style="background: #fffbeb; padding: 1rem; border-radius: 10px; border-left: 4px solid #f59e0b;">
+                            <h4 style="margin-bottom: 0.5rem;">{{ note.title }}</h4>
+                            <p style="color: #666; font-size: 0.9rem;">{{ note.content|truncatewords:30 }}</p>
+                            <small style="color: #999;">{{ note.updated_at|date:"M d, Y" }}</small>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div style="text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 10px;">
+                    <p style="color: #666; font-size: 0.9rem;">No notes yet.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
