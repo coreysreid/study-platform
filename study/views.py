@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models import Count, Avg
 from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, Note
 import random
+import json
 
 # Create your views here.
 
@@ -116,9 +117,19 @@ def study_session(request, topic_id):
     # Create study session
     session = StudySession.objects.create(user=request.user, topic=topic)
     
+    # Serialize flashcards to JSON for JavaScript
+    flashcards_json = json.dumps([{
+        'id': fc.id,
+        'question': fc.question,
+        'answer': fc.answer,
+        'hint': fc.hint,
+        'difficulty': fc.difficulty
+    } for fc in flashcards])
+    
     return render(request, 'study/study_session.html', {
         'topic': topic,
         'flashcards': flashcards,
+        'flashcards_json': flashcards_json,
         'session': session,
     })
 

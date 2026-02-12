@@ -122,23 +122,10 @@
 </div>
 
 <script>
-    const flashcards = {{ flashcards|safe|escapejs }};
+    const cards = {{ flashcards_json|safe }};
     let currentIndex = 0;
     let cardsStudied = 0;
     let isFlipped = false;
-    
-    // Parse flashcard data
-    const cards = [
-        {% for card in flashcards %}
-        {
-            id: {{ card.id }},
-            question: "{{ card.question|escapejs }}",
-            answer: "{{ card.answer|escapejs }}",
-            hint: "{{ card.hint|escapejs }}",
-            difficulty: "{{ card.difficulty }}"
-        }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ];
     
     function loadCard() {
         if (currentIndex >= cards.length) {
