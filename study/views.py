@@ -185,7 +185,8 @@ def statistics(request):
     total_sessions = sessions.count()
     
     progress = FlashcardProgress.objects.filter(user=request.user)
-    average_success_rate = sum(p.success_rate for p in progress) / len(progress) if progress else 0
+    progress_count = progress.count()
+    average_success_rate = sum(p.success_rate for p in progress) / progress_count if progress_count > 0 else 0
     
     context = {
         'total_cards': total_cards,
