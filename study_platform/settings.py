@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import dj_database_url
 
 # Load environment variables
 load_dotenv()
@@ -31,6 +32,13 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-!jcy0&&fql(onm7$x352bbrerx
 DEBUG = os.getenv('DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
+
+# Validate critical settings in production
+if not DEBUG:
+    if SECRET_KEY == 'django-insecure-!jcy0&&fql(onm7$x352bbrerxtg0n$tpy*1kw%232nwt#&s#d':
+        raise ValueError("SECRET_KEY must be set in production!")
+    if not ALLOWED_HOSTS or ALLOWED_HOSTS == ['localhost', '127.0.0.1']:
+        raise ValueError("ALLOWED_HOSTS must be configured for production!")
 
 
 # Application definition
@@ -79,10 +87,10 @@ WSGI_APPLICATION = 'study_platform.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
-    }
+    'default': dj_database_url.config(
+        default=f'sqlite:///{BASE_DIR / "db.sqlite3"}',
+        conn_max_age=600
+    )
 }
 
 
@@ -142,3 +150,12 @@ ENABLE_GRAPH_GENERATION = True
 
 # Security for code execution
 ALLOWED_GRAPH_IMPORTS = ['numpy', 'matplotlib.pyplot', 'math']
+
+# Production Security Settings (uncomment when deploying)
+# SECURE_SSL_REDIRECT = True
+# SESSION_COOKIE_SECURE = True
+# CSRF_COOKIE_SECURE = True
+# SECURE_HSTS_SECONDS = 31536000
+# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+# SECURE_BROWSER_XSS_FILTER = True
+# X_FRAME_OPTIONS = 'DENY'

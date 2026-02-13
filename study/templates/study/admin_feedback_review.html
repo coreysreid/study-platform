@@ -1,0 +1,112 @@
+{% extends 'study/base.html' %}
+
+{% block title %}Feedback Review Dashboard - Study Platform{% endblock %}
+
+{% block content %}
+<h1 style="color: #667eea; margin-bottom: 2rem;">Feedback Review Dashboard</h1>
+
+<div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem;">
+    <form method="get" style="display: flex; gap: 1rem; align-items: end;">
+        <div style="flex: 1;">
+            <label for="status" style="display: block; margin-bottom: 0.5rem;">Status:</label>
+            <select name="status" id="status" class="form-control">
+                <option value="">All</option>
+                <option value="pending" {% if status_filter == 'pending' %}selected{% endif %}>Pending</option>
+                <option value="reviewed" {% if status_filter == 'reviewed' %}selected{% endif %}>Reviewed</option>
+                <option value="resolved" {% if status_filter == 'resolved' %}selected{% endif %}>Resolved</option>
+            </select>
+        </div>
+        
+        <div style="flex: 1;">
+            <label for="feedback_type" style="display: block; margin-bottom: 0.5rem;">Type:</label>
+            <select name="feedback_type" id="feedback_type" class="form-control">
+                <option value="">All</option>
+                <option value="confusing" {% if feedback_type_filter == 'confusing' %}selected{% endif %}>Confusing/Unclear</option>
+                <option value="incorrect" {% if feedback_type_filter == 'incorrect' %}selected{% endif %}>Incorrect Information</option>
+                <option value="needs_improvement" {% if feedback_type_filter == 'needs_improvement' %}selected{% endif %}>Needs Improvement</option>
+                <option value="other" {% if feedback_type_filter == 'other' %}selected{% endif %}>Other</option>
+            </select>
+        </div>
+        
+        <button type="submit" class="btn">Filter</button>
+    </form>
+</div>
+
+{% if feedback_list %}
+    <div style="display: grid; gap: 1.5rem;">
+        {% for feedback in feedback_list %}
+            <div style="background: white; padding: 1.5rem; border-radius: 10px; border-left: 4px solid 
+                {% if feedback.status == 'pending' %}#ffc107
+                {% elif feedback.status == 'reviewed' %}#17a2b8
+                {% else %}#28a745{% endif %};">
+                
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                    <div>
+                        <h3 style="color: #667eea; margin-bottom: 0.5rem;">{{ feedback.get_feedback_type_display }}</h3>
+                        <p style="color: #666; font-size: 0.9rem;">
+                            By <strong>{{ feedback.user.username }}</strong> on {{ feedback.created_at|date:"M d, Y H:i" }}
+                        </p>
+                    </div>
+                    <div>
+                        <span style="padding: 0.25rem 0.75rem; background: 
+                            {% if feedback.status == 'pending' %}#fff3cd
+                            {% elif feedback.status == 'reviewed' %}#d1ecf1
+                            {% else %}#d4edda{% endif %}; 
+                            border-radius: 15px; font-size: 0.9rem;">
+                            {{ feedback.get_status_display }}
+                        </span>
+                    </div>
+                </div>
+                
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+                    <p><strong>Question:</strong> {{ feedback.flashcard.question|truncatewords:30 }}</p>
+                    <p><strong>Answer:</strong> {{ feedback.flashcard.answer|truncatewords:30 }}</p>
+                    {% if feedback.difficulty_rating %}
+                        <p><strong>Difficulty Rating:</strong> {{ feedback.difficulty_rating }}/5</p>
+                    {% endif %}
+                </div>
+                
+                {% if feedback.comment %}
+                    <div style="background: #fffbeb; padding: 1rem; border-radius: 5px; margin-bottom: 1rem;">
+                        <strong>Comment:</strong>
+                        <p style="margin-top: 0.5rem;">{{ feedback.comment }}</p>
+                    </div>
+                {% endif %}
+                
+                <div style="display: flex; gap: 0.5rem; margin-top: 1rem;">
+                    <a href="{% url 'admin:study_flashcard_change' feedback.flashcard.id %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Edit Card</a>
+                    
+                    {% if feedback.status == 'pending' %}
+                        <form method="post" action="{% url 'update_feedback_status' feedback.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="reviewed">
+                            <button type="submit" class="btn" style="font-size: 0.9rem; padding: 0.5rem 1rem; background: #17a2b8;">Mark Reviewed</button>
+                        </form>
+                        <form method="post" action="{% url 'update_feedback_status' feedback.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="resolved">
+                            <button type="submit" class="btn" style="font-size: 0.9rem; padding: 0.5rem 1rem; background: #28a745;">Mark Resolved</button>
+                        </form>
+                    {% elif feedback.status == 'reviewed' %}
+                        <form method="post" action="{% url 'update_feedback_status' feedback.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="resolved">
+                            <button type="submit" class="btn" style="font-size: 0.9rem; padding: 0.5rem 1rem; background: #28a745;">Mark Resolved</button>
+                        </form>
+                    {% endif %}
+                </div>
+                
+                {% if feedback.reviewed_by %}
+                    <p style="color: #666; font-size: 0.9rem; margin-top: 1rem;">
+                        Reviewed by <strong>{{ feedback.reviewed_by.username }}</strong> on {{ feedback.reviewed_at|date:"M d, Y H:i" }}
+                    </p>
+                {% endif %}
+            </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 10px;">
+        <p style="font-size: 1.2rem; color: #666;">No feedback found matching the current filters.</p>
+    </div>
+{% endif %}
+{% endblock %}

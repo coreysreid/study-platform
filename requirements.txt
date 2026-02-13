@@ -4,3 +4,5 @@ Pillow>=10.0.0
 matplotlib>=3.7.0
 numpy>=1.24.0
 RestrictedPython>=6.0
+dj-database-url>=2.0.0
+psycopg2-binary>=2.9.0

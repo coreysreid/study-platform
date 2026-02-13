@@ -6,10 +6,12 @@ An interactive Python-Django study tool designed for electrical engineering stud
 
 ## Features
 
-- 📚 **Course Management**: Organize your studies by courses and topics
+- 📚 **Course Management**: Create and organize your studies by courses and topics
 - 🎴 **Interactive Flashcards**: Create and study flashcards with active recall
+- 🖼️ **Image Support**: Add images to questions and answers for visual learning
+- 💬 **Card Feedback System**: Report issues, rate difficulty, and provide feedback on flashcards
+- 👥 **User-Generated Content**: Full UI for creating courses, topics, and flashcards
 - 📊 **Progress Tracking**: Monitor your study sessions and success rates
-- 📝 **Note Taking**: Take and organize notes for each topic
 - 🎯 **Spaced Repetition**: Track confidence levels for optimal learning
 - 👤 **User Authentication**: Secure login and personalized content
 - 🎨 **Modern UI**: Clean, responsive interface with gradient designs
@@ -18,17 +20,21 @@ An interactive Python-Django study tool designed for electrical engineering stud
 - 🎯 **Diagrams**: Add flowcharts, mind maps, and other diagrams with Mermaid.js
 - 💻 **Code Snippets**: Display syntax-highlighted code in multiple programming languages
 - 🎲 **Parameterized Cards**: Generate infinite variations with random values
+- 🔧 **Admin Dashboard**: Review and manage user feedback on flashcards
+- 🔐 **Production-Ready**: Database flexibility (SQLite/PostgreSQL) and security settings
 
 ## Technology Stack
 
 - **Backend**: Python 3.12 + Django 6.0
-- **Database**: SQLite (easily upgradeable to PostgreSQL)
+- **Database**: SQLite (dev) / PostgreSQL (production) via dj-database-url
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
 - **Authentication**: Django built-in auth system
 - **Math Rendering**: MathJax 3 for LaTeX equations
 - **Graphing**: Matplotlib + NumPy for dynamic graph generation
 - **Diagrams**: Mermaid.js for flowcharts, mind maps, and more
 - **Code Highlighting**: Prism.js for syntax-highlighted code snippets
+- **Media Handling**: Pillow for image processing
+- **Security**: Production-ready settings with validation
 
 ## Installation
 
@@ -84,18 +90,58 @@ python manage.py runserver
 ### Getting Started
 
 1. **Register/Login**: Create an account or log in to access the platform
-2. **Create a Course**: Go to Admin → Courses → Add Course
-3. **Add Topics**: Within a course, add topics (e.g., "Circuit Analysis", "Semiconductors")
-4. **Create Flashcards**: Add flashcards for each topic with questions and answers
+2. **Create a Course**: Click "Create" → "New Course" in the navigation menu
+3. **Add Topics**: Within a course, click "Add Topic" to create topics
+4. **Create Flashcards**: Add flashcards for each topic with questions, answers, and optional images
 5. **Start Studying**: Navigate to a topic and click "Start Studying"
+
+### Creating Content (User Interface)
+
+**Creating Courses:**
+- Navigate to "My Courses" and click "Create New Course"
+- Enter course name, code (optional), and description
+- You can only edit courses you created
+
+**Creating Topics:**
+- From a course page, click "Add Topic"
+- Set name, description, order, and prerequisites
+- Prerequisites help you organize learning dependencies
+
+**Creating Flashcards:**
+- From a topic page, click "Add Flashcard"
+- Choose difficulty level and question type
+- Add optional images to questions and answers (JPG, PNG)
+- For parameterized cards, use templates with {variable} placeholders
+
+### Feedback System
+
+**Submitting Feedback:**
+- During study sessions, click the "💬 Feedback" button
+- Choose feedback type (Confusing, Incorrect, Needs Improvement, Other)
+- Rate difficulty (1-5) and add comments
+- Help improve flashcard quality for everyone
+
+**Admin Feedback Review (Staff Only):**
+- Access via navigation menu → "Feedback Review"
+- Filter by status (Pending, Reviewed, Resolved) and type
+- Quick links to edit flagged flashcards
+- Mark feedback as reviewed or resolved
+
+### Image Support
+
+**Adding Images:**
+- When creating/editing flashcards, use the image upload fields
+- Supported formats: JPG, PNG, GIF
+- Images display automatically during study sessions
+- Maximum recommended size: 5MB per image
 
 ### Admin Interface
 
 Access the Django admin interface at `http://localhost:8000/admin` to:
-- Manage courses, topics, and flashcards
+- Manage all content with advanced options
 - View study session history
 - Track flashcard progress
-- Manage user notes
+- Review and manage user feedback
 
 ### Study Sessions
 
@@ -144,12 +190,12 @@ study-platform/
 
 - **Course**: Represents a subject/course
 - **Topic**: Chapters or sections within a course with prerequisite relationships
-- **Flashcard**: Question-answer pairs for studying with multiple question types
+- **Flashcard**: Question-answer pairs for studying with multiple question types and image support
+- **CardFeedback**: User feedback on flashcards (type, difficulty rating, comments, status)
 - **Skill**: Foundational skills/concepts for tracking learning foundations
 - **MultipleChoiceOption**: Options for multiple choice questions
 - **StudySession**: Tracks individual study sessions
 - **FlashcardProgress**: Monitors progress on specific flashcards
-- **Note**: User notes for topics
 
 ## Core Mathematics Curriculum
 
@@ -342,6 +388,56 @@ Via Django Admin:
 5. Save and study!
 
 For detailed documentation and examples, see `docs/RICH_MEDIA_GUIDE.md`.
+## Production Deployment
+
+### Database Configuration
+
+The platform supports both SQLite (development) and PostgreSQL (production):
+
+```bash
+# Set DATABASE_URL environment variable for PostgreSQL
+export DATABASE_URL="postgresql://user:password@localhost:5432/dbname"
+
+# Or keep default SQLite
+# (no DATABASE_URL needed - uses db.sqlite3)
+```
+
+### Security Settings
+
+**Before deploying to production:**
+
+1. Set a strong SECRET_KEY in your .env file
+2. Set DEBUG=False
+3. Configure ALLOWED_HOSTS with your domain
+4. Uncomment production security settings in settings.py:
+   - SECURE_SSL_REDIRECT
+   - SESSION_COOKIE_SECURE
+   - CSRF_COOKIE_SECURE
+   - SECURE_HSTS_SECONDS
+   - And others...
+
+**The platform validates these settings automatically and will raise errors if:**
+- SECRET_KEY is still using the default insecure key in production
+- ALLOWED_HOSTS is not properly configured in production
+
+### Media Files
+
+Ensure media files are served properly:
+- Development: Django serves media files automatically
+- Production: Configure your web server (nginx, Apache) to serve /media/ directory
+- Consider using cloud storage (S3, GCS) for media in production
+
+### Checklist
+
+- [ ] Set strong SECRET_KEY
+- [ ] Set DEBUG=False
+- [ ] Configure ALLOWED_HOSTS
+- [ ] Set up PostgreSQL database
+- [ ] Enable production security settings
+- [ ] Configure media file serving
+- [ ] Set up static file collection: `python manage.py collectstatic`
+- [ ] Run migrations: `python manage.py migrate`
+- [ ] Create superuser: `python manage.py createsuperuser`
 
 ## Future Enhancements
 
@@ -354,6 +450,10 @@ For detailed documentation and examples, see `docs/RICH_MEDIA_GUIDE.md`.
 - [x] **Graph generation** - Create matplotlib graphs with Python code
 - [x] **Diagrams** - Flowcharts, mind maps, and more with Mermaid.js
 - [x] **Code snippets** - Syntax-highlighted code in multiple languages
+- [x] **Image support in flashcards** - Add visual aids to questions and answers
+- [x] **User feedback system** - Report issues and rate difficulty
+- [x] **User-facing content creation** - Full UI for creating courses, topics, and flashcards
+- [x] **Production security settings** - Database flexibility and validation
 - [ ] Algorithm to suggest prerequisite review based on wrong answers
 - [ ] Progress dashboard showing skill mastery
 - [ ] Adaptive learning paths based on performance
@@ -364,6 +464,7 @@ For detailed documentation and examples, see `docs/RICH_MEDIA_GUIDE.md`.
 - [ ] Study reminders and scheduling
 - [ ] Collaborative study groups
 - [ ] Rich text editor for flashcard creation
+- [ ] Rich text editor for notes
 - [ ] Audio pronunciation for language learning
 
 ## Contributing

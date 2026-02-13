@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Course, Topic, Flashcard, StudySession, FlashcardProgress, 
-    Note, Skill, MultipleChoiceOption, CardTemplate
+    Note, Skill, MultipleChoiceOption, CardTemplate, CardFeedback
 )
 
 # Register your models here.
@@ -33,7 +33,7 @@ class FlashcardAdmin(admin.ModelAdmin):
             'fields': ('topic', 'difficulty', 'question_type', 'skills', 'template')
         }),
         ('Standard Card', {
-            'fields': ('question', 'answer', 'hint'),
+            'fields': ('question', 'question_image', 'answer', 'answer_image', 'hint'),
             'description': 'Use for standard, multiple choice, and step-by-step cards'
         }),
         ('Parameterized Card', {
@@ -91,13 +91,6 @@ class FlashcardProgressAdmin(admin.ModelAdmin):
     success_rate.short_description = 'Success Rate'
 
 
-@admin.register(Note)
-class NoteAdmin(admin.ModelAdmin):
-    list_display = ['title', 'user', 'topic', 'created_at', 'updated_at']
-    list_filter = ['user', 'topic__course', 'created_at']
-    search_fields = ['title', 'content']
-
-
 @admin.register(Skill)
 class SkillAdmin(admin.ModelAdmin):
     list_display = ['name', 'created_at']
@@ -123,4 +116,27 @@ class CardTemplateAdmin(admin.ModelAdmin):
     list_filter = ['category', 'created_at']
     search_fields = ['name', 'description', 'category']
     ordering = ['category', 'name']
+
+
+@admin.register(CardFeedback)
+class CardFeedbackAdmin(admin.ModelAdmin):
+    list_display = ['flashcard_preview', 'user', 'feedback_type', 'difficulty_rating', 'status', 'created_at']
+    list_filter = ['feedback_type', 'status', 'difficulty_rating', 'created_at']
+    search_fields = ['comment', 'flashcard__question', 'user__username']
+    readonly_fields = ['created_at']
+    fieldsets = (
+        ('Feedback Information', {
+            'fields': ('flashcard', 'user', 'feedback_type', 'difficulty_rating', 'comment')
+        }),
+        ('Review Status', {
+            'fields': ('status', 'reviewed_at', 'reviewed_by')
+        }),
+        ('Timestamps', {
+            'fields': ('created_at',)
+        }),
+    )
+    
+    def flashcard_preview(self, obj):
+        return obj.flashcard.question[:50] + '...' if len(obj.flashcard.question) > 50 else obj.flashcard.question
+    flashcard_preview.short_description = 'Flashcard'
 
