@@ -261,6 +261,21 @@ See `docs/PARAMETERIZED_CARDS_DESIGN.md` for full documentation and advanced exa
 
 This project is currently designed for personal use but may be expanded in the future. Suggestions and feedback are welcome!
 
+### Branch Protection
+
+To maintain code quality and prevent accidental changes, it's recommended to protect your main branch:
+
+- **Quick Start**: See [.github/BRANCH_PROTECTION_QUICKSTART.md](.github/BRANCH_PROTECTION_QUICKSTART.md) for a 5-minute setup guide
+- **Full Guide**: See [docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md) for comprehensive documentation
+- **Code Owners**: Automatically request reviews with [.github/CODEOWNERS](.github/CODEOWNERS)
+- **Automated Checks**: Use [.github/workflows/ci.yml](.github/workflows/ci.yml) for CI/CD
+
+With branch protection enabled:
+1. All changes must go through Pull Requests
+2. Changes require review and approval
+3. Automated tests must pass before merging
+4. Direct pushes to main are prevented
+
 ## License
 
 This project is open source and available for educational purposes.

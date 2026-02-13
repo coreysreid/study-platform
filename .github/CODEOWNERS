@@ -1,0 +1,40 @@
+# Code Owners for study-platform
+# This file defines who should review pull requests for specific files/directories
+# 
+# When someone opens a pull request that modifies files with code owners,
+# those owners are automatically requested as reviewers.
+#
+# Learn more: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owner for everything in the repo
+# This ensures that all PRs require review
+* @coreysreid
+
+# Critical Django configuration files
+# These files control settings, routing, and deployment
+study_platform/settings.py @coreysreid
+study_platform/urls.py @coreysreid
+study_platform/wsgi.py @coreysreid
+
+# Database migrations - should be reviewed carefully
+# Migrations can affect data integrity
+study/migrations/* @coreysreid
+
+# Security-sensitive files
+# These files may contain sensitive configuration
+.env.example @coreysreid
+requirements.txt @coreysreid
+
+# Core application models and views
+# Changes here affect the main application logic
+study/models.py @coreysreid
+study/views.py @coreysreid
+
+# Documentation files
+# Keep documentation up to date with code changes
+docs/* @coreysreid
+*.md @coreysreid
+
+# GitHub workflows and automation
+# Changes to CI/CD should be carefully reviewed
+.github/workflows/* @coreysreid
