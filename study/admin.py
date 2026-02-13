@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, Note, Skill, MultipleChoiceOption
+from .models import (
+    Course, Topic, Flashcard, StudySession, FlashcardProgress, 
+    Note, Skill, MultipleChoiceOption, CardTemplate
+)
 
 # Register your models here.
 
@@ -21,13 +24,13 @@ class TopicAdmin(admin.ModelAdmin):
 
 @admin.register(Flashcard)
 class FlashcardAdmin(admin.ModelAdmin):
-    list_display = ['question_preview', 'topic', 'difficulty', 'question_type', 'created_at']
-    list_filter = ['difficulty', 'question_type', 'topic__course', 'created_at']
+    list_display = ['question_preview', 'topic', 'difficulty', 'question_type', 'uses_latex', 'created_at']
+    list_filter = ['difficulty', 'question_type', 'uses_latex', 'graph_type', 'diagram_type', 'topic__course', 'created_at']
     search_fields = ['question', 'answer', 'question_template', 'answer_template']
     filter_horizontal = ['skills']
     fieldsets = (
         ('Basic Information', {
-            'fields': ('topic', 'difficulty', 'question_type', 'skills')
+            'fields': ('topic', 'difficulty', 'question_type', 'skills', 'template')
         }),
         ('Standard Card', {
             'fields': ('question', 'answer', 'hint'),
@@ -36,6 +39,26 @@ class FlashcardAdmin(admin.ModelAdmin):
         ('Parameterized Card', {
             'fields': ('question_template', 'answer_template', 'parameter_spec'),
             'description': 'Use for parameterized/randomized cards. Templates use {variable} placeholders.',
+            'classes': ('collapse',)
+        }),
+        ('Rich Media', {
+            'fields': ('uses_latex',),
+            'description': 'LaTeX/Math equation support',
+            'classes': ('collapse',)
+        }),
+        ('Graphs', {
+            'fields': ('graph_type', 'graph_code', 'graph_config', 'generated_graph_image'),
+            'description': 'Python matplotlib graph generation',
+            'classes': ('collapse',)
+        }),
+        ('Diagrams', {
+            'fields': ('diagram_type', 'diagram_code'),
+            'description': 'Mermaid.js diagrams (flowcharts, mind maps, etc.)',
+            'classes': ('collapse',)
+        }),
+        ('Code Snippets', {
+            'fields': ('code_snippet', 'code_language'),
+            'description': 'Syntax-highlighted code snippets',
             'classes': ('collapse',)
         }),
     )
@@ -92,4 +115,12 @@ class MultipleChoiceOptionAdmin(admin.ModelAdmin):
     def option_text_preview(self, obj):
         return obj.option_text[:50] + '...' if len(obj.option_text) > 50 else obj.option_text
     option_text_preview.short_description = 'Option'
+
+
+@admin.register(CardTemplate)
+class CardTemplateAdmin(admin.ModelAdmin):
+    list_display = ['name', 'category', 'created_at']
+    list_filter = ['category', 'created_at']
+    search_fields = ['name', 'description', 'category']
+    ordering = ['category', 'name']
 

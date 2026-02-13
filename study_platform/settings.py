@@ -134,3 +134,11 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
+
+# Graph generation settings
+GRAPH_TIMEOUT = 3  # seconds
+GRAPH_MAX_SIZE = (800, 600)  # pixels
+ENABLE_GRAPH_GENERATION = True
+
+# Security for code execution
+ALLOWED_GRAPH_IMPORTS = ['numpy', 'matplotlib.pyplot', 'math']
