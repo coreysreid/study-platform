@@ -7,6 +7,25 @@ from RestrictedPython import compile_restricted_eval, safe_globals, safe_builtin
 from RestrictedPython.Guards import guarded_iter_unpack_sequence
 
 
+def safe_getitem(obj, index):
+    """
+    Safe version of obj[index] for RestrictedPython.
+    Only allows indexing on safe types with valid index types.
+    Note: Typically not needed for simple math formulas, but included for defense in depth.
+    """
+    # Validate index type
+    if not isinstance(index, (int, str, slice)):
+        raise TypeError(f"Index must be int, str, or slice, not {type(index).__name__}")
+    
+    # Define allowed types for indexing
+    allowed_types = (list, tuple, dict, str)
+    
+    if not isinstance(obj, allowed_types):
+        raise TypeError(f"Indexing not allowed on type {type(obj).__name__}")
+    
+    return obj[index]
+
+
 class ParameterGenerator:
     """Generates random parameters according to specification"""
     
@@ -36,6 +55,8 @@ class ParameterGenerator:
         return {
             '__builtins__': safe_builtins,
             '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
+            '_getitem_': safe_getitem,
+            '_getattr_': lambda obj, name: getattr(obj, name),
             'sqrt': math.sqrt,
             'pow': math.pow,
             'sin': math.sin,

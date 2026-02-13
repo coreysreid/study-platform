@@ -19,8 +19,12 @@ logger = logging.getLogger(__name__)
 def safe_getitem(obj, index):
     """
     Safe version of obj[index] for RestrictedPython.
-    Only allows indexing on safe container types.
+    Only allows indexing on safe container types with valid index types.
     """
+    # Validate index type
+    if not isinstance(index, (int, str, slice)):
+        raise TypeError(f"Index must be int, str, or slice, not {type(index).__name__}")
+    
     # Define allowed types for indexing
     allowed_types = (list, tuple, dict, str, np.ndarray)
     
