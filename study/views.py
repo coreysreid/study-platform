@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Avg, Sum
 from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
 from functools import wraps
 from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback
 from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
@@ -105,8 +106,12 @@ def course_detail(request, course_id):
 @login_required
 def topic_detail(request, topic_id):
     """View details of a specific topic"""
-    topic = get_object_or_404(Topic, id=topic_id, course__created_by=request.user)
-    flashcards = topic.flashcards.all()
+    topic = get_object_or_404(
+        Topic.objects.select_related('course'),
+        id=topic_id, 
+        course__created_by=request.user
+    )
+    flashcards = topic.flashcards.select_related('topic')
     return render(request, 'study/topic_detail.html', {
         'topic': topic,
         'flashcards': flashcards,
@@ -116,8 +121,12 @@ def topic_detail(request, topic_id):
 @login_required
 def study_session(request, topic_id):
     """Start a study session for a topic"""
-    topic = get_object_or_404(Topic, id=topic_id, course__created_by=request.user)
-    flashcards = list(topic.flashcards.all())
+    topic = get_object_or_404(
+        Topic.objects.select_related('course'),
+        id=topic_id, 
+        course__created_by=request.user
+    )
+    flashcards = list(topic.flashcards.prefetch_related('skills'))
     
     if not flashcards:
         messages.warning(request, 'No flashcards available for this topic.')
@@ -400,6 +409,7 @@ def admin_feedback_review(request):
     # Get filter parameters
     status_filter = request.GET.get('status', 'pending')
     feedback_type_filter = request.GET.get('feedback_type', '')
+    page_number = request.GET.get('page', 1)
     
     # Build query
     feedback_list = CardFeedback.objects.select_related('flashcard', 'user', 'reviewed_by')
@@ -409,8 +419,12 @@ def admin_feedback_review(request):
     if feedback_type_filter:
         feedback_list = feedback_list.filter(feedback_type=feedback_type_filter)
     
+    # Add pagination
+    paginator = Paginator(feedback_list, 25)  # 25 items per page
+    page_obj = paginator.get_page(page_number)
+    
     context = {
-        'feedback_list': feedback_list[:50],  # Limit to 50 items
+        'feedback_list': page_obj,
         'status_filter': status_filter,
         'feedback_type_filter': feedback_type_filter,
     }
