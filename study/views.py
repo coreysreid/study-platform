@@ -5,6 +5,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Avg
+from django.http import HttpResponseForbidden
 from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback
 from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
 from .utils import generate_parameterized_card
@@ -207,7 +208,6 @@ def update_flashcard_progress(request, flashcard_id):
         # Currently only course creators can update progress for their flashcards
         # TODO: When course sharing is implemented, check for shared access as well
         if flashcard.topic.course.created_by != request.user:
-            from django.http import HttpResponseForbidden
             return HttpResponseForbidden("You don't have permission to update progress for this flashcard")
         
         correct = request.POST.get('correct') == 'true'

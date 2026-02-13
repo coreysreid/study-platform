@@ -22,6 +22,32 @@ class ParameterGenerator:
         self.constraints = parameter_spec.get('constraints', [])
         self.precision = parameter_spec.get('precision', 2)
         self.max_retries = 100
+    
+    def _create_safe_namespace(self, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a safe namespace for RestrictedPython evaluation.
+        
+        Args:
+            values: Dictionary of variable values to include in namespace
+            
+        Returns:
+            Safe namespace dictionary with guards and math functions
+        """
+        return {
+            '__builtins__': safe_builtins,
+            '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
+            'sqrt': math.sqrt,
+            'pow': math.pow,
+            'sin': math.sin,
+            'cos': math.cos,
+            'tan': math.tan,
+            'log': math.log,
+            'log10': math.log10,
+            'exp': math.exp,
+            'abs': abs,
+            'round': round,
+            **values
+        }
         
     def generate(self) -> Dict[str, Any]:
         """
@@ -98,21 +124,7 @@ class ParameterGenerator:
             raise ValueError("computed type requires 'formula'")
         
         # Create safe namespace with math functions and generated values
-        namespace = {
-            '__builtins__': safe_builtins,
-            '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
-            'sqrt': math.sqrt,
-            'pow': math.pow,
-            'sin': math.sin,
-            'cos': math.cos,
-            'tan': math.tan,
-            'log': math.log,
-            'log10': math.log10,
-            'exp': math.exp,
-            'abs': abs,
-            'round': round,
-            **values
-        }
+        namespace = self._create_safe_namespace(values)
         
         # Safely evaluate the formula using RestrictedPython
         try:
@@ -137,12 +149,7 @@ class ParameterGenerator:
         if not self.constraints:
             return True
             
-        namespace = {
-            '__builtins__': safe_builtins,
-            '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
-            'abs': abs,
-            **values
-        }
+        namespace = self._create_safe_namespace(values)
         
         for constraint in self.constraints:
             try:
