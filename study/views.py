@@ -363,8 +363,8 @@ def submit_feedback(request, flashcard_id):
             feedback.user = request.user
             feedback.save()
             messages.success(request, 'Thank you for your feedback!')
-            # Return to study session or topic detail
-            return redirect(request.POST.get('next', 'topic_detail'), topic_id=flashcard.topic.id)
+            # Return to topic detail page
+            return redirect('topic_detail', topic_id=flashcard.topic.id)
     else:
         form = CardFeedbackForm()
     

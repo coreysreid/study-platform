@@ -146,21 +146,33 @@
         const questionImg = document.getElementById('questionImage');
         const answerImg = document.getElementById('answerImage');
         
+        // Clear previous images
+        questionImg.innerHTML = '';
+        answerImg.innerHTML = '';
+        
         if (card.question_image) {
-            questionImg.innerHTML = '<img src="' + card.question_image + '" alt="Question image" style="max-width: 100%; max-height: 200px; border-radius: 5px;">';
-        } else {
-            questionImg.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = card.question_image;
+            img.alt = 'Question image';
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '200px';
+            img.style.borderRadius = '5px';
+            questionImg.appendChild(img);
         }
         
         if (card.answer_image) {
-            answerImg.innerHTML = '<img src="' + card.answer_image + '" alt="Answer image" style="max-width: 100%; max-height: 200px; border-radius: 5px;">';
-        } else {
-            answerImg.innerHTML = '';
+            const img = document.createElement('img');
+            img.src = card.answer_image;
+            img.alt = 'Answer image';
+            img.style.maxWidth = '100%';
+            img.style.maxHeight = '200px';
+            img.style.borderRadius = '5px';
+            answerImg.appendChild(img);
         }
         
         // Update feedback button
         const feedbackBtn = document.getElementById('feedbackBtn');
-        feedbackBtn.href = '/flashcard/' + card.id + '/feedback/?next=study_session';
+        feedbackBtn.href = '/flashcard/' + card.id + '/feedback/';
         
         if (card.hint) {
             document.getElementById('hintBtn').style.display = 'inline-block';
@@ -180,7 +192,7 @@
     
     function submitFeedback() {
         const card = cards[currentIndex];
-        window.location.href = '/flashcard/' + card.id + '/feedback/?next=study_session';
+        window.location.href = '/flashcard/' + card.id + '/feedback/';
     }
     
     function flipCard() {
