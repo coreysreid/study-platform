@@ -126,7 +126,6 @@
                     <div id="answer-diagram" class="diagram-container"></div>
                     <div id="answer-code" class="code-container"></div>
                     <div id="answer-graph" class="graph-container"></div>
->>>>>>> main
                 </div>
             </div>
         </div>
@@ -150,8 +149,9 @@
     </form>
 </div>
 
+{{ flashcards_data|json_script:"flashcards-data" }}
 <script>
-    const cards = {{ flashcards_json|safe }};
+    const cards = JSON.parse(document.getElementById('flashcards-data').textContent);
     let currentIndex = 0;
     let cardsStudied = 0;
     let isFlipped = false;
@@ -165,8 +165,9 @@
         const card = cards[currentIndex];
         
         // Load text content
-        document.getElementById('question').innerHTML = card.question;
-        document.getElementById('answer').innerHTML = card.answer;
+        // Always use textContent for security - MathJax can typeset from text nodes
+        document.getElementById('question').textContent = card.question;
+        document.getElementById('answer').textContent = card.answer;
         document.getElementById('cardCounter').textContent = currentIndex + 1;
         document.getElementById('hintText').textContent = card.hint;
         
@@ -248,7 +249,6 @@
         // Update feedback button
         const feedbackBtn = document.getElementById('feedbackBtn');
         feedbackBtn.href = '/flashcard/' + card.id + '/feedback/';
->>>>>>> main
         
         if (card.hint) {
             document.getElementById('hintBtn').style.display = 'inline-block';
