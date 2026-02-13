@@ -1,0 +1,174 @@
+{% extends 'study/base.html' %}
+
+{% block title %}{{ title }} - Study Platform{% endblock %}
+
+{% block extra_css %}
+<style>
+    .card-type-section {
+        padding: 1rem;
+        margin-bottom: 1rem;
+        background: white;
+        border-radius: 5px;
+        border-left: 4px solid #667eea;
+    }
+    .help-text {
+        color: #666;
+        font-size: 0.9rem;
+        margin-top: 0.25rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    <h1 style="color: #667eea; margin-bottom: 2rem;">{{ title }}</h1>
+    
+    <form method="post" enctype="multipart/form-data" style="background: #f8f9fa; padding: 2rem; border-radius: 10px;">
+        {% csrf_token %}
+        
+        <div class="card-type-section">
+            <h3 style="color: #667eea; margin-bottom: 1rem;">Basic Information</h3>
+            
+            <div class="form-group">
+                <label for="{{ form.topic.id_for_label }}">Topic *</label>
+                {{ form.topic }}
+                {% if form.topic.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.topic.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.difficulty.id_for_label }}">Difficulty *</label>
+                {{ form.difficulty }}
+                {% if form.difficulty.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.difficulty.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.question_type.id_for_label }}">Question Type *</label>
+                {{ form.question_type }}
+                {% if form.question_type.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.question_type.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.skills.id_for_label }}">Skills</label>
+                {{ form.skills }}
+                {% if form.skills.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.skills.errors }}</div>
+                {% endif %}
+                <small class="help-text">Hold Ctrl/Cmd to select multiple skills</small>
+            </div>
+        </div>
+        
+        <div class="card-type-section">
+            <h3 style="color: #667eea; margin-bottom: 1rem;">Standard Card Content</h3>
+            <p class="help-text" style="margin-bottom: 1rem;">For standard, multiple choice, and step-by-step cards</p>
+            
+            <div class="form-group">
+                <label for="{{ form.question.id_for_label }}">Question *</label>
+                {{ form.question }}
+                {% if form.question.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.question.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.question_image.id_for_label }}">Question Image</label>
+                {{ form.question_image }}
+                {% if form.question_image.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.question_image.errors }}</div>
+                {% endif %}
+                {% if flashcard and flashcard.question_image %}
+                    <div style="margin-top: 0.5rem;">
+                        <img src="{{ flashcard.question_image.url }}" alt="Current question image" style="max-width: 200px; border-radius: 5px;">
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.answer.id_for_label }}">Answer *</label>
+                {{ form.answer }}
+                {% if form.answer.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.answer.errors }}</div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.answer_image.id_for_label }}">Answer Image</label>
+                {{ form.answer_image }}
+                {% if form.answer_image.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.answer_image.errors }}</div>
+                {% endif %}
+                {% if flashcard and flashcard.answer_image %}
+                    <div style="margin-top: 0.5rem;">
+                        <img src="{{ flashcard.answer_image.url }}" alt="Current answer image" style="max-width: 200px; border-radius: 5px;">
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.hint.id_for_label }}">Hint</label>
+                {{ form.hint }}
+                {% if form.hint.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.hint.errors }}</div>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="card-type-section">
+            <h3 style="color: #667eea; margin-bottom: 1rem;">Parameterized Card (Advanced)</h3>
+            <p class="help-text" style="margin-bottom: 1rem;">For randomized questions with variable substitution</p>
+            
+            <div class="form-group">
+                <label for="{{ form.question_template.id_for_label }}">Question Template</label>
+                {{ form.question_template }}
+                {% if form.question_template.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.question_template.errors }}</div>
+                {% endif %}
+                <small class="help-text">Use {variable} placeholders, e.g., "What is {a} + {b}?"</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.answer_template.id_for_label }}">Answer Template</label>
+                {{ form.answer_template }}
+                {% if form.answer_template.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.answer_template.errors }}</div>
+                {% endif %}
+                <small class="help-text">Answer template with {variable} placeholders</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.parameter_spec.id_for_label }}">Parameter Specification (JSON)</label>
+                {{ form.parameter_spec }}
+                {% if form.parameter_spec.errors %}
+                    <div style="color: #dc3545; font-size: 0.9rem;">{{ form.parameter_spec.errors }}</div>
+                {% endif %}
+                <small class="help-text">JSON specification for parameters. Example: {"a": {"type": "random_int", "min": 1, "max": 10}}</small>
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+            <button type="submit" class="btn">Save Flashcard</button>
+            <a href="{% if flashcard %}{% url 'topic_detail' flashcard.topic.id %}{% else %}{% url 'course_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</div>
+
+{% block extra_js %}
+<script>
+    // Show/hide sections based on question type
+    document.addEventListener('DOMContentLoaded', function() {
+        const questionType = document.getElementById('{{ form.question_type.id_for_label }}');
+        
+        if (questionType) {
+            questionType.addEventListener('change', function() {
+                // You can add logic here to show/hide sections based on type
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}
