@@ -8,7 +8,10 @@ from django.core.files.base import ContentFile
 from django.conf import settings
 import signal
 import json
+import logging
 from contextlib import contextmanager
+
+logger = logging.getLogger(__name__)
 
 
 class TimeoutException(Exception):
@@ -169,8 +172,8 @@ def generate_graph(flashcard):
         return True
         
     except Exception as e:
-        # Log the error (in production, use proper logging)
-        print(f"Error generating graph for flashcard {flashcard.id}: {str(e)}")
+        # Log the error using proper logging
+        logger.error(f"Error generating graph for flashcard {flashcard.id}: {str(e)}")
         return False
     finally:
         # Always close any open figures
