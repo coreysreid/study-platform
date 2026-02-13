@@ -10,7 +10,7 @@ import signal
 import json
 import logging
 from contextlib import contextmanager
-from RestrictedPython import compile_restricted_exec, safe_globals
+from RestrictedPython import compile_restricted_exec
 from RestrictedPython.Guards import guarded_iter_unpack_sequence, safe_builtins, safer_getattr
 
 logger = logging.getLogger(__name__)

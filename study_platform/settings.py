@@ -159,7 +159,11 @@ ALLOWED_GRAPH_IMPORTS = ['numpy', 'matplotlib.pyplot', 'math']
 SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True') == 'True' and not DEBUG
 SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True' and not DEBUG
 CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True' and not DEBUG
-SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000')) if not DEBUG else 0
+# Defensive parsing for SECURE_HSTS_SECONDS
+try:
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000')) if not DEBUG else 0
+except (ValueError, TypeError):
+    SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'True') == 'True' and not DEBUG
-SECURE_BROWSER_XSS_FILTER = True
+# Note: SECURE_BROWSER_XSS_FILTER is deprecated and removed (modern browsers ignore X-XSS-Protection)
 X_FRAME_OPTIONS = 'DENY'

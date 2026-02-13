@@ -170,13 +170,12 @@ def study_session(request, topic_id):
         
         flashcards_data.append(card_data)
     
-    # Serialize flashcards to JSON for JavaScript
-    flashcards_json = json.dumps(flashcards_data)
+    # Pass flashcards_data directly to template for json_script tag (don't pre-serialize)
     
     return render(request, 'study/study_session.html', {
         'topic': topic,
         'flashcards': flashcards,
-        'flashcards_json': flashcards_json,
+        'flashcards_data': flashcards_data,
         'session': session,
     })
 

@@ -3,8 +3,8 @@ import random
 import math
 import re
 from typing import Dict, Any, List
-from RestrictedPython import compile_restricted_eval, safe_globals, safe_builtins
-from RestrictedPython.Guards import guarded_iter_unpack_sequence
+from RestrictedPython import compile_restricted_eval, safe_builtins
+from RestrictedPython.Guards import guarded_iter_unpack_sequence, safer_getattr
 
 
 def safe_getitem(obj, index):
@@ -56,7 +56,7 @@ class ParameterGenerator:
             '__builtins__': safe_builtins,
             '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
             '_getitem_': safe_getitem,
-            '_getattr_': lambda obj, name: getattr(obj, name),
+            '_getattr_': safer_getattr,
             'sqrt': math.sqrt,
             'pow': math.pow,
             'sin': math.sin,

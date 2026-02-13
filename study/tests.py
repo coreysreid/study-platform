@@ -317,3 +317,94 @@ class FlashcardModelTestCase(TestCase):
         
         self.assertEqual(flashcard.skills.count(), 1)
         self.assertIn(skill, flashcard.skills.all())
+
+
+class SecurityTestCase(TestCase):
+    """Test that malicious formulas are rejected by RestrictedPython"""
+    
+    def test_reject_import_in_formula(self):
+        """Test that __import__ is blocked in formulas"""
+        spec = {
+            'variables': {
+                'x': {'type': 'random_int', 'min': 1, 'max': 10},
+                'evil': {'type': 'computed', 'formula': '__import__("os").system("ls")'}
+            }
+        }
+        gen = ParameterGenerator(spec)
+        with self.assertRaises(Exception):
+            gen.generate()
+    
+    def test_reject_dunder_access(self):
+        """Test that dunder attributes are blocked"""
+        spec = {
+            'variables': {
+                'x': {'type': 'random_int', 'min': 1, 'max': 10},
+                'evil': {'type': 'computed', 'formula': 'x.__class__.__bases__'}
+            }
+        }
+        gen = ParameterGenerator(spec)
+        with self.assertRaises(Exception):
+            gen.generate()
+    
+    def test_reject_exec_in_formula(self):
+        """Test that exec is not available"""
+        spec = {
+            'variables': {
+                'x': {'type': 'random_int', 'min': 1, 'max': 10},
+                'evil': {'type': 'computed', 'formula': 'exec("print(1)")'}
+            }
+        }
+        gen = ParameterGenerator(spec)
+        with self.assertRaises(Exception):
+            gen.generate()
+    
+    def test_reject_eval_in_formula(self):
+        """Test that eval is not available"""
+        spec = {
+            'variables': {
+                'x': {'type': 'random_int', 'min': 1, 'max': 10},
+                'evil': {'type': 'computed', 'formula': 'eval("1+1")'}
+            }
+        }
+        gen = ParameterGenerator(spec)
+        with self.assertRaises(Exception):
+            gen.generate()
+    
+    def test_reject_open_file(self):
+        """Test that file operations are blocked"""
+        spec = {
+            'variables': {
+                'x': {'type': 'random_int', 'min': 1, 'max': 10},
+                'evil': {'type': 'computed', 'formula': 'open("/etc/passwd").read()'}
+            }
+        }
+        gen = ParameterGenerator(spec)
+        with self.assertRaises(Exception):
+            gen.generate()
+    
+    def test_allow_safe_math_operations(self):
+        """Test that safe math operations still work"""
+        spec = {
+            'variables': {
+                'a': {'type': 'random_int', 'min': 1, 'max': 10},
+                'b': {'type': 'random_int', 'min': 1, 'max': 10},
+                'result': {'type': 'computed', 'formula': 'sqrt(a**2 + b**2)'}
+            }
+        }
+        gen = ParameterGenerator(spec)
+        values = gen.generate()
+        # Should work without errors
+        self.assertIn('result', values)
+        self.assertGreater(values['result'], 0)
+    
+    def test_reject_malicious_constraint(self):
+        """Test that malicious code in constraints is blocked"""
+        spec = {
+            'variables': {
+                'x': {'type': 'random_int', 'min': 1, 'max': 10}
+            },
+            'constraints': ['__import__("os").system("ls") or True']
+        }
+        gen = ParameterGenerator(spec)
+        with self.assertRaises(Exception):
+            gen.generate()
