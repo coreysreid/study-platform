@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Avg
 from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, Note
+from .utils import generate_parameterized_card
 import random
 import json
 
@@ -117,14 +118,50 @@ def study_session(request, topic_id):
     # Create study session
     session = StudySession.objects.create(user=request.user, topic=topic)
     
+    # Process flashcards - generate parameterized cards if needed
+    flashcards_data = []
+    for fc in flashcards:
+        if fc.question_type == 'parameterized' and fc.parameter_spec:
+            try:
+                question, answer, values = generate_parameterized_card(
+                    fc.parameter_spec,
+                    fc.question_template,
+                    fc.answer_template
+                )
+                flashcards_data.append({
+                    'id': fc.id,
+                    'question': question,
+                    'answer': answer,
+                    'hint': fc.hint,
+                    'difficulty': fc.difficulty,
+                    'question_type': fc.question_type,
+                    'is_parameterized': True,
+                })
+            except Exception as e:
+                # Fallback to template if generation fails
+                messages.warning(request, f'Error generating parameterized card: {str(e)}')
+                flashcards_data.append({
+                    'id': fc.id,
+                    'question': fc.question_template or fc.question,
+                    'answer': fc.answer_template or fc.answer,
+                    'hint': fc.hint,
+                    'difficulty': fc.difficulty,
+                    'question_type': fc.question_type,
+                    'is_parameterized': False,
+                })
+        else:
+            flashcards_data.append({
+                'id': fc.id,
+                'question': fc.question,
+                'answer': fc.answer,
+                'hint': fc.hint,
+                'difficulty': fc.difficulty,
+                'question_type': fc.question_type,
+                'is_parameterized': False,
+            })
+    
     # Serialize flashcards to JSON for JavaScript
-    flashcards_json = json.dumps([{
-        'id': fc.id,
-        'question': fc.question,
-        'answer': fc.answer,
-        'hint': fc.hint,
-        'difficulty': fc.difficulty
-    } for fc in flashcards])
+    flashcards_json = json.dumps(flashcards_data)
     
     return render(request, 'study/study_session.html', {
         'topic': topic,
