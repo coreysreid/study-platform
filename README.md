@@ -15,6 +15,11 @@ An interactive Python-Django study tool designed for electrical engineering stud
 - 🎯 **Spaced Repetition**: Track confidence levels for optimal learning
 - 👤 **User Authentication**: Secure login and personalized content
 - 🎨 **Modern UI**: Clean, responsive interface with gradient designs
+- 🔢 **LaTeX/Math Equations**: Render beautiful mathematical equations using MathJax
+- 📈 **Graph Generation**: Create matplotlib graphs directly in flashcards with Python code
+- 🎯 **Diagrams**: Add flowcharts, mind maps, and other diagrams with Mermaid.js
+- 💻 **Code Snippets**: Display syntax-highlighted code in multiple programming languages
+- 🎲 **Parameterized Cards**: Generate infinite variations with random values
 - 🔧 **Admin Dashboard**: Review and manage user feedback on flashcards
 - 🔐 **Production-Ready**: Database flexibility (SQLite/PostgreSQL) and security settings
 
@@ -24,6 +29,10 @@ An interactive Python-Django study tool designed for electrical engineering stud
 - **Database**: SQLite (dev) / PostgreSQL (production) via dj-database-url
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
 - **Authentication**: Django built-in auth system
+- **Math Rendering**: MathJax 3 for LaTeX equations
+- **Graphing**: Matplotlib + NumPy for dynamic graph generation
+- **Diagrams**: Mermaid.js for flowcharts, mind maps, and more
+- **Code Highlighting**: Prism.js for syntax-highlighted code snippets
 - **Media Handling**: Pillow for image processing
 - **Security**: Production-ready settings with validation
 
@@ -283,6 +292,102 @@ Via Django Admin, create a flashcard with:
 
 See `docs/PARAMETERIZED_CARDS_DESIGN.md` for full documentation and advanced examples.
 
+## Rich Media Flashcards (v3.0)
+
+**NEW**: Enhance your flashcards with mathematical equations, graphs, diagrams, and code!
+
+### LaTeX/Math Equations
+
+Render beautiful mathematical equations using LaTeX syntax:
+
+**Inline Math**: `$f(x) = x^2$` → $f(x) = x^2$
+
+**Display Math**:
+```
+$$\int_0^\infty e^{-x^2} dx = \frac{\sqrt{\pi}}{2}$$
+```
+
+Enable LaTeX support by checking "Uses LaTeX" when creating a flashcard.
+
+### Python Graph Generation
+
+Generate dynamic graphs using matplotlib code:
+
+```python
+x = np.linspace(-10, 10, 100)
+y = np.sin(x)
+plt.plot(x, y)
+plt.grid(True)
+```
+
+Features:
+- Pre-built templates for common graph types
+- Secure sandboxed code execution
+- Support for parameterized graphs (graphs with random values)
+- Automatic image generation and caching
+
+### Diagrams with Mermaid.js
+
+Create flowcharts, mind maps, and other diagrams:
+
+**Flowchart Example**:
+```mermaid
+flowchart TD
+    A[Start] --> B{Is x > 0?}
+    B -->|Yes| C[Return sqrt(x)]
+    B -->|No| D[Return error]
+```
+
+**Mind Map Example**:
+```mermaid
+mindmap
+  root((Calculus))
+    Differential
+      Derivatives
+      Chain Rule
+    Integral
+      Definite Integrals
+      Applications
+```
+
+Supported diagram types:
+- Flowcharts
+- Sequence Diagrams
+- Class Diagrams
+- State Diagrams
+- Mind Maps
+- Gantt Charts
+- Pie Charts
+- Git Graphs
+
+### Code Snippets
+
+Display syntax-highlighted code in multiple programming languages:
+
+```python
+def factorial(n):
+    if n <= 1:
+        return 1
+    return n * factorial(n - 1)
+```
+
+Supported languages:
+- Python
+- C/C++
+- MATLAB
+- VHDL
+- JavaScript
+
+### Creating Rich Media Cards
+
+Via Django Admin:
+1. Navigate to Flashcards
+2. Create or edit a flashcard
+3. Expand the "Rich Media", "Graphs", "Diagrams", or "Code Snippets" sections
+4. Add your content
+5. Save and study!
+
+For detailed documentation and examples, see `docs/RICH_MEDIA_GUIDE.md`.
 ## Production Deployment
 
 ### Database Configuration
@@ -341,6 +446,10 @@ Ensure media files are served properly:
 - [x] Skill tagging for foundational concepts
 - [x] Multiple question types support
 - [x] **Parameterized/randomized cards** - Generate new values each time (e.g., a+b=c with random a,b)
+- [x] **LaTeX/Math equation rendering** - Beautiful mathematical equations with MathJax
+- [x] **Graph generation** - Create matplotlib graphs with Python code
+- [x] **Diagrams** - Flowcharts, mind maps, and more with Mermaid.js
+- [x] **Code snippets** - Syntax-highlighted code in multiple languages
 - [x] **Image support in flashcards** - Add visual aids to questions and answers
 - [x] **User feedback system** - Report issues and rate difficulty
 - [x] **User-facing content creation** - Full UI for creating courses, topics, and flashcards
@@ -354,6 +463,7 @@ Ensure media files are served properly:
 - [ ] Import/export flashcard decks
 - [ ] Study reminders and scheduling
 - [ ] Collaborative study groups
+- [ ] Rich text editor for flashcard creation
 - [ ] Rich text editor for notes
 - [ ] Audio pronunciation for language learning
 

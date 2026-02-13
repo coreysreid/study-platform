@@ -143,6 +143,14 @@ LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
 
+# Graph generation settings
+GRAPH_TIMEOUT = 3  # seconds
+GRAPH_MAX_SIZE = (800, 600)  # pixels
+ENABLE_GRAPH_GENERATION = True
+
+# Security for code execution
+ALLOWED_GRAPH_IMPORTS = ['numpy', 'matplotlib.pyplot', 'math']
+
 # Production Security Settings (uncomment when deploying)
 # SECURE_SSL_REDIRECT = True
 # SESSION_COOKIE_SECURE = True

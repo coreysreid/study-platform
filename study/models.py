@@ -64,6 +64,26 @@ class Flashcard(models.Model):
         ('parameterized', 'Parameterized/Randomized'),
     ]
     
+    GRAPH_TYPES = [
+        ('none', 'No Graph'),
+        ('function', 'Function Plot'),
+        ('parametric', 'Parametric Plot'),
+        ('3d', '3D Surface Plot'),
+        ('vector', 'Vector Field'),
+    ]
+    
+    DIAGRAM_TYPES = [
+        ('none', 'No Diagram'),
+        ('flowchart', 'Flowchart'),
+        ('sequence', 'Sequence Diagram'),
+        ('class', 'Class Diagram'),
+        ('state', 'State Diagram'),
+        ('gantt', 'Gantt Chart'),
+        ('mindmap', 'Mind Map'),
+        ('pie', 'Pie Chart'),
+        ('git', 'Git Graph'),
+    ]
+    
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='flashcards')
     question = models.TextField(help_text="Question or front of flashcard")
     answer = models.TextField(help_text="Answer or back of flashcard")
@@ -105,6 +125,71 @@ class Flashcard(models.Model):
         help_text="JSON specification of parameters, ranges, and computations"
     )
     
+    # LaTeX/Math equation support
+    uses_latex = models.BooleanField(
+        default=False, 
+        help_text='Check if this card contains LaTeX equations'
+    )
+    
+    # Graph generation fields
+    graph_type = models.CharField(
+        max_length=20, 
+        choices=GRAPH_TYPES, 
+        default='none'
+    )
+    graph_code = models.TextField(
+        blank=True, 
+        help_text='Python code to generate graph using matplotlib'
+    )
+    graph_config = models.JSONField(
+        null=True, 
+        blank=True, 
+        help_text='Graph configuration (title, labels, range, etc.)'
+    )
+    generated_graph_image = models.ImageField(
+        upload_to='generated_graphs/', 
+        null=True, 
+        blank=True
+    )
+    
+    # Diagram fields (Mermaid.js)
+    diagram_type = models.CharField(
+        max_length=20, 
+        choices=DIAGRAM_TYPES, 
+        default='none'
+    )
+    diagram_code = models.TextField(
+        blank=True, 
+        help_text='Mermaid.js diagram code'
+    )
+    
+    # Code snippet support
+    code_snippet = models.TextField(
+        blank=True, 
+        help_text='Code snippet to display'
+    )
+    code_language = models.CharField(
+        max_length=20, 
+        blank=True, 
+        choices=[
+            ('python', 'Python'),
+            ('c', 'C'),
+            ('cpp', 'C++'),
+            ('matlab', 'MATLAB'),
+            ('vhdl', 'VHDL'),
+            ('javascript', 'JavaScript'),
+        ]
+    )
+    
+    # Card template reference
+    template = models.ForeignKey(
+        'CardTemplate', 
+        on_delete=models.SET_NULL, 
+        null=True, 
+        blank=True,
+        help_text='Template used to create this card'
+    )
+    
     # Image fields
     question_image = models.ImageField(upload_to='flashcards/questions/', null=True, blank=True)
     answer_image = models.ImageField(upload_to='flashcards/answers/', null=True, blank=True)
@@ -117,6 +202,31 @@ class Flashcard(models.Model):
     
     def __str__(self):
         return f"{self.topic.name} - {self.question[:50]}..."
+
+
+class CardTemplate(models.Model):
+    """Template for creating flashcards with pre-configured settings"""
+    name = models.CharField(max_length=100)
+    description = models.TextField()
+    category = models.CharField(
+        max_length=50,
+        help_text="Category: math, circuit, programming, etc."
+    )
+    default_config = models.JSONField(
+        help_text="Default settings for this template"
+    )
+    example_image = models.ImageField(
+        upload_to='templates/', 
+        null=True, 
+        blank=True
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['category', 'name']
+    
+    def __str__(self):
+        return self.name
 
 
 class MultipleChoiceOption(models.Model):

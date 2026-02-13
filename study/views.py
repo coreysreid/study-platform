@@ -120,6 +120,20 @@ def study_session(request, topic_id):
     # Process flashcards - generate parameterized cards if needed
     flashcards_data = []
     for fc in flashcards:
+        # Base card data
+        card_data = {
+            'id': fc.id,
+            'hint': fc.hint,
+            'difficulty': fc.difficulty,
+            'question_type': fc.question_type,
+            'uses_latex': fc.uses_latex,
+            'diagram_code': fc.diagram_code,
+            'diagram_type': fc.diagram_type,
+            'code_snippet': fc.code_snippet,
+            'code_language': fc.code_language,
+            'graph_image_url': fc.generated_graph_image.url if fc.generated_graph_image else None,
+        }
+        
         if fc.question_type == 'parameterized' and fc.parameter_spec:
             try:
                 question, answer, values = generate_parameterized_card(
@@ -127,13 +141,9 @@ def study_session(request, topic_id):
                     fc.question_template,
                     fc.answer_template
                 )
-                flashcards_data.append({
-                    'id': fc.id,
+                card_data.update({
                     'question': question,
                     'answer': answer,
-                    'hint': fc.hint,
-                    'difficulty': fc.difficulty,
-                    'question_type': fc.question_type,
                     'is_parameterized': True,
                     'question_image': fc.question_image.url if fc.question_image else None,
                     'answer_image': fc.answer_image.url if fc.answer_image else None,
@@ -141,29 +151,23 @@ def study_session(request, topic_id):
             except Exception as e:
                 # Fallback to template if generation fails
                 messages.warning(request, f'Error generating parameterized card: {str(e)}')
-                flashcards_data.append({
-                    'id': fc.id,
+                card_data.update({
                     'question': fc.question_template or fc.question,
                     'answer': fc.answer_template or fc.answer,
-                    'hint': fc.hint,
-                    'difficulty': fc.difficulty,
-                    'question_type': fc.question_type,
                     'is_parameterized': False,
                     'question_image': fc.question_image.url if fc.question_image else None,
                     'answer_image': fc.answer_image.url if fc.answer_image else None,
                 })
         else:
-            flashcards_data.append({
-                'id': fc.id,
+            card_data.update({
                 'question': fc.question,
                 'answer': fc.answer,
-                'hint': fc.hint,
-                'difficulty': fc.difficulty,
-                'question_type': fc.question_type,
                 'is_parameterized': False,
                 'question_image': fc.question_image.url if fc.question_image else None,
                 'answer_image': fc.answer_image.url if fc.answer_image else None,
             })
+        
+        flashcards_data.append(card_data)
     
     # Serialize flashcards to JSON for JavaScript
     flashcards_json = json.dumps(flashcards_data)

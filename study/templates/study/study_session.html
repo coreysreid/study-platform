@@ -61,6 +61,25 @@
         height: 100%;
         transition: width 0.3s;
     }
+    
+    .diagram-container, .code-container, .graph-container {
+        margin-top: 1rem;
+        text-align: left;
+    }
+    
+    .code-container pre {
+        background: rgba(0, 0, 0, 0.1);
+        padding: 1rem;
+        border-radius: 5px;
+        overflow-x: auto;
+        text-align: left;
+    }
+    
+    .graph-container img {
+        max-width: 100%;
+        height: auto;
+        border-radius: 5px;
+    }
 </style>
 {% endblock %}
 
@@ -90,7 +109,10 @@
                 <div style="text-align: center; width: 100%;">
                     <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">Question</h2>
                     <div id="questionImage" style="margin-bottom: 1rem;"></div>
-                    <p id="question" style="font-size: 1.2rem;"></p>
+                    <div id="question" style="font-size: 1.2rem;"></div>
+                    <div id="question-diagram" class="diagram-container"></div>
+                    <div id="question-code" class="code-container"></div>
+                    <div id="question-graph" class="graph-container"></div>
                     <p style="margin-top: 2rem; opacity: 0.8; font-size: 0.9rem;">
                         Click to reveal answer
                     </p>
@@ -100,7 +122,11 @@
                 <div style="text-align: center; width: 100%;">
                     <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">Answer</h2>
                     <div id="answerImage" style="margin-bottom: 1rem;"></div>
-                    <p id="answer" style="font-size: 1.2rem;"></p>
+                    <div id="answer" style="font-size: 1.2rem;"></div>
+                    <div id="answer-diagram" class="diagram-container"></div>
+                    <div id="answer-code" class="code-container"></div>
+                    <div id="answer-graph" class="graph-container"></div>
+>>>>>>> main
                 </div>
             </div>
         </div>
@@ -137,10 +163,20 @@
         }
         
         const card = cards[currentIndex];
-        document.getElementById('question').textContent = card.question;
-        document.getElementById('answer').textContent = card.answer;
+        
+        // Load text content
+        document.getElementById('question').innerHTML = card.question;
+        document.getElementById('answer').innerHTML = card.answer;
         document.getElementById('cardCounter').textContent = currentIndex + 1;
         document.getElementById('hintText').textContent = card.hint;
+        
+        // Clear previous rich media
+        document.getElementById('question-diagram').innerHTML = '';
+        document.getElementById('answer-diagram').innerHTML = '';
+        document.getElementById('question-code').innerHTML = '';
+        document.getElementById('answer-code').innerHTML = '';
+        document.getElementById('question-graph').innerHTML = '';
+        document.getElementById('answer-graph').innerHTML = '';
         
         // Load images
         const questionImg = document.getElementById('questionImage');
@@ -150,9 +186,9 @@
         questionImg.innerHTML = '';
         answerImg.innerHTML = '';
         
-        if (card.question_image) {
+        if (card.question_image_url) {
             const img = document.createElement('img');
-            img.src = card.question_image;
+            img.src = card.question_image_url;
             img.alt = 'Question image';
             img.style.maxWidth = '100%';
             img.style.maxHeight = '200px';
@@ -160,9 +196,9 @@
             questionImg.appendChild(img);
         }
         
-        if (card.answer_image) {
+        if (card.answer_image_url) {
             const img = document.createElement('img');
-            img.src = card.answer_image;
+            img.src = card.answer_image_url;
             img.alt = 'Answer image';
             img.style.maxWidth = '100%';
             img.style.maxHeight = '200px';
@@ -170,9 +206,49 @@
             answerImg.appendChild(img);
         }
         
+        // Render diagrams if present
+        if (card.diagram_code) {
+            const diagramDiv = document.createElement('div');
+            diagramDiv.className = 'mermaid';
+            diagramDiv.textContent = card.diagram_code;
+            document.getElementById('question-diagram').appendChild(diagramDiv);
+        }
+        
+        // Render code snippets if present
+        if (card.code_snippet && card.code_language) {
+            const preElement = document.createElement('pre');
+            const codeElement = document.createElement('code');
+            codeElement.className = `language-${card.code_language}`;
+            codeElement.textContent = card.code_snippet;
+            preElement.appendChild(codeElement);
+            document.getElementById('question-code').appendChild(preElement);
+            if (typeof Prism !== 'undefined') {
+                Prism.highlightElement(codeElement);
+            }
+        }
+        
+        // Render graph if present
+        if (card.graph_image_url) {
+            const imgElement = document.createElement('img');
+            imgElement.src = card.graph_image_url;
+            imgElement.alt = 'Graph';
+            document.getElementById('question-graph').appendChild(imgElement);
+        }
+        
+        // Trigger MathJax to re-render if present
+        if (card.uses_latex && typeof MathJax !== 'undefined') {
+            MathJax.typesetPromise().catch((err) => console.log('MathJax error:', err));
+        }
+        
+        // Trigger Mermaid to re-render diagrams
+        if (card.diagram_code && typeof mermaid !== 'undefined') {
+            mermaid.init(undefined, '.mermaid');
+        }
+        
         // Update feedback button
         const feedbackBtn = document.getElementById('feedbackBtn');
         feedbackBtn.href = '/flashcard/' + card.id + '/feedback/';
+>>>>>>> main
         
         if (card.hint) {
             document.getElementById('hintBtn').style.display = 'inline-block';
