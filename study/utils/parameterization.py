@@ -3,7 +3,7 @@ import random
 import math
 import re
 from typing import Dict, Any, List
-from RestrictedPython import compile_restricted_eval, safe_globals
+from RestrictedPython import compile_restricted_eval, safe_globals, safe_builtins
 from RestrictedPython.Guards import guarded_iter_unpack_sequence
 
 
@@ -99,7 +99,7 @@ class ParameterGenerator:
         
         # Create safe namespace with math functions and generated values
         namespace = {
-            '__builtins__': {},
+            '__builtins__': safe_builtins,
             '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
             'sqrt': math.sqrt,
             'pow': math.pow,
@@ -138,7 +138,7 @@ class ParameterGenerator:
             return True
             
         namespace = {
-            '__builtins__': {},
+            '__builtins__': safe_builtins,
             '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
             'abs': abs,
             **values

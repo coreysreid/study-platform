@@ -11,9 +11,15 @@ import json
 import logging
 from contextlib import contextmanager
 from RestrictedPython import compile_restricted_exec, safe_globals
-from RestrictedPython.Guards import guarded_iter_unpack_sequence, safe_builtins
+from RestrictedPython.Guards import guarded_iter_unpack_sequence, safe_builtins, safer_getattr
 
 logger = logging.getLogger(__name__)
+
+
+def safe_getitem(obj, index):
+    """Safe version of obj[index] for RestrictedPython"""
+    # Allow indexing on safe types
+    return obj[index]
 
 
 class TimeoutException(Exception):
@@ -79,7 +85,8 @@ def safe_execute_graph_code(code, variables=None):
         '__builtins__': safe_builtins,
         '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
         '_getiter_': iter,
-        '_getitem_': lambda obj, index: obj[index],
+        '_getitem_': safe_getitem,
+        '_getattr_': safer_getattr,
         'np': np,
         'plt': plt,
         'numpy': np,
