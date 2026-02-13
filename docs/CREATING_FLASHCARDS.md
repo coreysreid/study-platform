@@ -232,15 +232,59 @@ def import_flashcards_from_csv(csv_file_path):
 ## Next Steps
 
 1. Start with foundational topics (Basic Arithmetic, Algebra)
-2. Create 10-20 cards per topic to begin
+2. Create flashcards for each topic as needed (no artificial limits - build as comprehensive as required)
 3. Test the cards with actual study sessions
 4. Gather feedback and refine
 5. Gradually build out more advanced topics
 6. Implement the review loop algorithm to suggest prerequisite topics
 
+## Parameterized/Randomized Cards (Future Feature)
+
+**Concept**: Create cards that generate new values each time they're presented, preventing memorization and forcing true understanding of the solving process.
+
+**Example - Addition Card:**
+```python
+# Future implementation concept
+flashcard = Flashcard.objects.create(
+    topic=topic,
+    question_template="What is {a} + {b}?",
+    answer_template="{c}",
+    parameter_spec={
+        'a': {'type': 'integer', 'min': 1, 'max': 100},
+        'b': {'type': 'integer', 'min': 1, 'max': 100},
+        'c': {'type': 'computed', 'formula': 'a + b'}
+    },
+    question_type='parameterized'
+)
+```
+
+Each presentation generates new random values for `a` and `b`, and computes `c` automatically.
+
+**Benefits:**
+- Prevents memorization of specific answers
+- Emphasizes understanding the solving process
+- Unlimited practice variations from a single card
+- Can be applied to any mathematical operation or pattern
+
+**Potential Applications:**
+- Basic arithmetic (addition, subtraction, multiplication, division)
+- Algebraic simplification with different coefficients
+- Calculus problems with varying functions
+- Matrix operations with different dimensions
+- Trigonometric identities with different angles
+
+**Implementation Notes:**
+- Would require new `question_template` and `answer_template` fields
+- Need `parameter_spec` JSON field to define variable ranges and computations
+- Frontend would need to render templates with generated values
+- Could include verification that computed answers are correct
+
+**Note**: This is a planned feature. Current implementation uses static question/answer fields.
+
 ## Future Enhancements
 
 The groundwork is in place for:
+- **Parameterized cards** (see above section)
 - Automatic difficulty adjustment based on user performance
 - Skill mastery tracking across all topics
 - Prerequisite suggestion algorithm

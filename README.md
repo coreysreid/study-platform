@@ -189,6 +189,7 @@ The curriculum provides the structure; the next phase is creating flashcards for
 - [x] Prerequisite relationship system
 - [x] Skill tagging for foundational concepts
 - [x] Multiple question types support
+- [ ] **Parameterized/randomized cards** - Generate new values each time (e.g., a+b=c with random a,b)
 - [ ] Algorithm to suggest prerequisite review based on wrong answers
 - [ ] Progress dashboard showing skill mastery
 - [ ] Adaptive learning paths based on performance

@@ -202,7 +202,7 @@ for topic in topics:
 ## Next Steps
 
 1. **Create Flashcards**: Start with Topic 1 (Basic Arithmetic)
-   - Aim for 10-20 cards per topic initially
+   - Create comprehensive card sets as needed (no artificial limits)
    - Use all three question types
    - Tag with appropriate skills
 
@@ -216,7 +216,12 @@ for topic in topics:
    - Skill mastery dashboard
    - Progress visualization
 
-4. **Expand Content**: Add more topics
+4. **Future Enhancement - Parameterized Cards**: 
+   - Add support for randomized card values (e.g., a+b=c with random a, b)
+   - Prevents memorization, enforces process understanding
+   - See CREATING_FLASHCARDS.md for detailed design
+
+5. **Expand Content**: Add more topics
    - Physics for engineers
    - Programming fundamentals
    - Circuit analysis

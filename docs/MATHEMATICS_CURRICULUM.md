@@ -1,5 +1,7 @@
 # Mathematics Curriculum for Bachelor of Engineering
 
+> **Documentation Note**: This document outlines the curriculum structure and planned content. It represents the design and roadmap. As features are implemented, ensure documentation stays synchronized with the actual codebase. Features marked as "planned" or "future" have not yet been implemented in code.
+
 ## Overview
 This curriculum is designed for engineering students starting from a Year 6 C-grade mathematics foundation. The progression builds fundamental skills systematically, ensuring mastery at each level before advancing to more complex topics.
 
@@ -636,8 +638,17 @@ This approach helps students understand the logical flow of problem-solving and 
 - Create Course: "Engineering Mathematics"
 - Create all 13 topics with descriptions and prerequisites
 - Create foundational skills in the database
-- Begin creating flashcards for each topic
+- Create flashcards for each topic (comprehensive sets, no artificial limits)
 - Implement step-by-step problem framework
+
+### Phase 2.5: Parameterized/Randomized Cards (Planned)
+- Add support for parameterized flashcards with variable substitution
+- Implement random value generation for card parameters
+- Add formula/computation engine for calculating answers
+- Example: Create one card for "a+b=?" that generates infinite variations
+- Benefits: Prevents memorization, ensures process understanding
+- Applicable to arithmetic, algebra, calculus, matrices, and more
+- See detailed design in CREATING_FLASHCARDS.md
 
 ### Phase 3: Enhanced Features (Future)
 - Algorithm to suggest prerequisite review based on wrong answers
@@ -655,6 +666,7 @@ A student should demonstrate:
 - 80%+ success rate on a topic before moving to dependent topics
 - Ability to complete problems without hints
 - Understanding of underlying concepts, not just memorization
+- **Note**: Parameterized cards (future feature) will help ensure true understanding by preventing answer memorization
 
 ### Review Loop
 When a student answers incorrectly:

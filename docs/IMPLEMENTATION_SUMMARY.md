@@ -190,11 +190,44 @@ Core Calculus (Topics 6-7)
 
 ## Future Implementation Roadmap
 
+> **Note on Documentation**: This documentation describes the current implementation and planned features. Future enhancements are clearly marked. Documentation should be updated as features are implemented to maintain accuracy.
+
 ### Phase 2: Content Creation (Next)
 - Create flashcards for each topic (start with foundations)
-- Begin with 10-20 cards per topic
+- Build comprehensive card sets as needed (no artificial limits)
 - Tag flashcards with appropriate skills
 - Implement multiple choice and step-by-step examples
+
+### Phase 2.5: Parameterized Cards (Planned Feature)
+**Problem**: Static flashcards can be memorized rather than understood.
+
+**Solution**: Parameterized/randomized cards that generate new values on each presentation.
+
+**Example**: For an addition card testing `a + b = c`:
+- Each time presented, new values for `a` and `b` are randomly generated
+- `c` is automatically computed
+- User must solve the process, not memorize specific answer
+
+**Implementation approach**:
+```python
+# Proposed model enhancement
+class Flashcard(models.Model):
+    # ... existing fields ...
+    question_template = models.TextField(blank=True, 
+        help_text="Template with {variables} for parameterized cards")
+    answer_template = models.TextField(blank=True,
+        help_text="Answer template with {variables}")
+    parameter_spec = models.JSONField(blank=True, null=True,
+        help_text="JSON defining variable ranges and computations")
+    # New question_type: 'parameterized'
+```
+
+**Benefits**:
+- Prevents memorization, forces understanding
+- Unlimited variations from single card definition
+- Applicable to arithmetic, algebra, calculus, matrices, etc.
+
+**Status**: Planned for future implementation. Current system uses static questions/answers.
 
 ### Phase 3: Learning Feedback Loop
 Algorithm to implement:
