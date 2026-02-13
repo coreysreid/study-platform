@@ -7,10 +7,16 @@ on:
   push:
     branches: [ main ]
 
+# Set minimal permissions for all jobs
+permissions:
+  contents: read
+
 jobs:
   test:
     name: Run Tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - name: Checkout code
@@ -42,6 +48,8 @@ jobs:
   lint:
     name: Code Quality Checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - name: Checkout code
@@ -68,6 +76,8 @@ jobs:
   security:
     name: Security Checks
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     
     steps:
     - name: Checkout code
