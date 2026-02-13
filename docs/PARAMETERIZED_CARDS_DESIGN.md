@@ -441,4 +441,3 @@ python manage.py create_example_parameterized_cards --user=<username>
 
 # Or create via Django Admin using question_type='parameterized'
 ```
-6. Gather user feedback
