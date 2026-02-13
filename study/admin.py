@@ -23,11 +23,26 @@ class TopicAdmin(admin.ModelAdmin):
 class FlashcardAdmin(admin.ModelAdmin):
     list_display = ['question_preview', 'topic', 'difficulty', 'question_type', 'created_at']
     list_filter = ['difficulty', 'question_type', 'topic__course', 'created_at']
-    search_fields = ['question', 'answer']
+    search_fields = ['question', 'answer', 'question_template', 'answer_template']
     filter_horizontal = ['skills']
+    fieldsets = (
+        ('Basic Information', {
+            'fields': ('topic', 'difficulty', 'question_type', 'skills')
+        }),
+        ('Standard Card', {
+            'fields': ('question', 'answer', 'hint'),
+            'description': 'Use for standard, multiple choice, and step-by-step cards'
+        }),
+        ('Parameterized Card', {
+            'fields': ('question_template', 'answer_template', 'parameter_spec'),
+            'description': 'Use for parameterized/randomized cards. Templates use {variable} placeholders.',
+            'classes': ('collapse',)
+        }),
+    )
     
     def question_preview(self, obj):
-        return obj.question[:50] + '...' if len(obj.question) > 50 else obj.question
+        question_text = obj.question_template if obj.question_type == 'parameterized' and obj.question_template else obj.question
+        return question_text[:50] + '...' if len(question_text) > 50 else question_text
     question_preview.short_description = 'Question'
 
 

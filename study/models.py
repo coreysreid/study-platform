@@ -61,6 +61,7 @@ class Flashcard(models.Model):
         ('standard', 'Standard Q&A'),
         ('multiple_choice', 'Multiple Choice'),
         ('step_by_step', 'Step-by-Step Problem'),
+        ('parameterized', 'Parameterized/Randomized'),
     ]
     
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='flashcards')
@@ -88,6 +89,22 @@ class Flashcard(models.Model):
         related_name='flashcards',
         help_text="Foundational skills required for this question"
     )
+    
+    # Parameterized card fields
+    question_template = models.TextField(
+        blank=True,
+        help_text="Template with {variable} placeholders. Used when question_type='parameterized'"
+    )
+    answer_template = models.TextField(
+        blank=True,
+        help_text="Template with {variable} placeholders for the answer"
+    )
+    parameter_spec = models.JSONField(
+        blank=True,
+        null=True,
+        help_text="JSON specification of parameters, ranges, and computations"
+    )
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     

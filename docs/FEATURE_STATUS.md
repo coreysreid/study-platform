@@ -38,25 +38,32 @@
 - ✅ IMPLEMENTATION_SUMMARY.md - Technical details
 - ✅ PARAMETERIZED_CARDS_DESIGN.md - Future feature design
 
-## 🔮 Planned Features (Not Yet Implemented)
+## ✅ Implemented Features (Recently Added)
 
 ### Parameterized/Randomized Cards
-**Status**: Design complete, implementation pending
+**Status**: ✅ Implemented (v2.0)
 
 **What it is**: Cards that generate random values on each presentation
 - Example: "What is {a} + {b}?" where a and b are randomly generated
 - Prevents memorization, forces understanding of process
 - One card definition creates infinite variations
 
-**Required changes**:
-- Add `question_template`, `answer_template` fields to Flashcard model
-- Add `parameter_spec` JSON field for variable definitions
-- Add 'parameterized' to question type choices
-- Implement parameter generation engine
-- Update frontend to render templates
-- Add answer validation for computed values
+**Implementation details**:
+- ✅ Added `question_template`, `answer_template` fields to Flashcard model
+- ✅ Added `parameter_spec` JSON field for variable definitions
+- ✅ Added 'parameterized' to question type choices
+- ✅ Implemented parameter generation engine (`utils.py`)
+- ✅ Updated study session view to render templates
+- ✅ Supports random_int, random_float, random_choice, and computed variables
+- ✅ Constraint validation system for ensuring valid parameters
+- ✅ 18 unit tests covering all functionality
+- ✅ 7 example cards demonstrating various use cases
+
+**Usage**: See management command `create_example_parameterized_cards` for examples
 
 **Documentation**: See `docs/PARAMETERIZED_CARDS_DESIGN.md`
+
+## 🔮 Planned Features (Not Yet Implemented)
 
 ### Learning Feedback Loop
 **Status**: Planned, algorithm designed
@@ -172,13 +179,16 @@ When implementing a feature, update these files as needed:
 
 ## Version History
 
-- **v1.0** (Current): Core structure, curriculum, prerequisite system, skill tagging
-- **v2.0** (Planned): Parameterized cards, learning feedback loop
-- **v3.0** (Planned): Progress dashboard, adaptive difficulty, full SM-2 implementation
+- **v1.0** (Released): Core structure, curriculum, prerequisite system, skill tagging
+- **v2.0** (Current): Parameterized/randomized flashcards fully implemented
+- **v3.0** (Planned): Learning feedback loop, progress dashboard
+- **v4.0** (Planned): Adaptive difficulty, full SM-2 implementation
 
 ---
 
 **Last Updated**: 2026-02-13
+
+**Current Version**: v2.0 - Parameterized Flashcards
 
 **Maintained by**: Development team
 
