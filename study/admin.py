@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Course, Topic, Flashcard, StudySession, FlashcardProgress, 
-    Note, Skill, MultipleChoiceOption, CardTemplate, CardFeedback
+    Skill, MultipleChoiceOption, CardTemplate, CardFeedback
 )
 
 # Register your models here.
