@@ -238,48 +238,163 @@ def import_flashcards_from_csv(csv_file_path):
 5. Gradually build out more advanced topics
 6. Implement the review loop algorithm to suggest prerequisite topics
 
-## Parameterized/Randomized Cards (Future Feature)
+## Parameterized/Randomized Cards (v2.0 - Implemented!)
 
-**Concept**: Create cards that generate new values each time they're presented, preventing memorization and forcing true understanding of the solving process.
+**Status**: ✅ Fully implemented and available!
 
-**Example - Addition Card:**
+Create cards that generate new random values each time they're presented, preventing memorization and forcing true understanding of the solving process.
+
+### Quick Start
+
+Use the management command to create 7 example parameterized cards:
+```bash
+python manage.py create_example_parameterized_cards --user=<your_username>
+```
+
+### 4. Parameterized Flashcards
+
+**Example - Simple Addition:**
 ```python
-# Future implementation concept
+from study.models import Topic, Flashcard, Skill
+
+topic = Topic.objects.get(name='Basic Arithmetic & Number Sense')
+skill = Skill.objects.get(name='basic_arithmetic')
+
 flashcard = Flashcard.objects.create(
     topic=topic,
+    question="Placeholder (not used for parameterized)",
+    answer="Placeholder (not used for parameterized)",
+    question_type='parameterized',
     question_template="What is {a} + {b}?",
     answer_template="{c}",
     parameter_spec={
-        'a': {'type': 'integer', 'min': 1, 'max': 100},
-        'b': {'type': 'integer', 'min': 1, 'max': 100},
-        'c': {'type': 'computed', 'formula': 'a + b'}
+        'variables': {
+            'a': {'type': 'random_int', 'min': 1, 'max': 50},
+            'b': {'type': 'random_int', 'min': 1, 'max': 50},
+            'c': {'type': 'computed', 'formula': 'a + b'}
+        }
     },
-    question_type='parameterized'
+    hint="Add the two numbers together",
+    difficulty='easy'
+)
+flashcard.skills.add(skill)
+```
+
+**Result**: Each time this card is presented, it generates new random values:
+- "What is 23 + 17?" → "40"
+- "What is 8 + 42?" → "50"
+- "What is 31 + 19?" → "50"
+- ... infinite variations!
+
+### Variable Types
+
+**1. random_int** - Random integer in range
+```python
+{'type': 'random_int', 'min': 1, 'max': 100}
+```
+
+**2. random_float** - Random decimal with precision
+```python
+{'type': 'random_float', 'min': 0.0, 'max': 10.0, 'precision': 2}
+```
+
+**3. random_choice** - Pick from list
+```python
+{'type': 'random_choice', 'choices': [30, 45, 60, 90]}
+```
+
+**4. computed** - Calculate from other variables
+```python
+{'type': 'computed', 'formula': 'a + b'}
+{'type': 'computed', 'formula': 'sqrt(a**2 + b**2)'}  # Pythagorean theorem
+```
+
+### Advanced Examples
+
+**Example - Pythagorean Theorem:**
+```python
+flashcard = Flashcard.objects.create(
+    topic=topic,
+    question="Not used",
+    answer="Not used",
+    question_type='parameterized',
+    question_template="A right triangle has legs of length {a} and {b}. What is the hypotenuse? (Round to 2 decimal places)",
+    answer_template="{c}",
+    parameter_spec={
+        'variables': {
+            'a': {'type': 'random_int', 'min': 3, 'max': 12},
+            'b': {'type': 'random_int', 'min': 3, 'max': 12},
+            'c': {'type': 'computed', 'formula': 'round(sqrt(a**2 + b**2), 2)'}
+        },
+        'precision': 2
+    },
+    hint="Use the Pythagorean theorem: c² = a² + b²",
+    difficulty='medium'
 )
 ```
 
-Each presentation generates new random values for `a` and `b`, and computes `c` automatically.
+**Example - Division with Clean Results (using constraints):**
+```python
+flashcard = Flashcard.objects.create(
+    topic=topic,
+    question="Not used",
+    answer="Not used", 
+    question_type='parameterized',
+    question_template="What is {a} ÷ {b}?",
+    answer_template="{c}",
+    parameter_spec={
+        'variables': {
+            'b': {'type': 'random_int', 'min': 2, 'max': 10},
+            'c': {'type': 'random_int', 'min': 2, 'max': 12},
+            'a': {'type': 'computed', 'formula': 'b * c'}
+        },
+        'constraints': ['a % b == 0']  # Ensure no remainder
+    },
+    hint="Divide the first number by the second",
+    difficulty='medium'
+)
+```
 
-**Benefits:**
-- Prevents memorization of specific answers
-- Emphasizes understanding the solving process
-- Unlimited practice variations from a single card
-- Can be applied to any mathematical operation or pattern
+### Constraints
 
-**Potential Applications:**
-- Basic arithmetic (addition, subtraction, multiplication, division)
-- Algebraic simplification with different coefficients
-- Calculus problems with varying functions
-- Matrix operations with different dimensions
-- Trigonometric identities with different angles
+Use constraints to ensure valid parameter combinations:
 
-**Implementation Notes:**
-- Would require new `question_template` and `answer_template` fields
-- Need `parameter_spec` JSON field to define variable ranges and computations
-- Frontend would need to render templates with generated values
-- Could include verification that computed answers are correct
+```python
+'constraints': [
+    'a > b',              # Ensure a is greater than b
+    'a % b == 0',         # Ensure a is divisible by b
+    'a - b > 10'          # Ensure difference is at least 10
+]
+```
 
-**Note**: This is a planned feature. Current implementation uses static question/answer fields.
+### Available Math Functions
+
+In computed formulas, you can use:
+- Basic: `+`, `-`, `*`, `/`, `**` (power), `%` (modulo)
+- Math functions: `sqrt()`, `abs()`, `round()`, `pow()`
+- Trigonometry: `sin()`, `cos()`, `tan()`
+- Logarithms: `log()`, `log10()`, `exp()`
+
+### Benefits
+
+1. **Prevents Memorization** - Students can't memorize answers, must understand process
+2. **Unlimited Practice** - One card definition creates infinite variations
+3. **Efficient Content Creation** - Create one card instead of hundreds
+4. **Better Assessment** - True measure of understanding, not recall
+5. **Adaptive Difficulty** - Can adjust parameter ranges based on performance
+
+### Complete Example Set
+
+See the `create_example_parameterized_cards` management command for 7 complete examples:
+1. Simple Addition
+2. Simple Subtraction
+3. Multiplication
+4. Division (clean results)
+5. Fraction Addition
+6. Pythagorean Theorem
+7. Percentage Calculation
+
+For full design documentation, see `docs/PARAMETERIZED_CARDS_DESIGN.md`.
 
 ## Future Enhancements
 

@@ -185,13 +185,65 @@ This creates:
 
 The curriculum provides the structure; the next phase is creating flashcards for each topic.
 
+## Parameterized Flashcards (v2.0)
+
+**NEW**: Create flashcards that generate infinite variations with random values!
+
+### What are Parameterized Cards?
+
+Instead of static flashcards that can be memorized, parameterized cards generate new random values each time they're presented:
+
+**Traditional Card:**
+- Question: "What is 2 + 3?"
+- Answer: "5"
+- Problem: Students memorize the answer, not the process
+
+**Parameterized Card:**
+- Template: "What is {a} + {b}?"
+- Parameters: a = random(1-50), b = random(1-50), c = a + b
+- Result: Each time generates new values like "What is 17 + 23?" or "What is 45 + 8?"
+
+### Quick Start with Parameterized Cards
+
+Create example cards for the Basic Arithmetic topic:
+
+```bash
+python manage.py create_example_parameterized_cards --user=<your_username>
+```
+
+This creates 7 example parameterized cards including:
+- Simple Addition: "What is {a} + {b}?"
+- Multiplication: "What is {a} × {b}?"
+- Pythagorean Theorem: "Triangle with legs {a} and {b}, find hypotenuse"
+- Percentage: "What is {percent}% of {number}?"
+- And more!
+
+### Creating Your Own Parameterized Cards
+
+Via Django Admin, create a flashcard with:
+- **Question Type**: Parameterized/Randomized
+- **Question Template**: "What is {a} + {b}?"
+- **Answer Template**: "{c}"
+- **Parameter Spec** (JSON):
+```json
+{
+  "variables": {
+    "a": {"type": "random_int", "min": 1, "max": 50},
+    "b": {"type": "random_int", "min": 1, "max": 50},
+    "c": {"type": "computed", "formula": "a + b"}
+  }
+}
+```
+
+See `docs/PARAMETERIZED_CARDS_DESIGN.md` for full documentation and advanced examples.
+
 ## Future Enhancements
 
 - [x] Core mathematics curriculum structure
 - [x] Prerequisite relationship system
 - [x] Skill tagging for foundational concepts
 - [x] Multiple question types support
-- [ ] **Parameterized/randomized cards** - Generate new values each time (e.g., a+b=c with random a,b)
+- [x] **Parameterized/randomized cards** - Generate new values each time (e.g., a+b=c with random a,b)
 - [ ] Algorithm to suggest prerequisite review based on wrong answers
 - [ ] Progress dashboard showing skill mastery
 - [ ] Adaptive learning paths based on performance
