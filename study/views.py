@@ -20,11 +20,11 @@ import json
 def staff_required(view_func):
     """Decorator to require staff permissions"""
     @wraps(view_func)
-    def wrapper(request, *args, **kwargs):
+    def _wrapped_view(request, *args, **kwargs):
         if not request.user.is_staff:
             raise PermissionDenied("You must be a staff member to access this page.")
         return view_func(request, *args, **kwargs)
-    return wrapper
+    return login_required(_wrapped_view)
 
 def home(request):
     """Home page view"""
