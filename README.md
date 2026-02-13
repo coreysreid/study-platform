@@ -2,6 +2,8 @@
 
 An interactive Python-Django study tool designed for electrical engineering students, with expandable capabilities for other subjects and users.
 
+> **Documentation Note**: See [docs/FEATURE_STATUS.md](docs/FEATURE_STATUS.md) for a complete list of implemented vs. planned features. This ensures documentation stays synchronized with the codebase.
+
 ## Features
 
 - 📚 **Course Management**: Organize your studies by courses and topics
@@ -132,19 +134,71 @@ study-platform/
 ## Database Models
 
 - **Course**: Represents a subject/course
-- **Topic**: Chapters or sections within a course
-- **Flashcard**: Question-answer pairs for studying
+- **Topic**: Chapters or sections within a course with prerequisite relationships
+- **Flashcard**: Question-answer pairs for studying with multiple question types
+- **Skill**: Foundational skills/concepts for tracking learning foundations
+- **MultipleChoiceOption**: Options for multiple choice questions
 - **StudySession**: Tracks individual study sessions
 - **FlashcardProgress**: Monitors progress on specific flashcards
 - **Note**: User notes for topics
 
+## Core Mathematics Curriculum
+
+The platform includes a comprehensive Engineering Mathematics curriculum designed for students starting from a Year 6 foundation. See [docs/MATHEMATICS_CURRICULUM.md](docs/MATHEMATICS_CURRICULUM.md) for the full curriculum.
+
+### Curriculum Highlights
+
+**13 Progressive Topics:**
+1. Basic Arithmetic & Number Sense
+2. Algebra Fundamentals
+3. Geometry
+4. Trigonometry Fundamentals
+5. Pre-Calculus
+6. Differential Calculus
+7. Integral Calculus
+8. Multivariable Calculus
+9. Linear Algebra
+10. Ordinary Differential Equations (ODEs)
+11. Partial Differential Equations (PDEs)
+12. Fourier Analysis
+13. Laplace Transforms
+
+**Key Features:**
+- Prerequisite tracking system - Topics show what must be mastered first
+- 68+ foundational skill tags for targeted review
+- Multiple question types: Standard Q&A, Multiple Choice, Step-by-Step problems
+- Estimated 70-85 weeks of content at a steady pace
+
+### Populating the Curriculum
+
+To initialize the Engineering Mathematics curriculum in your database:
+
+```bash
+python manage.py populate_math_curriculum --user=<your_username>
+```
+
+This creates:
+- The "Engineering Mathematics" course
+- All 13 topics with descriptions
+- 68 foundational skills
+- Prerequisite relationships between topics
+
+The curriculum provides the structure; the next phase is creating flashcards for each topic.
+
 ## Future Enhancements
 
+- [x] Core mathematics curriculum structure
+- [x] Prerequisite relationship system
+- [x] Skill tagging for foundational concepts
+- [x] Multiple question types support
+- [ ] **Parameterized/randomized cards** - Generate new values each time (e.g., a+b=c with random a,b)
+- [ ] Algorithm to suggest prerequisite review based on wrong answers
+- [ ] Progress dashboard showing skill mastery
+- [ ] Adaptive learning paths based on performance
 - [ ] Multi-user support with shared courses
 - [ ] Advanced spaced repetition algorithm (SM-2)
 - [ ] Mobile app version
 - [ ] Import/export flashcard decks
-- [ ] Quiz mode with multiple choice questions
 - [ ] Study reminders and scheduling
 - [ ] Collaborative study groups
 - [ ] Rich text editor for notes

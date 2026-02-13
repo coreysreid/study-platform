@@ -25,6 +25,13 @@ class Topic(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     order = models.IntegerField(default=0, help_text="Order of topic in course")
+    prerequisites = models.ManyToManyField(
+        'self',
+        symmetrical=False,
+        blank=True,
+        related_name='required_for',
+        help_text="Topics that should be mastered before this one"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -35,8 +42,27 @@ class Topic(models.Model):
         return f"{self.course.name} - {self.name}"
 
 
+class Skill(models.Model):
+    """Represents a foundational skill or concept"""
+    name = models.CharField(max_length=200, unique=True)
+    description = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['name']
+    
+    def __str__(self):
+        return self.name
+
+
 class Flashcard(models.Model):
     """Represents a flashcard for studying"""
+    QUESTION_TYPES = [
+        ('standard', 'Standard Q&A'),
+        ('multiple_choice', 'Multiple Choice'),
+        ('step_by_step', 'Step-by-Step Problem'),
+    ]
+    
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='flashcards')
     question = models.TextField(help_text="Question or front of flashcard")
     answer = models.TextField(help_text="Answer or back of flashcard")
@@ -50,6 +76,18 @@ class Flashcard(models.Model):
         ],
         default='medium'
     )
+    question_type = models.CharField(
+        max_length=20,
+        choices=QUESTION_TYPES,
+        default='standard',
+        help_text="Type of question presentation"
+    )
+    skills = models.ManyToManyField(
+        Skill,
+        blank=True,
+        related_name='flashcards',
+        help_text="Foundational skills required for this question"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -58,6 +96,25 @@ class Flashcard(models.Model):
     
     def __str__(self):
         return f"{self.topic.name} - {self.question[:50]}..."
+
+
+class MultipleChoiceOption(models.Model):
+    """Options for multiple choice questions"""
+    flashcard = models.ForeignKey(
+        Flashcard,
+        on_delete=models.CASCADE,
+        related_name='choices',
+        limit_choices_to={'question_type': 'multiple_choice'}
+    )
+    option_text = models.TextField()
+    is_correct = models.BooleanField(default=False)
+    order = models.IntegerField(default=0)
+    
+    class Meta:
+        ordering = ['flashcard', 'order']
+    
+    def __str__(self):
+        return f"{self.flashcard.question[:30]}... - {self.option_text[:30]}..."
 
 
 class StudySession(models.Model):

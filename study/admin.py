@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, Note
+from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, Note, Skill, MultipleChoiceOption
 
 # Register your models here.
 
@@ -16,13 +16,15 @@ class TopicAdmin(admin.ModelAdmin):
     list_filter = ['course', 'created_at']
     search_fields = ['name', 'description']
     ordering = ['course', 'order']
+    filter_horizontal = ['prerequisites']
 
 
 @admin.register(Flashcard)
 class FlashcardAdmin(admin.ModelAdmin):
-    list_display = ['question_preview', 'topic', 'difficulty', 'created_at']
-    list_filter = ['difficulty', 'topic__course', 'created_at']
+    list_display = ['question_preview', 'topic', 'difficulty', 'question_type', 'created_at']
+    list_filter = ['difficulty', 'question_type', 'topic__course', 'created_at']
     search_fields = ['question', 'answer']
+    filter_horizontal = ['skills']
     
     def question_preview(self, obj):
         return obj.question[:50] + '...' if len(obj.question) > 50 else obj.question
@@ -56,4 +58,23 @@ class NoteAdmin(admin.ModelAdmin):
     list_display = ['title', 'user', 'topic', 'created_at', 'updated_at']
     list_filter = ['user', 'topic__course', 'created_at']
     search_fields = ['title', 'content']
+
+
+@admin.register(Skill)
+class SkillAdmin(admin.ModelAdmin):
+    list_display = ['name', 'created_at']
+    search_fields = ['name', 'description']
+    ordering = ['name']
+
+
+@admin.register(MultipleChoiceOption)
+class MultipleChoiceOptionAdmin(admin.ModelAdmin):
+    list_display = ['flashcard', 'option_text_preview', 'is_correct', 'order']
+    list_filter = ['is_correct']
+    search_fields = ['option_text', 'flashcard__question']
+    ordering = ['flashcard', 'order']
+    
+    def option_text_preview(self, obj):
+        return obj.option_text[:50] + '...' if len(obj.option_text) > 50 else obj.option_text
+    option_text_preview.short_description = 'Option'
 
