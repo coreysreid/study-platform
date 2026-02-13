@@ -90,14 +90,13 @@ class FlashcardForm(forms.ModelForm):
                 )
             
             # Validate parameter_spec is valid JSON
-            if parameter_spec:
-                import json
-                try:
-                    json.loads(parameter_spec)
-                except json.JSONDecodeError as e:
-                    raise forms.ValidationError(
-                        f"Parameter specification must be valid JSON: {str(e)}"
-                    )
+            import json
+            try:
+                json.loads(parameter_spec)
+            except json.JSONDecodeError as e:
+                raise forms.ValidationError(
+                    f"Parameter specification must be valid JSON: {str(e)}"
+                )
         
         return cleaned_data
 
