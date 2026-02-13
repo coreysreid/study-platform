@@ -259,20 +259,23 @@ See `docs/PARAMETERIZED_CARDS_DESIGN.md` for full documentation and advanced exa
 
 ## Contributing
 
-This project is currently designed for personal use but may be expanded in the future. Suggestions and feedback are welcome!
+This project is currently designed for personal use but may be expanded in the future. Contributions and feedback are welcome!
+
+**See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed contribution guidelines.**
 
 ### Branch Protection
 
 To maintain code quality and prevent accidental changes, it's recommended to protect your main branch:
 
-- **Quick Start**: See [.github/BRANCH_PROTECTION_QUICKSTART.md](.github/BRANCH_PROTECTION_QUICKSTART.md) for a 5-minute setup guide
-- **Full Guide**: See [docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md) for comprehensive documentation
-- **Code Owners**: Automatically request reviews with [.github/CODEOWNERS](.github/CODEOWNERS)
-- **Automated Checks**: Use [.github/workflows/ci.yml](.github/workflows/ci.yml) for CI/CD
+- **Quick Start**: [.github/BRANCH_PROTECTION_QUICKSTART.md](.github/BRANCH_PROTECTION_QUICKSTART.md) - 5-minute setup
+- **Full Guide**: [docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md) - Comprehensive documentation
+- **Workflow Visual**: [docs/BRANCH_PROTECTION_WORKFLOW.md](docs/BRANCH_PROTECTION_WORKFLOW.md) - Visual workflow guide
+- **Code Owners**: [.github/CODEOWNERS](.github/CODEOWNERS) - Automated review assignments
+- **CI/CD**: [.github/workflows/ci.yml](.github/workflows/ci.yml) - Automated testing and checks
 
 With branch protection enabled:
 1. All changes must go through Pull Requests
-2. Changes require review and approval
+2. Changes require review and approval  
 3. Automated tests must pass before merging
 4. Direct pushes to main are prevented
 
