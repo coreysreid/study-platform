@@ -11,18 +11,23 @@
     </div>
     
     <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 2rem; border-radius: 10px; color: white; margin-bottom: 2rem;">
-        <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">{{ topic.name }}</h1>
-        <p style="opacity: 0.9;">{{ topic.course.name }}</p>
-        {% if topic.description %}
-            <p style="opacity: 0.9; margin-top: 1rem;">{{ topic.description }}</p>
-        {% endif %}
+        <div style="display: flex; justify-content: space-between; align-items: start;">
+            <div>
+                <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">{{ topic.name }}</h1>
+                <p style="opacity: 0.9;">{{ topic.course.name }}</p>
+                {% if topic.description %}
+                    <p style="opacity: 0.9; margin-top: 1rem;">{{ topic.description }}</p>
+                {% endif %}
+            </div>
+            <a href="{% url 'topic_edit' topic.id %}" class="btn btn-secondary" style="background: rgba(255,255,255,0.2);">Edit Topic</a>
+        </div>
     </div>
     
     <div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h2 style="color: #667eea;">Flashcards ({{ flashcards.count }})</h2>
             <div style="display: flex; gap: 0.5rem;">
-                <a href="{% url 'admin:study_flashcard_add' %}?topic={{ topic.id }}" class="btn btn-secondary">+ Add Flashcard</a>
+                <a href="{% url 'flashcard_create_for_topic' topic.id %}" class="btn btn-secondary">+ Add Flashcard</a>
                 {% if flashcards %}
                     <a href="{% url 'study_session' topic.id %}" class="btn">Start Studying</a>
                 {% endif %}
@@ -33,13 +38,25 @@
             <div style="display: grid; gap: 1rem;">
                 {% for flashcard in flashcards %}
                     <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px;">
-                        <div style="margin-bottom: 1rem;">
-                            <strong style="color: #667eea;">Question:</strong>
-                            <p style="margin-top: 0.5rem;">{{ flashcard.question }}</p>
+                        <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+                            <div style="flex: 1;">
+                                <strong style="color: #667eea;">Question:</strong>
+                                <p style="margin-top: 0.5rem;">{{ flashcard.question }}</p>
+                                {% if flashcard.question_image %}
+                                    <img src="{{ flashcard.question_image.url }}" alt="Question image" style="max-width: 300px; margin-top: 0.5rem; border-radius: 5px;">
+                                {% endif %}
+                            </div>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <a href="{% url 'flashcard_edit' flashcard.id %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Edit</a>
+                                <a href="{% url 'submit_feedback' flashcard.id %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Feedback</a>
+                            </div>
                         </div>
                         <div>
                             <strong style="color: #4facfe;">Answer:</strong>
                             <p style="margin-top: 0.5rem;">{{ flashcard.answer }}</p>
+                            {% if flashcard.answer_image %}
+                                <img src="{{ flashcard.answer_image.url }}" alt="Answer image" style="max-width: 300px; margin-top: 0.5rem; border-radius: 5px;">
+                            {% endif %}
                         </div>
                         {% if flashcard.hint %}
                             <div style="margin-top: 1rem; padding: 0.75rem; background: #fff3cd; border-radius: 5px;">
@@ -47,7 +64,7 @@
                                 <p style="color: #856404; margin-top: 0.25rem;">{{ flashcard.hint }}</p>
                             </div>
                         {% endif %}
-                        <div style="margin-top: 1rem;">
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center;">
                             <span style="padding: 0.25rem 0.75rem; background: 
                                 {% if flashcard.difficulty == 'easy' %}#d4edda
                                 {% elif flashcard.difficulty == 'medium' %}#fff3cd
@@ -55,6 +72,11 @@
                                 border-radius: 15px; font-size: 0.9rem;">
                                 {{ flashcard.get_difficulty_display }}
                             </span>
+                            {% if flashcard.feedback.count > 0 %}
+                                <span style="padding: 0.25rem 0.75rem; background: #e3f2fd; border-radius: 15px; font-size: 0.9rem;">
+                                    {{ flashcard.feedback.count }} feedback item{{ flashcard.feedback.count|pluralize }}
+                                </span>
+                            {% endif %}
                         </div>
                     </div>
                 {% endfor %}
@@ -62,7 +84,7 @@
         {% else %}
             <div style="text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 10px;">
                 <p style="color: #666; margin-bottom: 1rem;">No flashcards yet.</p>
-                <a href="{% url 'admin:study_flashcard_add' %}?topic={{ topic.id }}" class="btn">Add First Flashcard</a>
+                <a href="{% url 'flashcard_create_for_topic' topic.id %}" class="btn">Add First Flashcard</a>
             </div>
         {% endif %}
     </div>

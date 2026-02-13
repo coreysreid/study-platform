@@ -87,8 +87,9 @@
     <div class="flashcard-container">
         <div class="flashcard" id="flashcard" onclick="flipCard()">
             <div class="flashcard-face flashcard-front">
-                <div style="text-align: center;">
+                <div style="text-align: center; width: 100%;">
                     <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">Question</h2>
+                    <div id="questionImage" style="margin-bottom: 1rem;"></div>
                     <p id="question" style="font-size: 1.2rem;"></p>
                     <p style="margin-top: 2rem; opacity: 0.8; font-size: 0.9rem;">
                         Click to reveal answer
@@ -96,8 +97,9 @@
                 </div>
             </div>
             <div class="flashcard-face flashcard-back">
-                <div style="text-align: center;">
+                <div style="text-align: center; width: 100%;">
                     <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">Answer</h2>
+                    <div id="answerImage" style="margin-bottom: 1rem;"></div>
                     <p id="answer" style="font-size: 1.2rem;"></p>
                 </div>
             </div>
@@ -108,11 +110,12 @@
         <strong>Hint:</strong> <span id="hintText"></span>
     </div>
     
-    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem;">
+    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap;">
         <button onclick="showHint()" class="btn btn-secondary" id="hintBtn">Show Hint</button>
         <button onclick="markCorrect()" class="btn" style="background: #28a745;">✓ Got it!</button>
         <button onclick="markIncorrect()" class="btn btn-danger">✗ Missed</button>
         <button onclick="nextCard()" class="btn btn-secondary">Skip</button>
+        <a href="#" onclick="submitFeedback(); return false;" class="btn btn-secondary" id="feedbackBtn">💬 Feedback</a>
     </div>
     
     <form id="endSessionForm" method="post" action="{% url 'end_study_session' session.id %}" style="display: none;">
@@ -139,6 +142,26 @@
         document.getElementById('cardCounter').textContent = currentIndex + 1;
         document.getElementById('hintText').textContent = card.hint;
         
+        // Load images
+        const questionImg = document.getElementById('questionImage');
+        const answerImg = document.getElementById('answerImage');
+        
+        if (card.question_image) {
+            questionImg.innerHTML = '<img src="' + card.question_image + '" alt="Question image" style="max-width: 100%; max-height: 200px; border-radius: 5px;">';
+        } else {
+            questionImg.innerHTML = '';
+        }
+        
+        if (card.answer_image) {
+            answerImg.innerHTML = '<img src="' + card.answer_image + '" alt="Answer image" style="max-width: 100%; max-height: 200px; border-radius: 5px;">';
+        } else {
+            answerImg.innerHTML = '';
+        }
+        
+        // Update feedback button
+        const feedbackBtn = document.getElementById('feedbackBtn');
+        feedbackBtn.href = '/flashcard/' + card.id + '/feedback/?next=study_session';
+        
         if (card.hint) {
             document.getElementById('hintBtn').style.display = 'inline-block';
         } else {
@@ -153,6 +176,11 @@
         if (isFlipped) {
             flipCard();
         }
+    }
+    
+    function submitFeedback() {
+        const card = cards[currentIndex];
+        window.location.href = '/flashcard/' + card.id + '/feedback/?next=study_session';
     }
     
     function flipCard() {

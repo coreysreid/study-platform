@@ -5,7 +5,8 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Avg
-from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress
+from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback
+from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
 from .utils import generate_parameterized_card
 import random
 import json
@@ -134,6 +135,8 @@ def study_session(request, topic_id):
                     'difficulty': fc.difficulty,
                     'question_type': fc.question_type,
                     'is_parameterized': True,
+                    'question_image': fc.question_image.url if fc.question_image else None,
+                    'answer_image': fc.answer_image.url if fc.answer_image else None,
                 })
             except Exception as e:
                 # Fallback to template if generation fails
@@ -146,6 +149,8 @@ def study_session(request, topic_id):
                     'difficulty': fc.difficulty,
                     'question_type': fc.question_type,
                     'is_parameterized': False,
+                    'question_image': fc.question_image.url if fc.question_image else None,
+                    'answer_image': fc.answer_image.url if fc.answer_image else None,
                 })
         else:
             flashcards_data.append({
@@ -156,6 +161,8 @@ def study_session(request, topic_id):
                 'difficulty': fc.difficulty,
                 'question_type': fc.question_type,
                 'is_parameterized': False,
+                'question_image': fc.question_image.url if fc.question_image else None,
+                'answer_image': fc.answer_image.url if fc.answer_image else None,
             })
     
     # Serialize flashcards to JSON for JavaScript
@@ -231,4 +238,185 @@ def statistics(request):
     }
     
     return render(request, 'study/statistics.html', context)
+
+
+# Content Creation Views
+
+@login_required
+def course_create(request):
+    """Create a new course"""
+    if request.method == 'POST':
+        form = CourseForm(request.POST)
+        if form.is_valid():
+            course = form.save(commit=False)
+            course.created_by = request.user
+            course.save()
+            messages.success(request, f'Course "{course.name}" created successfully!')
+            return redirect('course_detail', course_id=course.id)
+    else:
+        form = CourseForm()
+    
+    return render(request, 'study/course_form.html', {'form': form, 'title': 'Create Course'})
+
+
+@login_required
+def course_edit(request, course_id):
+    """Edit an existing course"""
+    course = get_object_or_404(Course, id=course_id, created_by=request.user)
+    
+    if request.method == 'POST':
+        form = CourseForm(request.POST, instance=course)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Course "{course.name}" updated successfully!')
+            return redirect('course_detail', course_id=course.id)
+    else:
+        form = CourseForm(instance=course)
+    
+    return render(request, 'study/course_form.html', {'form': form, 'title': 'Edit Course', 'course': course})
+
+
+@login_required
+def topic_create(request, course_id=None):
+    """Create a new topic"""
+    if request.method == 'POST':
+        form = TopicForm(request.POST, user=request.user)
+        if form.is_valid():
+            topic = form.save()
+            messages.success(request, f'Topic "{topic.name}" created successfully!')
+            return redirect('topic_detail', topic_id=topic.id)
+    else:
+        initial = {}
+        if course_id:
+            course = get_object_or_404(Course, id=course_id, created_by=request.user)
+            initial['course'] = course
+        form = TopicForm(initial=initial, user=request.user)
+    
+    return render(request, 'study/topic_form.html', {'form': form, 'title': 'Create Topic'})
+
+
+@login_required
+def topic_edit(request, topic_id):
+    """Edit an existing topic"""
+    topic = get_object_or_404(Topic, id=topic_id, course__created_by=request.user)
+    
+    if request.method == 'POST':
+        form = TopicForm(request.POST, instance=topic, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Topic "{topic.name}" updated successfully!')
+            return redirect('topic_detail', topic_id=topic.id)
+    else:
+        form = TopicForm(instance=topic, user=request.user)
+    
+    return render(request, 'study/topic_form.html', {'form': form, 'title': 'Edit Topic', 'topic': topic})
+
+
+@login_required
+def flashcard_create(request, topic_id=None):
+    """Create a new flashcard"""
+    if request.method == 'POST':
+        form = FlashcardForm(request.POST, request.FILES, user=request.user)
+        if form.is_valid():
+            flashcard = form.save()
+            messages.success(request, 'Flashcard created successfully!')
+            return redirect('topic_detail', topic_id=flashcard.topic.id)
+    else:
+        initial = {}
+        if topic_id:
+            topic = get_object_or_404(Topic, id=topic_id, course__created_by=request.user)
+            initial['topic'] = topic
+        form = FlashcardForm(initial=initial, user=request.user)
+    
+    return render(request, 'study/flashcard_form.html', {'form': form, 'title': 'Create Flashcard'})
+
+
+@login_required
+def flashcard_edit(request, flashcard_id):
+    """Edit an existing flashcard"""
+    flashcard = get_object_or_404(Flashcard, id=flashcard_id, topic__course__created_by=request.user)
+    
+    if request.method == 'POST':
+        form = FlashcardForm(request.POST, request.FILES, instance=flashcard, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Flashcard updated successfully!')
+            return redirect('topic_detail', topic_id=flashcard.topic.id)
+    else:
+        form = FlashcardForm(instance=flashcard, user=request.user)
+    
+    return render(request, 'study/flashcard_form.html', {'form': form, 'title': 'Edit Flashcard', 'flashcard': flashcard})
+
+
+# Feedback Views
+
+@login_required
+def submit_feedback(request, flashcard_id):
+    """Submit feedback for a flashcard"""
+    flashcard = get_object_or_404(Flashcard, id=flashcard_id)
+    
+    if request.method == 'POST':
+        form = CardFeedbackForm(request.POST)
+        if form.is_valid():
+            feedback = form.save(commit=False)
+            feedback.flashcard = flashcard
+            feedback.user = request.user
+            feedback.save()
+            messages.success(request, 'Thank you for your feedback!')
+            # Return to study session or topic detail
+            return redirect(request.POST.get('next', 'topic_detail'), topic_id=flashcard.topic.id)
+    else:
+        form = CardFeedbackForm()
+    
+    return render(request, 'study/feedback_form.html', {'form': form, 'flashcard': flashcard})
+
+
+@login_required
+def admin_feedback_review(request):
+    """Admin dashboard for reviewing feedback (staff only)"""
+    if not request.user.is_staff:
+        messages.error(request, 'You must be staff to access this page.')
+        return redirect('home')
+    
+    # Get filter parameters
+    status_filter = request.GET.get('status', 'pending')
+    feedback_type_filter = request.GET.get('feedback_type', '')
+    
+    # Build query
+    feedback_list = CardFeedback.objects.select_related('flashcard', 'user', 'reviewed_by')
+    
+    if status_filter:
+        feedback_list = feedback_list.filter(status=status_filter)
+    if feedback_type_filter:
+        feedback_list = feedback_list.filter(feedback_type=feedback_type_filter)
+    
+    context = {
+        'feedback_list': feedback_list[:50],  # Limit to 50 items
+        'status_filter': status_filter,
+        'feedback_type_filter': feedback_type_filter,
+    }
+    
+    return render(request, 'study/admin_feedback_review.html', context)
+
+
+@login_required
+def update_feedback_status(request, feedback_id):
+    """Update feedback status (staff only)"""
+    if not request.user.is_staff:
+        messages.error(request, 'You must be staff to perform this action.')
+        return redirect('home')
+    
+    feedback = get_object_or_404(CardFeedback, id=feedback_id)
+    
+    if request.method == 'POST':
+        new_status = request.POST.get('status')
+        if new_status in ['pending', 'reviewed', 'resolved']:
+            feedback.status = new_status
+            if new_status in ['reviewed', 'resolved']:
+                feedback.reviewed_at = timezone.now()
+                feedback.reviewed_by = request.user
+            feedback.save()
+            messages.success(request, f'Feedback marked as {new_status}.')
+    
+    return redirect('admin_feedback_review')
 

@@ -6,7 +6,7 @@
 <div>
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
         <h1 style="color: #667eea;">My Courses</h1>
-        <a href="{% url 'admin:study_course_add' %}" class="btn">+ Add New Course</a>
+        <a href="{% url 'course_create' %}" class="btn">+ Create New Course</a>
     </div>
     
     {% if courses %}
@@ -38,7 +38,7 @@
             <p style="font-size: 1.2rem; color: #666; margin-bottom: 1.5rem;">
                 You haven't created any courses yet.
             </p>
-            <a href="{% url 'admin:study_course_add' %}" class="btn">Create Your First Course</a>
+            <a href="{% url 'course_create' %}" class="btn">Create Your First Course</a>
         </div>
     {% endif %}
 </div>
