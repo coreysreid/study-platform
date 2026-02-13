@@ -2,6 +2,8 @@
 
 An interactive Python-Django study tool designed for electrical engineering students, with expandable capabilities for other subjects and users.
 
+> **Documentation Note**: See [docs/FEATURE_STATUS.md](docs/FEATURE_STATUS.md) for a complete list of implemented vs. planned features. This ensures documentation stays synchronized with the codebase.
+
 ## Features
 
 - 📚 **Course Management**: Organize your studies by courses and topics
