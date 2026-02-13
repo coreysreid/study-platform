@@ -105,6 +105,10 @@ class Flashcard(models.Model):
         help_text="JSON specification of parameters, ranges, and computations"
     )
     
+    # Image fields
+    question_image = models.ImageField(upload_to='flashcards/questions/', null=True, blank=True)
+    answer_image = models.ImageField(upload_to='flashcards/answers/', null=True, blank=True)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -173,4 +177,36 @@ class FlashcardProgress(models.Model):
         if self.times_reviewed == 0:
             return 0
         return (self.times_correct / self.times_reviewed) * 100
+
+
+class CardFeedback(models.Model):
+    """User feedback on flashcards"""
+    FEEDBACK_TYPES = [
+        ('confusing', 'Confusing/Unclear'),
+        ('incorrect', 'Incorrect Information'),
+        ('needs_improvement', 'Needs Improvement'),
+        ('other', 'Other'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending Review'),
+        ('reviewed', 'Reviewed'),
+        ('resolved', 'Resolved'),
+    ]
+    
+    flashcard = models.ForeignKey('Flashcard', on_delete=models.CASCADE, related_name='feedback')
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    feedback_type = models.CharField(max_length=20, choices=FEEDBACK_TYPES)
+    difficulty_rating = models.IntegerField(null=True, blank=True, help_text='Rate difficulty 1-5')
+    comment = models.TextField(blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='reviewed_feedback')
+    
+    class Meta:
+        ordering = ['-created_at']
+        
+    def __str__(self):
+        return f"{self.get_feedback_type_display()} - {self.flashcard}"
 
