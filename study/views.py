@@ -202,6 +202,14 @@ def update_flashcard_progress(request, flashcard_id):
     """Update progress for a flashcard (AJAX endpoint)"""
     if request.method == 'POST':
         flashcard = get_object_or_404(Flashcard, id=flashcard_id)
+        
+        # Verify user has access to this flashcard's course
+        # Users can update progress for any flashcard they can access (their own or shared courses)
+        # This check prevents unauthorized progress updates
+        if flashcard.topic.course.created_by != request.user:
+            from django.http import HttpResponseForbidden
+            return HttpResponseForbidden("You don't have permission to update progress for this flashcard")
+        
         correct = request.POST.get('correct') == 'true'
         
         progress, created = FlashcardProgress.objects.get_or_create(
@@ -354,6 +362,7 @@ def flashcard_edit(request, flashcard_id):
 
 # Feedback Views
 
+@login_required
 @login_required
 def submit_feedback(request, flashcard_id):
     """Submit feedback for a flashcard"""

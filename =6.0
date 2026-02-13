@@ -1,0 +1,6 @@
+Defaulting to user installation because normal site-packages is not writeable
+Collecting RestrictedPython
+  Downloading restrictedpython-8.1-py3-none-any.whl.metadata (14 kB)
+Downloading restrictedpython-8.1-py3-none-any.whl (27 kB)
+Installing collected packages: RestrictedPython
+Successfully installed RestrictedPython-8.1

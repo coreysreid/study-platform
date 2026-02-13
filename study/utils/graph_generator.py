@@ -10,6 +10,8 @@ import signal
 import json
 import logging
 from contextlib import contextmanager
+from RestrictedPython import compile_restricted_exec, safe_globals
+from RestrictedPython.Guards import guarded_iter_unpack_sequence, safe_builtins
 
 logger = logging.getLogger(__name__)
 
@@ -72,23 +74,12 @@ def safe_execute_graph_code(code, variables=None):
         if placeholder in code:
             code = code.replace(placeholder, str(var_value))
     
-    # Create a safe namespace with whitelisted imports
-    safe_globals = {
-        '__builtins__': {
-            'range': range,
-            'len': len,
-            'str': str,
-            'int': int,
-            'float': float,
-            'abs': abs,
-            'min': min,
-            'max': max,
-            'sum': sum,
-            'round': round,
-            'list': list,
-            'tuple': tuple,
-            'dict': dict,
-        },
+    # Create a safe namespace with whitelisted imports and RestrictedPython guards
+    restricted_globals = {
+        '__builtins__': safe_builtins,
+        '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
+        '_getiter_': iter,
+        '_getitem_': lambda obj, index: obj[index],
         'np': np,
         'plt': plt,
         'numpy': np,
@@ -98,10 +89,16 @@ def safe_execute_graph_code(code, variables=None):
     fig = plt.figure(figsize=(8, 6))
     
     try:
+        # Compile code with RestrictedPython for safety
+        byte_code = compile_restricted_exec(code, '<graph>')
+        if byte_code.errors:
+            plt.close(fig)
+            raise ValueError(f"Code compilation errors: {byte_code.errors}")
+        
         # Execute the code with timeout
         timeout_seconds = getattr(settings, 'GRAPH_TIMEOUT', 3)
         with timeout(timeout_seconds):
-            exec(code, safe_globals, {})
+            exec(byte_code.code, restricted_globals, {})
     except TimeoutException:
         plt.close(fig)
         raise

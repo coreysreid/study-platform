@@ -150,8 +150,9 @@
     </form>
 </div>
 
+{{ flashcards_json|json_script:"flashcards-data" }}
 <script>
-    const cards = {{ flashcards_json|safe }};
+    const cards = JSON.parse(document.getElementById('flashcards-data').textContent);
     let currentIndex = 0;
     let cardsStudied = 0;
     let isFlipped = false;
@@ -165,8 +166,14 @@
         const card = cards[currentIndex];
         
         // Load text content
-        document.getElementById('question').innerHTML = card.question;
-        document.getElementById('answer').innerHTML = card.answer;
+        // Use innerHTML only for LaTeX cards (needed for MathJax), otherwise use textContent for security
+        if (card.uses_latex) {
+            document.getElementById('question').innerHTML = card.question;
+            document.getElementById('answer').innerHTML = card.answer;
+        } else {
+            document.getElementById('question').textContent = card.question;
+            document.getElementById('answer').textContent = card.answer;
+        }
         document.getElementById('cardCounter').textContent = currentIndex + 1;
         document.getElementById('hintText').textContent = card.hint;
         

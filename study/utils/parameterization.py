@@ -3,6 +3,8 @@ import random
 import math
 import re
 from typing import Dict, Any, List
+from RestrictedPython import compile_restricted_eval, safe_globals
+from RestrictedPython.Guards import guarded_iter_unpack_sequence
 
 
 class ParameterGenerator:
@@ -97,6 +99,8 @@ class ParameterGenerator:
         
         # Create safe namespace with math functions and generated values
         namespace = {
+            '__builtins__': {},
+            '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
             'sqrt': math.sqrt,
             'pow': math.pow,
             'sin': math.sin,
@@ -110,9 +114,14 @@ class ParameterGenerator:
             **values
         }
         
-        # Safely evaluate the formula
+        # Safely evaluate the formula using RestrictedPython
         try:
-            result = eval(formula, {"__builtins__": {}}, namespace)
+            # Compile with RestrictedPython for safety
+            byte_code = compile_restricted_eval(formula, '<formula>')
+            if byte_code.errors:
+                raise ValueError(f"Formula compilation errors: {byte_code.errors}")
+            
+            result = eval(byte_code.code, namespace, {})
             
             # Apply precision if it's a float
             if isinstance(result, float):
@@ -129,13 +138,20 @@ class ParameterGenerator:
             return True
             
         namespace = {
+            '__builtins__': {},
+            '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
             'abs': abs,
             **values
         }
         
         for constraint in self.constraints:
             try:
-                if not eval(constraint, {"__builtins__": {}}, namespace):
+                # Compile with RestrictedPython for safety
+                byte_code = compile_restricted_eval(constraint, '<constraint>')
+                if byte_code.errors:
+                    return False
+                
+                if not eval(byte_code.code, namespace, {}):
                     return False
             except Exception:
                 return False
