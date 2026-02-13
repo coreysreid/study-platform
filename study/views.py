@@ -5,7 +5,7 @@ from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Avg
-from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, Note
+from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress
 from .utils import generate_parameterized_card
 import random
 import json
@@ -94,11 +94,9 @@ def topic_detail(request, topic_id):
     """View details of a specific topic"""
     topic = get_object_or_404(Topic, id=topic_id, course__created_by=request.user)
     flashcards = topic.flashcards.all()
-    notes = topic.notes.filter(user=request.user)
     return render(request, 'study/topic_detail.html', {
         'topic': topic,
         'flashcards': flashcards,
-        'notes': notes,
     })
 
 

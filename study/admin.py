@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, Note, Skill, MultipleChoiceOption
+from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, Skill, MultipleChoiceOption
 
 # Register your models here.
 
@@ -66,13 +66,6 @@ class FlashcardProgressAdmin(admin.ModelAdmin):
     def success_rate(self, obj):
         return f"{obj.success_rate:.1f}%"
     success_rate.short_description = 'Success Rate'
-
-
-@admin.register(Note)
-class NoteAdmin(admin.ModelAdmin):
-    list_display = ['title', 'user', 'topic', 'created_at', 'updated_at']
-    list_filter = ['user', 'topic__course', 'created_at']
-    search_fields = ['title', 'content']
 
 
 @admin.register(Skill)
