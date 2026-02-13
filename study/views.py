@@ -4,7 +4,9 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Count, Avg
+from django.db.models import Count, Avg, Sum
+from django.core.exceptions import PermissionDenied
+from functools import wraps
 from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback
 from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
 from .utils import generate_parameterized_card
@@ -12,6 +14,16 @@ import random
 import json
 
 # Create your views here.
+
+# Custom decorators
+def staff_required(view_func):
+    """Decorator to require staff permissions"""
+    @wraps(view_func)
+    def wrapper(request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise PermissionDenied("You must be a staff member to access this page.")
+        return view_func(request, *args, **kwargs)
+    return wrapper
 
 def home(request):
     """Home page view"""
@@ -227,18 +239,24 @@ def update_flashcard_progress(request, flashcard_id):
 def statistics(request):
     """View study statistics"""
     sessions = StudySession.objects.filter(user=request.user)
-    total_cards = sum(session.cards_studied for session in sessions)
-    total_sessions = sessions.count()
+    
+    # Use aggregate to avoid N+1 queries
+    session_stats = sessions.aggregate(
+        total_cards=Sum('cards_studied'),
+        total_sessions=Count('id')
+    )
     
     progress = FlashcardProgress.objects.filter(user=request.user)
-    progress_count = progress.count()
-    average_success_rate = sum(p.success_rate for p in progress) / progress_count if progress_count > 0 else 0
+    progress_stats = progress.aggregate(
+        avg_success=Avg('success_rate'),
+        progress_count=Count('id')
+    )
     
     context = {
-        'total_cards': total_cards,
-        'total_sessions': total_sessions,
-        'average_success_rate': average_success_rate,
-        'recent_sessions': sessions[:10],
+        'total_cards': session_stats['total_cards'] or 0,
+        'total_sessions': session_stats['total_sessions'],
+        'average_success_rate': progress_stats['avg_success'] or 0,
+        'recent_sessions': sessions.select_related('topic', 'topic__course')[:10],
     }
     
     return render(request, 'study/statistics.html', context)
@@ -376,12 +394,9 @@ def submit_feedback(request, flashcard_id):
 
 
 @login_required
+@staff_required
 def admin_feedback_review(request):
     """Admin dashboard for reviewing feedback (staff only)"""
-    if not request.user.is_staff:
-        messages.error(request, 'You must be staff to access this page.')
-        return redirect('home')
-    
     # Get filter parameters
     status_filter = request.GET.get('status', 'pending')
     feedback_type_filter = request.GET.get('feedback_type', '')
@@ -404,12 +419,9 @@ def admin_feedback_review(request):
 
 
 @login_required
+@staff_required
 def update_feedback_status(request, feedback_id):
     """Update feedback status (staff only)"""
-    if not request.user.is_staff:
-        messages.error(request, 'You must be staff to perform this action.')
-        return redirect('home')
-    
     feedback = get_object_or_404(CardFeedback, id=feedback_id)
     
     if request.method == 'POST':
