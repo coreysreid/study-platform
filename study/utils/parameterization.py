@@ -154,7 +154,7 @@ class ParameterGenerator:
             if byte_code.errors:
                 raise ValueError(f"Formula compilation errors: {byte_code.errors}")
             
-            result = eval(byte_code.code, namespace, {})
+            result = eval(byte_code.code, namespace, {})  # nosec B307 - Using RestrictedPython compiled bytecode
             
             # Apply precision if it's a float
             if isinstance(result, float):
@@ -179,7 +179,7 @@ class ParameterGenerator:
                 if byte_code.errors:
                     return False
                 
-                if not eval(byte_code.code, namespace, {}):
+                if not eval(byte_code.code, namespace, {}):  # nosec B307 - Using RestrictedPython compiled bytecode
                     return False
             except Exception:
                 return False

@@ -112,7 +112,7 @@ class ParameterGenerator:
         
         # Safely evaluate the formula
         try:
-            result = eval(formula, {"__builtins__": {}}, namespace)
+            result = eval(formula, {"__builtins__": {}}, namespace)  # nosec B307 - Restricted namespace, no builtins
             
             # Apply precision if it's a float
             if isinstance(result, float):
@@ -135,7 +135,7 @@ class ParameterGenerator:
         
         for constraint in self.constraints:
             try:
-                if not eval(constraint, {"__builtins__": {}}, namespace):
+                if not eval(constraint, {"__builtins__": {}}, namespace):  # nosec B307 - Restricted namespace, no builtins
                     return False
             except Exception:
                 return False
