@@ -89,8 +89,8 @@ def logout_view(request):
 def course_list(request):
     """List all courses for the current user"""
     courses = Course.objects.filter(created_by=request.user).annotate(
-        topic_count=Count('topics'),
-        flashcard_count=Count('topics__flashcards')
+        topic_count=Count('topics', distinct=True),
+        flashcard_count=Count('topics__flashcards', distinct=True)
     )
     return render(request, 'study/course_list.html', {'courses': courses})
 
