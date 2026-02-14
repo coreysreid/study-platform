@@ -4,8 +4,10 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Count, Avg
-from django.http import HttpResponseForbidden
+from django.db.models import Count, Avg, Sum
+from django.core.exceptions import PermissionDenied
+from django.core.paginator import Paginator
+from functools import wraps
 from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback
 from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
 from .utils import generate_parameterized_card
@@ -13,6 +15,16 @@ import random
 import json
 
 # Create your views here.
+
+# Custom decorators
+def staff_required(view_func):
+    """Decorator to require staff permissions"""
+    @wraps(view_func)
+    def _wrapped_view(request, *args, **kwargs):
+        if not request.user.is_staff:
+            raise PermissionDenied("You must be a staff member to access this page.")
+        return view_func(request, *args, **kwargs)
+    return login_required(_wrapped_view)
 
 def home(request):
     """Home page view"""
@@ -94,7 +106,11 @@ def course_detail(request, course_id):
 @login_required
 def topic_detail(request, topic_id):
     """View details of a specific topic"""
-    topic = get_object_or_404(Topic, id=topic_id, course__created_by=request.user)
+    topic = get_object_or_404(
+        Topic.objects.select_related('course'),
+        id=topic_id, 
+        course__created_by=request.user
+    )
     flashcards = topic.flashcards.all()
     return render(request, 'study/topic_detail.html', {
         'topic': topic,
@@ -105,8 +121,12 @@ def topic_detail(request, topic_id):
 @login_required
 def study_session(request, topic_id):
     """Start a study session for a topic"""
-    topic = get_object_or_404(Topic, id=topic_id, course__created_by=request.user)
-    flashcards = list(topic.flashcards.all())
+    topic = get_object_or_404(
+        Topic.objects.select_related('course'),
+        id=topic_id, 
+        course__created_by=request.user
+    )
+    flashcards = list(topic.flashcards.prefetch_related('skills'))
     
     if not flashcards:
         messages.warning(request, 'No flashcards available for this topic.')
@@ -234,18 +254,30 @@ def update_flashcard_progress(request, flashcard_id):
 def statistics(request):
     """View study statistics"""
     sessions = StudySession.objects.filter(user=request.user)
-    total_cards = sum(session.cards_studied for session in sessions)
-    total_sessions = sessions.count()
+    
+    # Use aggregate to avoid N+1 queries
+    session_stats = sessions.aggregate(
+        total_cards=Sum('cards_studied'),
+        total_sessions=Count('id')
+    )
     
     progress = FlashcardProgress.objects.filter(user=request.user)
-    progress_count = progress.count()
-    average_success_rate = sum(p.success_rate for p in progress) / progress_count if progress_count > 0 else 0
+    progress_stats = progress.aggregate(
+        total_reviewed=Sum('times_reviewed'),
+        total_correct=Sum('times_correct'),
+        progress_count=Count('id')
+    )
+    
+    # Calculate average success rate from aggregated totals
+    total_reviewed = progress_stats['total_reviewed'] or 0
+    total_correct = progress_stats['total_correct'] or 0
+    avg_success_rate = (total_correct / total_reviewed * 100) if total_reviewed > 0 else 0
     
     context = {
-        'total_cards': total_cards,
-        'total_sessions': total_sessions,
-        'average_success_rate': average_success_rate,
-        'recent_sessions': sessions[:10],
+        'total_cards': session_stats['total_cards'] or 0,
+        'total_sessions': session_stats['total_sessions'],
+        'average_success_rate': avg_success_rate,
+        'recent_sessions': sessions.select_related('topic', 'topic__course')[:10],
     }
     
     return render(request, 'study/statistics.html', context)
@@ -382,16 +414,13 @@ def submit_feedback(request, flashcard_id):
     return render(request, 'study/feedback_form.html', {'form': form, 'flashcard': flashcard})
 
 
-@login_required
+@staff_required
 def admin_feedback_review(request):
     """Admin dashboard for reviewing feedback (staff only)"""
-    if not request.user.is_staff:
-        messages.error(request, 'You must be staff to access this page.')
-        return redirect('home')
-    
     # Get filter parameters
     status_filter = request.GET.get('status', 'pending')
     feedback_type_filter = request.GET.get('feedback_type', '')
+    page_number = request.GET.get('page', 1)
     
     # Build query
     feedback_list = CardFeedback.objects.select_related('flashcard', 'user', 'reviewed_by')
@@ -401,8 +430,12 @@ def admin_feedback_review(request):
     if feedback_type_filter:
         feedback_list = feedback_list.filter(feedback_type=feedback_type_filter)
     
+    # Add pagination
+    paginator = Paginator(feedback_list, 25)  # 25 items per page
+    page_obj = paginator.get_page(page_number)
+    
     context = {
-        'feedback_list': feedback_list[:50],  # Limit to 50 items
+        'feedback_list': page_obj,
         'status_filter': status_filter,
         'feedback_type_filter': feedback_type_filter,
     }
@@ -410,13 +443,9 @@ def admin_feedback_review(request):
     return render(request, 'study/admin_feedback_review.html', context)
 
 
-@login_required
+@staff_required
 def update_feedback_status(request, feedback_id):
     """Update feedback status (staff only)"""
-    if not request.user.is_staff:
-        messages.error(request, 'You must be staff to perform this action.')
-        return redirect('home')
-    
     feedback = get_object_or_404(CardFeedback, id=feedback_id)
     
     if request.method == 'POST':

@@ -62,6 +62,43 @@ class FlashcardForm(forms.ModelForm):
         if user:
             # Limit topic selection to user's own topics
             self.fields['topic'].queryset = Topic.objects.filter(course__created_by=user)
+    
+    def clean(self):
+        """Validate parameterized card requirements"""
+        cleaned_data = super().clean()
+        question_type = cleaned_data.get('question_type')
+        
+        # Validate parameterized cards have required fields
+        if question_type == 'parameterized':
+            question_template = cleaned_data.get('question_template')
+            answer_template = cleaned_data.get('answer_template')
+            parameter_spec = cleaned_data.get('parameter_spec')
+            
+            if not question_template:
+                raise forms.ValidationError(
+                    "Parameterized cards require a question template with {variable} placeholders."
+                )
+            
+            if not answer_template:
+                raise forms.ValidationError(
+                    "Parameterized cards require an answer template."
+                )
+            
+            if not parameter_spec:
+                raise forms.ValidationError(
+                    "Parameterized cards require a parameter specification (JSON format)."
+                )
+            
+            # Validate parameter_spec is valid JSON
+            import json
+            try:
+                json.loads(parameter_spec)
+            except json.JSONDecodeError as e:
+                raise forms.ValidationError(
+                    f"Parameter specification must be valid JSON: {str(e)}"
+                )
+        
+        return cleaned_data
 
 
 class CardFeedbackForm(forms.ModelForm):
