@@ -26,10 +26,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-!jcy0&&fql(onm7$x352bbrerxtg0n$tpy*1kw%232nwt#&s#d')
+# SECRET_KEY must be set via environment variable - no default allowed for security
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise ValueError("SECRET_KEY environment variable must be set. See .env.example for guidance.")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.getenv('DEBUG', 'True') == 'True'
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
@@ -151,11 +154,16 @@ ENABLE_GRAPH_GENERATION = True
 # Security for code execution
 ALLOWED_GRAPH_IMPORTS = ['numpy', 'matplotlib.pyplot', 'math']
 
-# Production Security Settings (uncomment when deploying)
-# SECURE_SSL_REDIRECT = True
-# SESSION_COOKIE_SECURE = True
-# CSRF_COOKIE_SECURE = True
-# SECURE_HSTS_SECONDS = 31536000
-# SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-# SECURE_BROWSER_XSS_FILTER = True
-# X_FRAME_OPTIONS = 'DENY'
+# Production Security Settings
+# These are enabled by default but can be disabled in development by setting environment variables
+SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True') == 'True' and not DEBUG
+SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True' and not DEBUG
+CSRF_COOKIE_SECURE = os.getenv('CSRF_COOKIE_SECURE', 'True') == 'True' and not DEBUG
+# Defensive parsing for SECURE_HSTS_SECONDS
+try:
+    SECURE_HSTS_SECONDS = int(os.getenv('SECURE_HSTS_SECONDS', '31536000')) if not DEBUG else 0
+except (ValueError, TypeError):
+    SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
+SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'True') == 'True' and not DEBUG
+# Note: SECURE_BROWSER_XSS_FILTER is deprecated and removed (modern browsers ignore X-XSS-Protection)
+X_FRAME_OPTIONS = 'DENY'

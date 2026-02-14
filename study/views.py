@@ -190,13 +190,12 @@ def study_session(request, topic_id):
         
         flashcards_data.append(card_data)
     
-    # Serialize flashcards to JSON for JavaScript
-    flashcards_json = json.dumps(flashcards_data)
+    # Pass flashcards_data directly to template for json_script tag (don't pre-serialize)
     
     return render(request, 'study/study_session.html', {
         'topic': topic,
         'flashcards': flashcards,
-        'flashcards_json': flashcards_json,
+        'flashcards_data': flashcards_data,
         'session': session,
     })
 
@@ -223,6 +222,13 @@ def update_flashcard_progress(request, flashcard_id):
     """Update progress for a flashcard (AJAX endpoint)"""
     if request.method == 'POST':
         flashcard = get_object_or_404(Flashcard, id=flashcard_id)
+        
+        # Verify user has access to this flashcard's course
+        # Currently only course creators can update progress for their flashcards
+        # TODO: When course sharing is implemented, check for shared access as well
+        if flashcard.topic.course.created_by != request.user:
+            return HttpResponseForbidden("You don't have permission to update progress for this flashcard")
+        
         correct = request.POST.get('correct') == 'true'
         
         progress, created = FlashcardProgress.objects.get_or_create(

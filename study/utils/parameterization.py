@@ -3,6 +3,27 @@ import random
 import math
 import re
 from typing import Dict, Any, List
+from RestrictedPython import compile_restricted_eval, safe_builtins
+from RestrictedPython.Guards import guarded_iter_unpack_sequence, safer_getattr
+
+
+def safe_getitem(obj, index):
+    """
+    Safe version of obj[index] for RestrictedPython.
+    Only allows indexing on safe types with valid index types.
+    Note: Typically not needed for simple math formulas, but included for defense in depth.
+    """
+    # Validate index type
+    if not isinstance(index, (int, str, slice)):
+        raise TypeError(f"Index must be int, str, or slice, not {type(index).__name__}")
+    
+    # Define allowed types for indexing
+    allowed_types = (list, tuple, dict, str)
+    
+    if not isinstance(obj, allowed_types):
+        raise TypeError(f"Indexing not allowed on type {type(obj).__name__}")
+    
+    return obj[index]
 
 
 class ParameterGenerator:
@@ -20,6 +41,34 @@ class ParameterGenerator:
         self.constraints = parameter_spec.get('constraints', [])
         self.precision = parameter_spec.get('precision', 2)
         self.max_retries = 100
+    
+    def _create_safe_namespace(self, values: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Create a safe namespace for RestrictedPython evaluation.
+        
+        Args:
+            values: Dictionary of variable values to include in namespace
+            
+        Returns:
+            Safe namespace dictionary with guards and math functions
+        """
+        return {
+            '__builtins__': safe_builtins,
+            '_iter_unpack_sequence_': guarded_iter_unpack_sequence,
+            '_getitem_': safe_getitem,
+            '_getattr_': safer_getattr,
+            'sqrt': math.sqrt,
+            'pow': math.pow,
+            'sin': math.sin,
+            'cos': math.cos,
+            'tan': math.tan,
+            'log': math.log,
+            'log10': math.log10,
+            'exp': math.exp,
+            'abs': abs,
+            'round': round,
+            **values
+        }
         
     def generate(self) -> Dict[str, Any]:
         """
@@ -96,23 +145,16 @@ class ParameterGenerator:
             raise ValueError("computed type requires 'formula'")
         
         # Create safe namespace with math functions and generated values
-        namespace = {
-            'sqrt': math.sqrt,
-            'pow': math.pow,
-            'sin': math.sin,
-            'cos': math.cos,
-            'tan': math.tan,
-            'log': math.log,
-            'log10': math.log10,
-            'exp': math.exp,
-            'abs': abs,
-            'round': round,
-            **values
-        }
+        namespace = self._create_safe_namespace(values)
         
-        # Safely evaluate the formula
+        # Safely evaluate the formula using RestrictedPython
         try:
-            result = eval(formula, {"__builtins__": {}}, namespace)
+            # Compile with RestrictedPython for safety
+            byte_code = compile_restricted_eval(formula, '<formula>')
+            if byte_code.errors:
+                raise ValueError(f"Formula compilation errors: {byte_code.errors}")
+            
+            result = eval(byte_code.code, namespace, {})
             
             # Apply precision if it's a float
             if isinstance(result, float):
@@ -128,14 +170,16 @@ class ParameterGenerator:
         if not self.constraints:
             return True
             
-        namespace = {
-            'abs': abs,
-            **values
-        }
+        namespace = self._create_safe_namespace(values)
         
         for constraint in self.constraints:
             try:
-                if not eval(constraint, {"__builtins__": {}}, namespace):
+                # Compile with RestrictedPython for safety
+                byte_code = compile_restricted_eval(constraint, '<constraint>')
+                if byte_code.errors:
+                    return False
+                
+                if not eval(byte_code.code, namespace, {}):
                     return False
             except Exception:
                 return False
