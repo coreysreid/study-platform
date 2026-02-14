@@ -25,7 +25,7 @@ An interactive Python-Django study tool designed for electrical engineering stud
 
 ## Technology Stack
 
-- **Backend**: Python 3.12 + Django 6.0
+- **Backend**: Python 3.8+ + Django 4.2
 - **Database**: SQLite (dev) / PostgreSQL (production) via dj-database-url
 - **Frontend**: HTML5, CSS3, Vanilla JavaScript
 - **Authentication**: Django built-in auth system
