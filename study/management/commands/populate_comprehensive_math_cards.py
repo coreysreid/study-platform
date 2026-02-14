@@ -155,7 +155,7 @@ class Command(BaseCommand):
                     'variables': {
                         'gcd': {'type': 'random_choice', 'choices': [2, 3, 4, 5, 6]},
                         'simplified_num': {'type': 'random_int', 'min': 1, 'max': 10},
-                        'simplified_den': {'type': 'random_int', 'min': 2, 'max': 12},
+                        'simplified_den': {'type': 'computed', 'formula': 'simplified_num + 1'},
                         'numerator': {'type': 'computed', 'formula': 'gcd * simplified_num'},
                         'denominator': {'type': 'computed', 'formula': 'gcd * simplified_den'},
                     }
