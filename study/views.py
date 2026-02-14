@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.db.models import Count, Avg, Sum
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
+from django.http import HttpResponseForbidden
 from functools import wraps
 from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback
 from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
@@ -89,8 +90,8 @@ def logout_view(request):
 def course_list(request):
     """List all courses for the current user"""
     courses = Course.objects.filter(created_by=request.user).annotate(
-        topic_count=Count('topics'),
-        flashcard_count=Count('topics__flashcards')
+        topic_count=Count('topics', distinct=True),
+        flashcard_count=Count('topics__flashcards', distinct=True)
     )
     return render(request, 'study/course_list.html', {'courses': courses})
 

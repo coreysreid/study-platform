@@ -117,7 +117,7 @@ def safe_execute_graph_code(code, variables=None):
         # Execute the code with timeout
         timeout_seconds = getattr(settings, 'GRAPH_TIMEOUT', 3)
         with timeout(timeout_seconds):
-            exec(byte_code.code, restricted_globals, {})
+            exec(byte_code.code, restricted_globals, {})  # nosec B102 - Using RestrictedPython compiled bytecode
     except TimeoutException:
         plt.close(fig)
         raise

@@ -238,7 +238,23 @@ This creates:
 - 68 foundational skills
 - Prerequisite relationships between topics
 
-The curriculum provides the structure; the next phase is creating flashcards for each topic.
+### Populating Comprehensive Flashcard Content
+
+To add comprehensive flashcard content across all 13 topics:
+
+```bash
+python manage.py populate_comprehensive_math_cards --user=<your_username>
+```
+
+This creates 66+ flashcards covering:
+- Basic arithmetic and number theory
+- Algebra fundamentals with parameterized questions
+- Geometry formulas and theorems
+- Trigonometry ratios and identities
+- Calculus concepts (differential and integral)
+- Advanced topics (ODEs, PDEs, Fourier, Laplace)
+
+**Note**: Run both commands for a complete math learning experience right after installation!
 
 ## Parameterized Flashcards (v2.0)
 
