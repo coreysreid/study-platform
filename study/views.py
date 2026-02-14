@@ -111,7 +111,7 @@ def topic_detail(request, topic_id):
         id=topic_id, 
         course__created_by=request.user
     )
-    flashcards = topic.flashcards.select_related('topic')
+    flashcards = topic.flashcards.all()
     return render(request, 'study/topic_detail.html', {
         'topic': topic,
         'flashcards': flashcards,
@@ -257,14 +257,20 @@ def statistics(request):
     
     progress = FlashcardProgress.objects.filter(user=request.user)
     progress_stats = progress.aggregate(
-        avg_success=Avg('success_rate'),
+        total_reviewed=Sum('times_reviewed'),
+        total_correct=Sum('times_correct'),
         progress_count=Count('id')
     )
+    
+    # Calculate average success rate from aggregated totals
+    total_reviewed = progress_stats['total_reviewed'] or 0
+    total_correct = progress_stats['total_correct'] or 0
+    avg_success_rate = (total_correct / total_reviewed * 100) if total_reviewed > 0 else 0
     
     context = {
         'total_cards': session_stats['total_cards'] or 0,
         'total_sessions': session_stats['total_sessions'],
-        'average_success_rate': progress_stats['avg_success'] or 0,
+        'average_success_rate': avg_success_rate,
         'recent_sessions': sessions.select_related('topic', 'topic__course')[:10],
     }
     
@@ -402,7 +408,6 @@ def submit_feedback(request, flashcard_id):
     return render(request, 'study/feedback_form.html', {'form': form, 'flashcard': flashcard})
 
 
-@login_required
 @staff_required
 def admin_feedback_review(request):
     """Admin dashboard for reviewing feedback (staff only)"""
@@ -432,7 +437,6 @@ def admin_feedback_review(request):
     return render(request, 'study/admin_feedback_review.html', context)
 
 
-@login_required
 @staff_required
 def update_feedback_status(request, feedback_id):
     """Update feedback status (staff only)"""
