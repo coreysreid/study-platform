@@ -97,6 +97,13 @@ class Command(BaseCommand):
                 created = self.create_fourier_analysis_cards(topic)
             elif topic.name == 'Laplace Transforms':
                 created = self.create_laplace_transforms_cards(topic)
+            else:
+                self.stdout.write(
+                    self.style.WARNING(
+                        f'  ⚠️ No flashcard generator found for topic "{topic.name}". '
+                        'No flashcards were created for this topic.'
+                    )
+                )
             
             total_created += created
             self.stdout.write(self.style.SUCCESS(f'  ✓ Created {created} flashcards'))
