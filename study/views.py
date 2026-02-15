@@ -1,10 +1,11 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout, authenticate
+from django.contrib.auth.models import User
 from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Count, Avg, Sum
+from django.db.models import Count, Avg, Sum, Q
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import HttpResponseForbidden
@@ -31,7 +32,14 @@ def home(request):
     """Home page view"""
     context = {}
     if request.user.is_authenticated:
-        courses = Course.objects.filter(created_by=request.user)
+        # Get system user for public content
+        system_user = User.objects.filter(username='system').first()
+        
+        # Query: User's courses + Public courses
+        courses = Course.objects.filter(
+            Q(created_by=request.user) |  # User's own
+            (Q(created_by=system_user) if system_user else Q(pk__in=[]))  # Public
+        )
         recent_sessions = StudySession.objects.filter(user=request.user)[:5]
         context = {
             'courses': courses,
@@ -88,18 +96,35 @@ def logout_view(request):
 
 @login_required
 def course_list(request):
-    """List all courses for the current user"""
-    courses = Course.objects.filter(created_by=request.user).annotate(
+    """List all courses - both user's own and public content"""
+    # Get system user for public content
+    system_user = User.objects.filter(username='system').first()
+    
+    # Query: User's courses + Public courses
+    courses = Course.objects.filter(
+        Q(created_by=request.user) |  # User's own
+        (Q(created_by=system_user) if system_user else Q(pk__in=[]))  # Public
+    ).annotate(
         topic_count=Count('topics', distinct=True),
         flashcard_count=Count('topics__flashcards', distinct=True)
-    )
+    ).order_by('name')
+    
     return render(request, 'study/course_list.html', {'courses': courses})
 
 
 @login_required
 def course_detail(request, course_id):
     """View details of a specific course"""
-    course = get_object_or_404(Course, id=course_id, created_by=request.user)
+    # Get system user for public content
+    system_user = User.objects.filter(username='system').first()
+    
+    # Allow access to user's own courses or public courses
+    course = get_object_or_404(
+        Course.objects.filter(
+            Q(created_by=request.user) | (Q(created_by=system_user) if system_user else Q(pk__in=[]))
+        ),
+        id=course_id
+    )
     topics = course.topics.all().annotate(flashcard_count=Count('flashcards'))
     return render(request, 'study/course_detail.html', {'course': course, 'topics': topics})
 
@@ -107,10 +132,16 @@ def course_detail(request, course_id):
 @login_required
 def topic_detail(request, topic_id):
     """View details of a specific topic"""
+    # Get system user for public content
+    system_user = User.objects.filter(username='system').first()
+    
+    # Allow access to user's own topics or public topics
     topic = get_object_or_404(
-        Topic.objects.select_related('course'),
-        id=topic_id, 
-        course__created_by=request.user
+        Topic.objects.select_related('course').filter(
+            Q(course__created_by=request.user) | 
+            (Q(course__created_by=system_user) if system_user else Q(pk__in=[]))
+        ),
+        id=topic_id
     )
     flashcards = topic.flashcards.all()
     return render(request, 'study/topic_detail.html', {
@@ -122,10 +153,16 @@ def topic_detail(request, topic_id):
 @login_required
 def study_session(request, topic_id):
     """Start a study session for a topic"""
+    # Get system user for public content
+    system_user = User.objects.filter(username='system').first()
+    
+    # Allow access to user's own topics or public topics
     topic = get_object_or_404(
-        Topic.objects.select_related('course'),
-        id=topic_id, 
-        course__created_by=request.user
+        Topic.objects.select_related('course').filter(
+            Q(course__created_by=request.user) |
+            (Q(course__created_by=system_user) if system_user else Q(pk__in=[]))
+        ),
+        id=topic_id
     )
     flashcards = list(topic.flashcards.prefetch_related('skills'))
     
@@ -224,10 +261,16 @@ def update_flashcard_progress(request, flashcard_id):
     if request.method == 'POST':
         flashcard = get_object_or_404(Flashcard, id=flashcard_id)
         
-        # Verify user has access to this flashcard's course
-        # Currently only course creators can update progress for their flashcards
-        # TODO: When course sharing is implemented, check for shared access as well
-        if flashcard.topic.course.created_by != request.user:
+        # Get system user for public content
+        system_user = User.objects.filter(username='system').first()
+        
+        # Verify user has access to this flashcard's course (either own or public)
+        has_access = (
+            flashcard.topic.course.created_by == request.user or
+            (system_user and flashcard.topic.course.created_by == system_user)
+        )
+        
+        if not has_access:
             return HttpResponseForbidden("You don't have permission to update progress for this flashcard")
         
         correct = request.POST.get('correct') == 'true'
