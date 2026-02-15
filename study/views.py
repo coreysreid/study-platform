@@ -146,8 +146,8 @@ def course_catalog(request):
         flashcard_count=Count('topics__flashcards', distinct=True)
     ).order_by('name')
     
-    # Get user's enrolled course IDs
-    enrolled_course_ids = CourseEnrollment.objects.filter(user=request.user).values_list('course_id', flat=True)
+    # Get user's enrolled course IDs as a set for efficient membership checking
+    enrolled_course_ids = set(CourseEnrollment.objects.filter(user=request.user).values_list('course_id', flat=True))
     
     # Mark which courses are enrolled
     for course in public_courses:
@@ -221,7 +221,9 @@ def update_enrollment_status(request, course_id):
         enrollment = get_object_or_404(CourseEnrollment, user=request.user, course_id=course_id)
         new_status = request.POST.get('status')
         
-        if new_status in dict(CourseEnrollment.STATUS_CHOICES):
+        # Check if status is valid (efficient membership check)
+        valid_statuses = {'studying', 'mastered', 'shelved'}
+        if new_status in valid_statuses:
             enrollment.status = new_status
             enrollment.save()
             messages.success(request, f'Updated status to "{enrollment.get_status_display()}".')
