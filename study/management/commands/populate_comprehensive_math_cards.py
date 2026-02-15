@@ -124,7 +124,7 @@ class Command(BaseCommand):
         }
         
         cards = [
-            # Standard Q&A cards
+            # Easy difficulty cards (5 cards)
             {
                 'question': 'What is the order of operations (PEMDAS/BODMAS)?',
                 'answer': 'Parentheses/Brackets, Exponents/Orders, Multiplication and Division (left to right), Addition and Subtraction (left to right)',
@@ -140,13 +140,69 @@ class Command(BaseCommand):
                 'skills': ['basic_arithmetic'],
             },
             {
+                'question': 'What is the absolute value of a number?',
+                'answer': 'The absolute value is the distance of a number from zero, always non-negative. For example, |−5| = 5 and |5| = 5.',
+                'difficulty': 'easy',
+                'hint': 'Think of distance from zero on a number line',
+                'skills': ['basic_arithmetic'],
+            },
+            {
+                'question': 'What is the difference between an even and odd number?',
+                'answer': 'Even numbers are divisible by 2 (e.g., 2, 4, 6), while odd numbers leave a remainder of 1 when divided by 2 (e.g., 1, 3, 5).',
+                'difficulty': 'easy',
+                'skills': ['basic_arithmetic'],
+            },
+            {
+                'question_type': 'parameterized',
+                'question_template': 'Convert {decimal} to a percentage.',
+                'answer_template': '{percent}%',
+                'parameter_spec': {
+                    'variables': {
+                        'decimal': {'type': 'random_choice', 'choices': [0.25, 0.5, 0.75, 0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]},
+                        'percent': {'type': 'computed', 'formula': 'decimal * 100'},
+                    }
+                },
+                'difficulty': 'easy',
+                'hint': 'Multiply by 100',
+                'skills': ['decimal_operations'],
+            },
+            # Medium difficulty cards (7 cards)
+            {
                 'question': 'List the first 10 prime numbers.',
                 'answer': '2, 3, 5, 7, 11, 13, 17, 19, 23, 29',
                 'difficulty': 'medium',
                 'hint': 'Start with 2, the only even prime number',
                 'skills': ['basic_arithmetic'],
             },
-            # Parameterized cards
+            {
+                'question': 'What is the Greatest Common Divisor (GCD)?',
+                'answer': 'The GCD is the largest positive integer that divides two or more numbers without a remainder. For example, GCD(12, 18) = 6.',
+                'difficulty': 'medium',
+                'hint': 'Think of the largest number that divides both numbers evenly',
+                'skills': ['basic_arithmetic'],
+            },
+            {
+                'question': 'What is the Least Common Multiple (LCM)?',
+                'answer': 'The LCM is the smallest positive integer that is divisible by two or more numbers. For example, LCM(4, 6) = 12.',
+                'difficulty': 'medium',
+                'hint': 'Think of the smallest number that both numbers divide into',
+                'skills': ['basic_arithmetic'],
+            },
+            {
+                'question': 'How do you add fractions with different denominators?',
+                'answer': 'Find a common denominator (usually the LCM), convert both fractions, then add the numerators. Example: 1/3 + 1/4 = 4/12 + 3/12 = 7/12',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'You need a common denominator first',
+                'skills': ['fraction_operations'],
+            },
+            {
+                'question': 'What is scientific notation?',
+                'answer': 'A way of expressing numbers as a product of a number between 1 and 10 and a power of 10. Example: 3,000 = 3 × 10³',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['basic_arithmetic'],
+            },
             {
                 'question_type': 'parameterized',
                 'question_template': 'Simplify the fraction: {numerator}/{denominator}',
@@ -166,20 +222,6 @@ class Command(BaseCommand):
             },
             {
                 'question_type': 'parameterized',
-                'question_template': 'Convert {decimal} to a percentage.',
-                'answer_template': '{percent}%',
-                'parameter_spec': {
-                    'variables': {
-                        'decimal': {'type': 'random_choice', 'choices': [0.25, 0.5, 0.75, 0.1, 0.2, 0.3, 0.4, 0.6, 0.7, 0.8, 0.9]},
-                        'percent': {'type': 'computed', 'formula': 'decimal * 100'},
-                    }
-                },
-                'difficulty': 'easy',
-                'hint': 'Multiply by 100',
-                'skills': ['decimal_operations'],
-            },
-            {
-                'question_type': 'parameterized',
                 'question_template': 'Calculate: ({a} + {b}) × {c}',
                 'answer_template': '{result}',
                 'parameter_spec': {
@@ -193,6 +235,36 @@ class Command(BaseCommand):
                 'difficulty': 'medium',
                 'hint': 'Remember order of operations: parentheses first',
                 'skills': ['order_of_operations'],
+            },
+            # Hard difficulty cards (3 cards)
+            {
+                'question': 'Convert the decimal 0.625 to a fraction in simplest form.',
+                'answer': '5/8. Process: 0.625 = 625/1000, then simplify by dividing both by 125.',
+                'difficulty': 'hard',
+                'hint': 'Count decimal places to determine denominator, then simplify',
+                'skills': ['fraction_operations', 'decimal_operations'],
+            },
+            {
+                'question': 'Calculate 15% of 240.',
+                'answer': '36. Process: 240 × 0.15 = 36',
+                'difficulty': 'hard',
+                'hint': 'Convert percentage to decimal, then multiply',
+                'skills': ['decimal_operations', 'basic_arithmetic'],
+            },
+            {
+                'question_type': 'parameterized',
+                'question_template': 'What is {percent}% of {number}?',
+                'answer_template': '{result}',
+                'parameter_spec': {
+                    'variables': {
+                        'percent': {'type': 'random_choice', 'choices': [10, 15, 20, 25, 30, 40, 50]},
+                        'number': {'type': 'random_int', 'min': 50, 'max': 200},
+                        'result': {'type': 'computed', 'formula': 'round((percent / 100) * number, 2)'},
+                    }
+                },
+                'difficulty': 'hard',
+                'hint': 'Convert percent to decimal and multiply',
+                'skills': ['decimal_operations', 'basic_arithmetic'],
             },
         ]
         
@@ -209,14 +281,7 @@ class Command(BaseCommand):
         }
         
         cards = [
-            {
-                'question': 'What is the quadratic formula?',
-                'answer': 'x = (-b ± √(b² - 4ac)) / (2a) for equation ax² + bx + c = 0',
-                'difficulty': 'medium',
-                'uses_latex': True,
-                'hint': 'Used to solve equations of the form ax² + bx + c = 0',
-                'skills': ['quadratic_equations'],
-            },
+            # Easy difficulty cards (5 cards)
             {
                 'question': 'What are the exponent rules for multiplication?',
                 'answer': 'x^a × x^b = x^(a+b). When multiplying powers with the same base, add the exponents.',
@@ -227,6 +292,20 @@ class Command(BaseCommand):
             {
                 'question': 'What are the exponent rules for division?',
                 'answer': 'x^a ÷ x^b = x^(a-b). When dividing powers with the same base, subtract the exponents.',
+                'difficulty': 'easy',
+                'uses_latex': True,
+                'skills': ['exponent_rules'],
+            },
+            {
+                'question': 'What is the difference of squares formula?',
+                'answer': 'a² - b² = (a + b)(a - b)',
+                'difficulty': 'easy',
+                'uses_latex': True,
+                'skills': ['factoring'],
+            },
+            {
+                'question': 'What is the power of a power rule?',
+                'answer': '(x^a)^b = x^(ab). Multiply the exponents when raising a power to a power.',
                 'difficulty': 'easy',
                 'uses_latex': True,
                 'skills': ['exponent_rules'],
@@ -247,6 +326,45 @@ class Command(BaseCommand):
                 'hint': 'Isolate x by subtracting b from both sides, then dividing by a',
                 'skills': ['equation_solving'],
             },
+            # Medium difficulty cards (7 cards)
+            {
+                'question': 'What is the quadratic formula?',
+                'answer': 'x = (-b ± √(b² - 4ac)) / (2a) for equation ax² + bx + c = 0',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Used to solve equations of the form ax² + bx + c = 0',
+                'skills': ['quadratic_equations'],
+            },
+            {
+                'question': 'Expand: (x + 3)(x + 5)',
+                'answer': 'x² + 8x + 15. Use FOIL: First (x·x), Outer (x·5), Inner (3·x), Last (3·5)',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Use the FOIL method or distributive property',
+                'skills': ['algebraic_manipulation'],
+            },
+            {
+                'question': 'What is the discriminant of a quadratic equation and what does it tell us?',
+                'answer': 'The discriminant is b² - 4ac. If > 0: two real roots; if = 0: one real root; if < 0: two complex roots.',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'It\'s the expression under the square root in the quadratic formula',
+                'skills': ['quadratic_equations'],
+            },
+            {
+                'question': 'Solve the inequality: 2x + 5 > 13',
+                'answer': 'x > 4. Subtract 5 from both sides: 2x > 8, then divide by 2: x > 4',
+                'difficulty': 'medium',
+                'hint': 'Treat it like an equation, but keep the inequality sign',
+                'skills': ['equation_solving'],
+            },
+            {
+                'question': 'What is an absolute value equation?',
+                'answer': 'An equation containing absolute value expressions like |x| = 5, which has solutions x = 5 and x = -5.',
+                'difficulty': 'medium',
+                'hint': 'Absolute value represents distance from zero',
+                'skills': ['equation_solving'],
+            },
             {
                 'question_type': 'parameterized',
                 'question_template': 'Factor: x² + {b}x + {c}',
@@ -264,11 +382,45 @@ class Command(BaseCommand):
                 'skills': ['factoring'],
             },
             {
-                'question': 'What is the difference of squares formula?',
-                'answer': 'a² - b² = (a + b)(a - b)',
-                'difficulty': 'easy',
+                'question_type': 'parameterized',
+                'question_template': 'Simplify: x^{a} × x^{b}',
+                'answer_template': 'x^{sum}',
+                'parameter_spec': {
+                    'variables': {
+                        'a': {'type': 'random_int', 'min': 2, 'max': 8},
+                        'b': {'type': 'random_int', 'min': 2, 'max': 8},
+                        'sum': {'type': 'computed', 'formula': 'a + b'},
+                    }
+                },
+                'difficulty': 'medium',
+                'hint': 'Add the exponents when multiplying with same base',
+                'skills': ['exponent_rules'],
                 'uses_latex': True,
+            },
+            # Hard difficulty cards (3 cards)
+            {
+                'question': 'Solve the system of equations: 2x + y = 7 and x - y = 2',
+                'answer': 'x = 3, y = 1. Add equations to eliminate y: 3x = 9, so x = 3. Substitute back: 3 - y = 2, so y = 1.',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Try the elimination method by adding the equations',
+                'skills': ['equation_solving'],
+            },
+            {
+                'question': 'Factor completely: x³ - 8',
+                'answer': '(x - 2)(x² + 2x + 4). This is a difference of cubes: a³ - b³ = (a - b)(a² + ab + b²)',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Recognize this as a difference of cubes where a = x and b = 2',
                 'skills': ['factoring'],
+            },
+            {
+                'question': 'Simplify the rational expression: (x² - 4)/(x² - 3x + 2)',
+                'answer': '(x + 2)/(x - 1). Factor numerator: (x+2)(x-2), factor denominator: (x-1)(x-2), cancel (x-2)',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Factor both numerator and denominator, then cancel common factors',
+                'skills': ['factoring', 'algebraic_manipulation'],
             },
         ]
         
