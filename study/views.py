@@ -9,7 +9,7 @@ from django.db.models import Count, Avg, Sum, Q
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import HttpResponseForbidden
-from functools import wraps
+from functools import wraps, lru_cache
 from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback
 from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
 from .utils import generate_parameterized_card
@@ -17,6 +17,38 @@ import random
 import json
 
 # Create your views here.
+
+# Utility functions for public content
+@lru_cache(maxsize=1)
+def get_system_user():
+    """Get the system user for public content. Cached to avoid repeated queries."""
+    return User.objects.filter(username='system').first()
+
+def get_public_content_filter(user, model_class):
+    """
+    Get a Q filter for accessing both user's own content and public content.
+    
+    Args:
+        user: The current request user
+        model_class: The model class being filtered (Course, Topic, etc.)
+    
+    Returns:
+        Q object that filters for user's content OR public content
+    """
+    system_user = get_system_user()
+    
+    # Determine the field path based on the model
+    if model_class == Course:
+        field_path = 'created_by'
+    elif model_class == Topic:
+        field_path = 'course__created_by'
+    elif model_class == Flashcard:
+        field_path = 'topic__course__created_by'
+    else:
+        field_path = 'created_by'  # Default
+    
+    # Build filter: user's content OR public content
+    return Q(**{field_path: user}) | (Q(**{field_path: system_user}) if system_user else Q(pk__in=[]))
 
 # Custom decorators
 def staff_required(view_func):
@@ -32,14 +64,8 @@ def home(request):
     """Home page view"""
     context = {}
     if request.user.is_authenticated:
-        # Get system user for public content
-        system_user = User.objects.filter(username='system').first()
-        
         # Query: User's courses + Public courses
-        courses = Course.objects.filter(
-            Q(created_by=request.user) |  # User's own
-            (Q(created_by=system_user) if system_user else Q(pk__in=[]))  # Public
-        )
+        courses = Course.objects.filter(get_public_content_filter(request.user, Course))
         recent_sessions = StudySession.objects.filter(user=request.user)[:5]
         context = {
             'courses': courses,
@@ -97,13 +123,9 @@ def logout_view(request):
 @login_required
 def course_list(request):
     """List all courses - both user's own and public content"""
-    # Get system user for public content
-    system_user = User.objects.filter(username='system').first()
-    
     # Query: User's courses + Public courses
     courses = Course.objects.filter(
-        Q(created_by=request.user) |  # User's own
-        (Q(created_by=system_user) if system_user else Q(pk__in=[]))  # Public
+        get_public_content_filter(request.user, Course)
     ).annotate(
         topic_count=Count('topics', distinct=True),
         flashcard_count=Count('topics__flashcards', distinct=True)
@@ -115,14 +137,9 @@ def course_list(request):
 @login_required
 def course_detail(request, course_id):
     """View details of a specific course"""
-    # Get system user for public content
-    system_user = User.objects.filter(username='system').first()
-    
     # Allow access to user's own courses or public courses
     course = get_object_or_404(
-        Course.objects.filter(
-            Q(created_by=request.user) | (Q(created_by=system_user) if system_user else Q(pk__in=[]))
-        ),
+        Course.objects.filter(get_public_content_filter(request.user, Course)),
         id=course_id
     )
     topics = course.topics.all().annotate(flashcard_count=Count('flashcards'))
@@ -132,14 +149,10 @@ def course_detail(request, course_id):
 @login_required
 def topic_detail(request, topic_id):
     """View details of a specific topic"""
-    # Get system user for public content
-    system_user = User.objects.filter(username='system').first()
-    
     # Allow access to user's own topics or public topics
     topic = get_object_or_404(
         Topic.objects.select_related('course').filter(
-            Q(course__created_by=request.user) | 
-            (Q(course__created_by=system_user) if system_user else Q(pk__in=[]))
+            get_public_content_filter(request.user, Topic)
         ),
         id=topic_id
     )
@@ -153,14 +166,10 @@ def topic_detail(request, topic_id):
 @login_required
 def study_session(request, topic_id):
     """Start a study session for a topic"""
-    # Get system user for public content
-    system_user = User.objects.filter(username='system').first()
-    
     # Allow access to user's own topics or public topics
     topic = get_object_or_404(
         Topic.objects.select_related('course').filter(
-            Q(course__created_by=request.user) |
-            (Q(course__created_by=system_user) if system_user else Q(pk__in=[]))
+            get_public_content_filter(request.user, Topic)
         ),
         id=topic_id
     )
@@ -261,10 +270,8 @@ def update_flashcard_progress(request, flashcard_id):
     if request.method == 'POST':
         flashcard = get_object_or_404(Flashcard, id=flashcard_id)
         
-        # Get system user for public content
-        system_user = User.objects.filter(username='system').first()
-        
         # Verify user has access to this flashcard's course (either own or public)
+        system_user = get_system_user()
         has_access = (
             flashcard.topic.course.created_by == request.user or
             (system_user and flashcard.topic.course.created_by == system_user)
