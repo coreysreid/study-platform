@@ -19,6 +19,9 @@ import json
 
 # Create your views here.
 
+# Constants
+VALID_ENROLLMENT_STATUSES = {'studying', 'mastered', 'shelved'}
+
 # Utility functions for public content
 def get_system_user():
     """Get the system user for public content."""
@@ -232,9 +235,8 @@ def update_enrollment_status(request, course_id):
     enrollment = get_object_or_404(CourseEnrollment, user=request.user, course_id=course_id)
     new_status = request.POST.get('status')
     
-    # Check if status is valid using the model's STATUS_CHOICES as the single source of truth
-    valid_statuses = {choice[0] for choice in CourseEnrollment.STATUS_CHOICES}
-    if new_status in valid_statuses:
+    # Check if status is valid using constant derived from model's STATUS_CHOICES
+    if new_status in VALID_ENROLLMENT_STATUSES:
         enrollment.status = new_status
         enrollment.save()
         messages.success(request, f'Updated status to "{enrollment.get_status_display()}".')
