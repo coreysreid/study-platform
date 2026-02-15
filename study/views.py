@@ -10,7 +10,7 @@ from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import HttpResponseForbidden
 from functools import wraps, lru_cache
-from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback
+from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback, CourseEnrollment
 from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
 from .utils import generate_parameterized_card
 import random
@@ -122,57 +122,149 @@ def logout_view(request):
 
 @login_required
 def course_list(request):
-    """List all courses - both user's own and public content"""
-    # Query: User's courses + Public courses
-    courses = Course.objects.filter(
-        get_public_content_filter(request.user, Course)
-    ).annotate(
+    """My Courses - Show only courses the user is enrolled in"""
+    enrollments = CourseEnrollment.objects.filter(user=request.user).select_related('course').annotate(
+        topic_count=Count('course__topics', distinct=True),
+        flashcard_count=Count('course__topics__flashcards', distinct=True)
+    ).order_by('-enrolled_at')
+    
+    return render(request, 'study/my_courses.html', {'enrollments': enrollments})
+
+
+@login_required
+def course_catalog(request):
+    """Course Catalog - Browse all public courses available for enrollment"""
+    system_user = get_system_user()
+    
+    if not system_user:
+        messages.warning(request, 'No public courses available yet.')
+        return redirect('course_list')
+    
+    # Get all public courses
+    public_courses = Course.objects.filter(created_by=system_user).annotate(
         topic_count=Count('topics', distinct=True),
         flashcard_count=Count('topics__flashcards', distinct=True)
     ).order_by('name')
     
-    return render(request, 'study/course_list.html', {'courses': courses})
+    # Get user's enrolled course IDs
+    enrolled_course_ids = CourseEnrollment.objects.filter(user=request.user).values_list('course_id', flat=True)
+    
+    # Mark which courses are enrolled
+    for course in public_courses:
+        course.is_enrolled = course.id in enrolled_course_ids
+    
+    return render(request, 'study/course_catalog.html', {'courses': public_courses})
 
 
 @login_required
 def course_detail(request, course_id):
-    """View details of a specific course"""
-    # Allow access to user's own courses or public courses
-    course = get_object_or_404(
-        Course.objects.filter(get_public_content_filter(request.user, Course)),
-        id=course_id
-    )
+    """View details of a specific course (enrolled or catalog)"""
+    system_user = get_system_user()
+    
+    # Check if user is enrolled in this course
+    enrollment = CourseEnrollment.objects.filter(user=request.user, course_id=course_id).first()
+    
+    if enrollment:
+        # Show enrolled course details
+        course = enrollment.course
+    else:
+        # Show catalog course (must be public)
+        course = get_object_or_404(Course, id=course_id, created_by=system_user)
+    
     topics = course.topics.all().annotate(flashcard_count=Count('flashcards'))
-    return render(request, 'study/course_detail.html', {'course': course, 'topics': topics})
+    
+    return render(request, 'study/course_detail.html', {
+        'course': course,
+        'topics': topics,
+        'enrollment': enrollment,
+        'is_enrolled': enrollment is not None
+    })
+
+
+@login_required
+def enroll_course(request, course_id):
+    """Enroll in a public course"""
+    system_user = get_system_user()
+    
+    # Only allow enrolling in public courses
+    course = get_object_or_404(Course, id=course_id, created_by=system_user)
+    
+    # Create enrollment if it doesn't exist
+    enrollment, created = CourseEnrollment.objects.get_or_create(
+        user=request.user,
+        course=course,
+        defaults={'status': 'studying'}
+    )
+    
+    if created:
+        messages.success(request, f'Successfully enrolled in "{course.name}"!')
+    else:
+        messages.info(request, f'You are already enrolled in "{course.name}".')
+    
+    return redirect('course_list')
+
+
+@login_required
+def unenroll_course(request, course_id):
+    """Remove a course from My Courses"""
+    enrollment = get_object_or_404(CourseEnrollment, user=request.user, course_id=course_id)
+    course_name = enrollment.course.name
+    enrollment.delete()
+    messages.success(request, f'Removed "{course_name}" from your courses.')
+    return redirect('course_list')
+
+
+@login_required
+def update_enrollment_status(request, course_id):
+    """Update the status of an enrolled course"""
+    if request.method == 'POST':
+        enrollment = get_object_or_404(CourseEnrollment, user=request.user, course_id=course_id)
+        new_status = request.POST.get('status')
+        
+        if new_status in dict(CourseEnrollment.STATUS_CHOICES):
+            enrollment.status = new_status
+            enrollment.save()
+            messages.success(request, f'Updated status to "{enrollment.get_status_display()}".')
+        else:
+            messages.error(request, 'Invalid status.')
+    
+    return redirect('course_list')
 
 
 @login_required
 def topic_detail(request, topic_id):
-    """View details of a specific topic"""
-    # Allow access to user's own topics or public topics
-    topic = get_object_or_404(
-        Topic.objects.select_related('course').filter(
-            get_public_content_filter(request.user, Topic)
-        ),
-        id=topic_id
-    )
+    """View details of a specific topic - user must be enrolled in the course"""
+    topic = get_object_or_404(Topic.objects.select_related('course'), id=topic_id)
+    
+    # Check if user is enrolled in this course
+    enrollment = CourseEnrollment.objects.filter(user=request.user, course=topic.course).first()
+    system_user = get_system_user()
+    
+    # Allow access if enrolled OR if viewing catalog (not studying)
+    if not enrollment and topic.course.created_by != system_user:
+        messages.error(request, 'You must be enrolled in this course to view topics.')
+        return redirect('course_catalog')
+    
     flashcards = topic.flashcards.all()
     return render(request, 'study/topic_detail.html', {
         'topic': topic,
         'flashcards': flashcards,
+        'is_enrolled': enrollment is not None
     })
 
 
 @login_required
 def study_session(request, topic_id):
-    """Start a study session for a topic"""
-    # Allow access to user's own topics or public topics
-    topic = get_object_or_404(
-        Topic.objects.select_related('course').filter(
-            get_public_content_filter(request.user, Topic)
-        ),
-        id=topic_id
-    )
+    """Start a study session for a topic - user must be enrolled"""
+    topic = get_object_or_404(Topic.objects.select_related('course'), id=topic_id)
+    
+    # Check if user is enrolled in this course
+    enrollment = CourseEnrollment.objects.filter(user=request.user, course=topic.course).first()
+    
+    if not enrollment:
+        messages.error(request, 'You must be enrolled in this course to study.')
+        return redirect('course_catalog')
+    
     flashcards = list(topic.flashcards.prefetch_related('skills'))
     
     if not flashcards:
@@ -510,4 +602,54 @@ def update_feedback_status(request, feedback_id):
             messages.success(request, f'Feedback marked as {new_status}.')
     
     return redirect('admin_feedback_review')
+
+@login_required
+def enroll_course(request, course_id):
+    """Enroll in a public course"""
+    system_user = get_system_user()
+    
+    # Only allow enrolling in public courses
+    course = get_object_or_404(Course, id=course_id, created_by=system_user)
+    
+    # Create enrollment if it doesn't exist
+    enrollment, created = CourseEnrollment.objects.get_or_create(
+        user=request.user,
+        course=course,
+        defaults={'status': 'studying'}
+    )
+    
+    if created:
+        messages.success(request, f'Successfully enrolled in "{course.name}"!')
+    else:
+        messages.info(request, f'You are already enrolled in "{course.name}".')
+    
+    return redirect('course_list')
+
+
+@login_required
+def unenroll_course(request, course_id):
+    """Remove a course from My Courses"""
+    enrollment = get_object_or_404(CourseEnrollment, user=request.user, course_id=course_id)
+    course_name = enrollment.course.name
+    enrollment.delete()
+    messages.success(request, f'Removed "{course_name}" from your courses.')
+    return redirect('course_list')
+
+
+@login_required
+def update_enrollment_status(request, course_id):
+    """Update the status of an enrolled course"""
+    if request.method == 'POST':
+        enrollment = get_object_or_404(CourseEnrollment, user=request.user, course_id=course_id)
+        new_status = request.POST.get('status')
+        
+        if new_status in dict(CourseEnrollment.STATUS_CHOICES):
+            enrollment.status = new_status
+            enrollment.save()
+            messages.success(request, f'Updated status to "{enrollment.get_status_display()}".')
+        else:
+            messages.error(request, 'Invalid status.')
+    
+    return redirect('course_list')
+
 

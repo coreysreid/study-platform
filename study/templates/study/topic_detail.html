@@ -32,8 +32,10 @@
                 {% if topic.course.created_by == request.user %}
                     <a href="{% url 'flashcard_create_for_topic' topic.id %}" class="btn btn-secondary">+ Add Flashcard</a>
                 {% endif %}
-                {% if flashcards %}
+                {% if flashcards and is_enrolled %}
                     <a href="{% url 'study_session' topic.id %}" class="btn">Start Studying</a>
+                {% elif flashcards and not is_enrolled %}
+                    <a href="{% url 'course_catalog' %}" class="btn" style="background: #10b981;">Enroll to Study</a>
                 {% endif %}
             </div>
         </div>

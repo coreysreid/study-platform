@@ -1,7 +1,7 @@
 from django.contrib import admin
 from .models import (
     Course, Topic, Flashcard, StudySession, FlashcardProgress, 
-    Skill, MultipleChoiceOption, CardTemplate, CardFeedback
+    Skill, MultipleChoiceOption, CardTemplate, CardFeedback, CourseEnrollment
 )
 
 # Register your models here.
@@ -140,3 +140,11 @@ class CardFeedbackAdmin(admin.ModelAdmin):
         return obj.flashcard.question[:50] + '...' if len(obj.flashcard.question) > 50 else obj.flashcard.question
     flashcard_preview.short_description = 'Flashcard'
 
+
+
+@admin.register(CourseEnrollment)
+class CourseEnrollmentAdmin(admin.ModelAdmin):
+    list_display = ['user', 'course', 'status', 'enrolled_at', 'updated_at']
+    list_filter = ['status', 'enrolled_at', 'course']
+    search_fields = ['user__username', 'course__name']
+    ordering = ['-enrolled_at']

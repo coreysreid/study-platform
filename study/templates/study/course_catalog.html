@@ -1,0 +1,67 @@
+{% extends 'study/base.html' %}
+
+{% block title %}Course Catalog - Study Platform{% endblock %}
+
+{% block content %}
+<div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+        <h1 style="color: #667eea;">Course Catalog</h1>
+        <a href="{% url 'course_list' %}" class="btn">📖 My Courses</a>
+    </div>
+    
+    <p style="color: #666; margin-bottom: 2rem;">Browse and enroll in available courses</p>
+    
+    {% if courses %}
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
+            {% for course in courses %}
+                <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 1.5rem; border-radius: 10px; color: white; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                        <h3 style="font-size: 1.3rem; flex: 1;">{{ course.name }}</h3>
+                        {% if course.is_enrolled %}
+                            <span style="background: rgba(16, 185, 129, 0.8); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.85rem; white-space: nowrap; margin-left: 0.5rem;">
+                                ✓ Enrolled
+                            </span>
+                        {% endif %}
+                    </div>
+                    {% if course.code %}
+                        <p style="opacity: 0.9; margin-bottom: 1rem;">{{ course.code }}</p>
+                    {% endif %}
+                    {% if course.description %}
+                        <p style="opacity: 0.9; margin-bottom: 1rem; font-size: 0.9rem;">{{ course.description|truncatewords:20 }}</p>
+                    {% endif %}
+                    <div style="background: rgba(255,255,255,0.2); padding: 0.75rem; border-radius: 5px; margin-bottom: 1rem;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                            <span>Topics:</span>
+                            <strong>{{ course.topic_count }}</strong>
+                        </div>
+                        <div style="display: flex; justify-content: space-between;">
+                            <span>Flashcards:</span>
+                            <strong>{{ course.flashcard_count }}</strong>
+                        </div>
+                    </div>
+                    
+                    <div style="display: flex; gap: 0.5rem;">
+                        <a href="{% url 'course_detail' course.id %}" class="btn btn-secondary" style="background: rgba(255,255,255,0.3); flex: 1; text-align: center;">
+                            View Details
+                        </a>
+                        {% if not course.is_enrolled %}
+                            <form method="post" action="{% url 'enroll_course' course.id %}" style="flex: 1;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn" style="background: white; color: #4facfe; width: 100%; border: none; cursor: pointer;">
+                                    + Add to My Courses
+                                </button>
+                            </form>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 10px;">
+            <p style="font-size: 1.2rem; color: #666; margin-bottom: 1.5rem;">
+                No courses available in the catalog yet.
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

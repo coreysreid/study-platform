@@ -4,8 +4,18 @@
 
 {% block content %}
 <div>
-    <div style="margin-bottom: 2rem;">
-        <a href="{% url 'course_list' %}" style="color: #667eea; text-decoration: none;">← Back to Courses</a>
+    <div style="margin-bottom: 2rem; display: flex; justify-content: space-between; align-items: center;">
+        <a href="{% if is_enrolled %}{% url 'course_list' %}{% else %}{% url 'course_catalog' %}{% endif %}" style="color: #667eea; text-decoration: none;">
+            ← Back to {% if is_enrolled %}My Courses{% else %}Catalog{% endif %}
+        </a>
+        {% if not is_enrolled and course.created_by.username == 'system' %}
+            <form method="post" action="{% url 'enroll_course' course.id %}">
+                {% csrf_token %}
+                <button type="submit" class="btn" style="background: #10b981; border: none; cursor: pointer;">
+                    + Add to My Courses
+                </button>
+            </form>
+        {% endif %}
     </div>
     
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white; margin-bottom: 2rem;">
@@ -13,7 +23,11 @@
             <div style="flex: 1;">
                 <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
                     <h1 style="font-size: 2rem; margin: 0;">{{ course.name }}</h1>
-                    {% if course.created_by.username == 'system' %}
+                    {% if is_enrolled %}
+                        <span style="background: rgba(16, 185, 129, 0.8); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.85rem;">
+                            ✓ Enrolled - {{ enrollment.get_status_display }}
+                        </span>
+                    {% elif course.created_by.username == 'system' %}
                         <span style="background: rgba(255,255,255,0.3); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.85rem;">
                             📚 Public Course
                         </span>
