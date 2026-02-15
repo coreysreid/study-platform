@@ -241,7 +241,7 @@ This creates a **"system" user** that owns the public content. The courses appea
 - All 13 topics with descriptions
 - 68 foundational skills
 - Prerequisite relationships between topics
-- 59+ comprehensive flashcards covering all topics
+- 152 comprehensive flashcards covering all topics
 
 **For Students** - To access the curriculum:
 1. Log in to the platform
@@ -255,6 +255,16 @@ This creates a **"system" user** that owns the public content. The courses appea
 python manage.py populate_math_curriculum --user=<your_username>
 python manage.py populate_comprehensive_math_cards --user=<your_username>
 ```
+
+This creates 150+ flashcards (152 total) covering:
+- Basic arithmetic and number theory
+- Algebra fundamentals with parameterized questions
+- Geometry formulas and theorems
+- Trigonometry ratios and identities
+- Calculus concepts (differential and integral)
+- Advanced topics (ODEs, PDEs, Fourier, Laplace)
+
+**Note**: Run both commands for a complete math learning experience right after installation!
 
 ## Parameterized Flashcards (v2.0)
 

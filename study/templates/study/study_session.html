@@ -156,6 +156,9 @@
     let cardsStudied = 0;
     let isFlipped = false;
     
+    // Animation duration constant (matches CSS transition: transform 0.6s)
+    const FLIP_ANIMATION_DURATION = 650; // 650ms to ensure animation completes (600ms + buffer)
+    
     function loadCard() {
         if (currentIndex >= cards.length) {
             endSession();
@@ -260,10 +263,6 @@
         
         const progress = ((currentIndex) / cards.length) * 100;
         document.getElementById('progressBar').style.width = progress + '%';
-        
-        if (isFlipped) {
-            flipCard();
-        }
     }
     
     function submitFeedback() {
@@ -301,7 +300,17 @@
     
     function nextCard() {
         currentIndex++;
-        loadCard();
+        // If card is flipped (showing answer), flip it back first
+        if (isFlipped) {
+            flipCard(); // Flip card back to question side
+            // Wait for flip animation to complete before loading new content
+            setTimeout(() => {
+                loadCard();
+            }, FLIP_ANIMATION_DURATION);
+        } else {
+            // Card not flipped, load immediately
+            loadCard();
+        }
     }
     
     function endSession() {
