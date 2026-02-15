@@ -348,7 +348,7 @@ class Command(BaseCommand):
                 'answer': 'The discriminant is b² - 4ac. If > 0: two real roots; if = 0: one real root; if < 0: two complex roots.',
                 'difficulty': 'medium',
                 'uses_latex': True,
-                'hint': 'It\'s the expression under the square root in the quadratic formula',
+                'hint': "It's the expression under the square root in the quadratic formula",
                 'skills': ['quadratic_equations'],
             },
             {
@@ -512,7 +512,7 @@ class Command(BaseCommand):
                 'answer': 'd = √[(x₂ - x₁)² + (y₂ - y₁)²]',
                 'difficulty': 'medium',
                 'uses_latex': True,
-                'hint': 'It\'s derived from the Pythagorean theorem',
+                'hint': "It's derived from the Pythagorean theorem",
                 'skills': ['pythagorean_theorem'],
             },
             # Hard difficulty cards (2 cards)
@@ -521,7 +521,7 @@ class Command(BaseCommand):
                 'answer': 'V = (1/3)πr²h, where r is the radius and h is the height',
                 'difficulty': 'hard',
                 'uses_latex': True,
-                'hint': 'It\'s one-third the volume of a cylinder with the same base and height',
+                'hint': "It's one-third the volume of a cylinder with the same base and height",
                 'skills': ['area_volume_calculations'],
             },
             {
@@ -530,8 +530,9 @@ class Command(BaseCommand):
                 'answer_template': '{hypotenuse}',
                 'parameter_spec': {
                     'variables': {
-                        'a': {'type': 'random_choice', 'choices': [3, 5, 6, 8, 9, 12]},
-                        'b': {'type': 'random_choice', 'choices': [4, 12, 8, 15, 12, 16]},
+                        'index': {'type': 'random_choice', 'choices': [0, 1, 2, 3, 4, 5]},
+                        'a': {'type': 'computed', 'formula': '[3, 5, 6, 8, 9, 12][index]'},
+                        'b': {'type': 'computed', 'formula': '[4, 12, 8, 15, 12, 16][index]'},
                         'hypotenuse': {'type': 'computed', 'formula': 'round((a**2 + b**2)**0.5, 2)'},
                     }
                 },
@@ -665,7 +666,7 @@ class Command(BaseCommand):
                 'skills': ['function_analysis'],
             },
             {
-                'question': 'What is e (Euler\'s number) approximately equal to?',
+                'question': "What is e (Euler's number) approximately equal to?",
                 'answer': 'Approximately 2.71828',
                 'difficulty': 'easy',
                 'skills': ['exponential_logarithmic'],
@@ -835,7 +836,7 @@ class Command(BaseCommand):
                 'skills': ['derivative_calculation'],
             },
             {
-                'question': 'What is L\'Hôpital\'s Rule?',
+                'question': "What is L'Hôpital's Rule?",
                 'answer': 'If lim f(x)/g(x) gives 0/0 or ∞/∞, then lim f(x)/g(x) = lim f\'(x)/g\'(x)',
                 'difficulty': 'hard',
                 'uses_latex': True,
@@ -935,7 +936,7 @@ class Command(BaseCommand):
                 'answer': 'f_avg = (1/(b-a))∫[a to b] f(x)dx',
                 'difficulty': 'hard',
                 'uses_latex': True,
-                'hint': 'It\'s the definite integral divided by the interval length',
+                'hint': "It's the definite integral divided by the interval length",
                 'skills': ['definite_integrals'],
             },
             {
@@ -1005,7 +1006,7 @@ class Command(BaseCommand):
                 'answer': 'The rate of change of f in the direction of a unit vector u, given by D_u f = ∇f · u',
                 'difficulty': 'medium',
                 'uses_latex': True,
-                'hint': 'It\'s the dot product of the gradient and the direction vector',
+                'hint': "It's the dot product of the gradient and the direction vector",
                 'skills': ['partial_derivatives'],
             },
             {
@@ -1028,7 +1029,7 @@ class Command(BaseCommand):
                 'answer': 'div F = ∇·F = ∂P/∂x + ∂Q/∂y + ∂R/∂z, a measure of how much the field spreads out',
                 'difficulty': 'hard',
                 'uses_latex': True,
-                'hint': 'It\'s the dot product of del and the vector field',
+                'hint': "It's the dot product of del and the vector field",
                 'skills': ['partial_derivatives'],
             },
         ]
@@ -1081,7 +1082,7 @@ class Command(BaseCommand):
             },
             {
                 'question': 'What is matrix multiplication rule?',
-                'answer': 'For matrices A(m×n) and B(n×p), the product AB is m×p, where (AB)_ij = Σ(A_ik × B_kj)',
+                'answer': 'For matrices A(m×n) and B(n×p), the product AB is m×p, where (AB)ij = Σ(Aik × Bkj)',
                 'difficulty': 'medium',
                 'skills': ['matrix_operations'],
             },
@@ -1192,7 +1193,7 @@ class Command(BaseCommand):
             },
             {
                 'question': 'What is the characteristic equation for ay\'\' + by\' + cy = 0?',
-                'answer': 'ar² + br + c = 0, where r represents the roots that give solutions e^(rx)',
+                'answer': 'ar² + br + c = 0. The roots r₁ and r₂ determine the general solution: y = c₁e^(r₁x) + c₂e^(r₂x) for distinct real roots',
                 'difficulty': 'medium',
                 'uses_latex': True,
                 'hint': 'Replace y with e^(rx) and solve for r',
@@ -1266,7 +1267,7 @@ class Command(BaseCommand):
                 'skills': ['pde_classification'],
             },
             {
-                'question': 'What is Laplace\'s equation?',
+                'question': "What is Laplace's equation?",
                 'answer': '∇²u = 0, an elliptic PDE describing steady-state phenomena',
                 'difficulty': 'medium',
                 'uses_latex': True,
@@ -1282,7 +1283,7 @@ class Command(BaseCommand):
             },
             # Hard difficulty cards (2 cards)
             {
-                'question': 'What is the D\'Alembert solution to the wave equation?',
+                'question': "What is the D'Alembert solution to the wave equation?",
                 'answer': 'u(x,t) = f(x-ct) + g(x+ct), representing waves traveling in opposite directions',
                 'difficulty': 'hard',
                 'uses_latex': True,
@@ -1372,7 +1373,7 @@ class Command(BaseCommand):
                 'skills': ['fourier_transform'],
             },
             {
-                'question': 'What is Parseval\'s theorem?',
+                'question': "What is Parseval's theorem?",
                 'answer': 'The total energy in time domain equals total energy in frequency domain: ∫|f(t)|²dt = ∫|F(ω)|²dω',
                 'difficulty': 'hard',
                 'uses_latex': True,
