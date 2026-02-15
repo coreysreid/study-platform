@@ -246,7 +246,7 @@ To add comprehensive flashcard content across all 13 topics:
 python manage.py populate_comprehensive_math_cards --user=<your_username>
 ```
 
-This creates 66+ flashcards covering:
+This creates 150+ flashcards covering:
 - Basic arithmetic and number theory
 - Algebra fundamentals with parameterized questions
 - Geometry formulas and theorems
