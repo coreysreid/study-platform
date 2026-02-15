@@ -226,35 +226,29 @@ The platform includes a comprehensive Engineering Mathematics curriculum designe
 
 ### Populating the Curriculum
 
-To initialize the Engineering Mathematics curriculum in your database:
+**For Administrators** - Initialize the Engineering Mathematics curriculum as globally available public content:
 
 ```bash
-python manage.py populate_math_curriculum --user=<your_username>
+# Run once during initial deployment (creates public content visible to all users)
+python manage.py populate_math_curriculum
+python manage.py populate_comprehensive_math_cards
 ```
 
-This creates:
-- The "Engineering Mathematics" course
+This creates a **"system" user** that owns the public content, which is automatically visible to all logged-in users. No need to specify a username - it defaults to creating/using the system user.
+
+**What gets created:**
+- The "Engineering Mathematics" course owned by the system user
 - All 13 topics with descriptions
 - 68 foundational skills
 - Prerequisite relationships between topics
+- 59+ comprehensive flashcards covering all topics
 
-### Populating Comprehensive Flashcard Content
-
-To add comprehensive flashcard content across all 13 topics:
+**Optional: Create personal copy** - If you want to create a personal copy for editing:
 
 ```bash
+python manage.py populate_math_curriculum --user=<your_username>
 python manage.py populate_comprehensive_math_cards --user=<your_username>
 ```
-
-This creates 66+ flashcards covering:
-- Basic arithmetic and number theory
-- Algebra fundamentals with parameterized questions
-- Geometry formulas and theorems
-- Trigonometry ratios and identities
-- Calculus concepts (differential and integral)
-- Advanced topics (ODEs, PDEs, Fourier, Laplace)
-
-**Note**: Run both commands for a complete math learning experience right after installation!
 
 ## Parameterized Flashcards (v2.0)
 
