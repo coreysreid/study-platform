@@ -21,8 +21,9 @@ class Command(BaseCommand):
         parser.add_argument(
             '--user',
             type=str,
-            help='Username of the user who will own the content',
-            required=True,
+            help='Username of the user who will own the content (default: system)',
+            default='system',
+            required=False,
         )
         parser.add_argument(
             '--skip-existing',
@@ -31,13 +32,33 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        username = options['user']
+        username = options.get('user', 'system')
         skip_existing = options.get('skip_existing', False)
 
-        try:
-            user = User.objects.get(username=username)
-        except User.DoesNotExist:
-            raise CommandError(f'User "{username}" does not exist')
+        # Only auto-create the special "system" user; require other users to pre-exist
+        if username == 'system':
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults={
+                    'is_staff': False,
+                    'is_active': True,
+                    'email': f'{username}@system.local',
+                    'first_name': 'System',
+                    'last_name': 'Content'
+                }
+            )
+            
+            if created:
+                self.stdout.write(
+                    self.style.SUCCESS(f'✓ Created system user: {username}')
+                )
+        else:
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                raise CommandError(
+                    f'User "{username}" does not exist. Please create this user before running this command.'
+                )
 
         # Get the Engineering Mathematics course
         try:

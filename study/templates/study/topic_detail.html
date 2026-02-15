@@ -19,7 +19,9 @@
                     <p style="opacity: 0.9; margin-top: 1rem;">{{ topic.description }}</p>
                 {% endif %}
             </div>
-            <a href="{% url 'topic_edit' topic.id %}" class="btn btn-secondary" style="background: rgba(255,255,255,0.2);">Edit Topic</a>
+            {% if topic.course.created_by == request.user %}
+                <a href="{% url 'topic_edit' topic.id %}" class="btn btn-secondary" style="background: rgba(255,255,255,0.2);">Edit Topic</a>
+            {% endif %}
         </div>
     </div>
     
@@ -27,9 +29,13 @@
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h2 style="color: #667eea;">Flashcards ({{ flashcards.count }})</h2>
             <div style="display: flex; gap: 0.5rem;">
-                <a href="{% url 'flashcard_create_for_topic' topic.id %}" class="btn btn-secondary">+ Add Flashcard</a>
-                {% if flashcards %}
+                {% if topic.course.created_by == request.user %}
+                    <a href="{% url 'flashcard_create_for_topic' topic.id %}" class="btn btn-secondary">+ Add Flashcard</a>
+                {% endif %}
+                {% if flashcards and is_enrolled %}
                     <a href="{% url 'study_session' topic.id %}" class="btn">Start Studying</a>
+                {% elif flashcards and not is_enrolled %}
+                    <a href="{% url 'course_catalog' %}" class="btn" style="background: #10b981;">Enroll to Study</a>
                 {% endif %}
             </div>
         </div>
@@ -47,7 +53,9 @@
                                 {% endif %}
                             </div>
                             <div style="display: flex; gap: 0.5rem;">
-                                <a href="{% url 'flashcard_edit' flashcard.id %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Edit</a>
+                                {% if topic.course.created_by == request.user %}
+                                    <a href="{% url 'flashcard_edit' flashcard.id %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Edit</a>
+                                {% endif %}
                                 <a href="{% url 'submit_feedback' flashcard.id %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Feedback</a>
                             </div>
                         </div>

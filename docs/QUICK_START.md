@@ -6,29 +6,41 @@ This guide will get you up and running with the Engineering Mathematics curricul
 
 - Python 3.8 or higher
 - Study Platform installed and configured
-- A user account created
 
-## Step 1: Initialize the Curriculum
+## For Students: Just Log In!
 
-Run the management command to populate your database with the complete mathematics curriculum:
+**Good news!** If you're a student and the platform administrator has already set up the curriculum, you can access it easily:
+
+1. Log in to your account
+2. Navigate to **Course Catalog** in the navigation
+3. Find the "Engineering Mathematics" course with a **📚 Public** badge
+4. Click **"+ Add to My Courses"** to enroll
+5. The course appears in **My Courses** where you can start studying!
+
+Public courses are available in the Course Catalog. Enroll once to add them to **My Courses**.
+
+## For Administrators: One-Time Setup
+
+Run these commands **once** during initial deployment to create public content available in the catalog:
 
 ```bash
-python manage.py populate_math_curriculum --user=<your_username>
+# Initialize the public math curriculum (automatically creates 'system' user)
+python manage.py populate_math_curriculum
+python manage.py populate_comprehensive_math_cards
 ```
 
-**Example:**
-```bash
-python manage.py populate_math_curriculum --user=john
-```
+**That's it!** The curriculum is now available in the Course Catalog for all users to enroll in.
 
-This creates:
-- ✅ 1 course: "Engineering Mathematics"
+**What gets created:**
+- ✅ 1 course: "Engineering Mathematics" (owned by system user, visible in catalog)
 - ✅ 13 topics: From Basic Arithmetic to Laplace Transforms
 - ✅ 68 foundational skills
 - ✅ 22 prerequisite relationships
+- ✅ 59+ comprehensive flashcards
 
 **Output:**
 ```
+✓ Created system user: system
 Creating Engineering Mathematics course...
 ✓ Created course: Engineering Mathematics
 
@@ -50,7 +62,16 @@ Setting up prerequisite relationships...
 ✓ Created 68 skill tags for prerequisite tracking
 ```
 
-## Step 2: View the Curriculum
+## Optional: Create Personal Copy
+
+If you want to create a **personal copy** for editing or customization (you must create the user first):
+
+```bash
+python manage.py populate_math_curriculum --user=<your_username>
+python manage.py populate_comprehensive_math_cards --user=<your_username>
+```
+
+**Note:** This is rarely needed - most users just use the public content.
 
 ### Option A: Admin Interface
 1. Navigate to `http://localhost:8000/admin`
@@ -63,7 +84,7 @@ Setting up prerequisite relationships...
 3. Click on "Engineering Mathematics"
 4. Browse the 13 topics
 
-## Step 3: Understand the Learning Path
+## Understanding the Learning Path
 
 The curriculum follows this progression:
 
@@ -77,7 +98,7 @@ Foundation → Pre-University → Core Calculus → Advanced Math
 - Comfortable with algebra? → Topic 3: Geometry
 - Ready for calculus? → Topic 6: Differential Calculus
 
-## Step 4: Create Your First Flashcards
+## Create Additional Flashcards (Optional)
 
 See `docs/CREATING_FLASHCARDS.md` for detailed examples. Here's a quick one:
 
@@ -104,7 +125,7 @@ flashcard = Flashcard.objects.create(
 flashcard.skills.add(skill)
 ```
 
-## Step 5: Start Studying
+## Start Studying
 
 1. Navigate to a topic
 2. Click "Start Studying"
@@ -233,23 +254,26 @@ If you see this when running the populate command:
 
 **Option 1:** Use `--skip-existing`
 ```bash
-python manage.py populate_math_curriculum --user=john --skip-existing
+python manage.py populate_math_curriculum --skip-existing
 ```
 
 **Option 2:** Delete existing course first
 ```python
 from study.models import Course
-Course.objects.filter(name='Engineering Mathematics').delete()
+Course.objects.filter(name='Engineering Mathematics', created_by__username='system').delete()
 ```
 
-### "User does not exist" Error
-Create the user first:
-```bash
-python manage.py createsuperuser
-# Or for a regular user:
-python manage.py shell
->>> from django.contrib.auth.models import User
->>> User.objects.create_user('username', 'email@example.com', 'password')
+### Checking If Public Content Exists
+```python
+from django.contrib.auth.models import User
+from study.models import Course
+
+system_user = User.objects.filter(username='system').first()
+if system_user:
+    courses = Course.objects.filter(created_by=system_user)
+    print(f"Public courses: {list(courses.values_list('name', flat=True))}")
+else:
+    print("System user does not exist - run populate_math_curriculum")
 ```
 
 ### Migration Issues

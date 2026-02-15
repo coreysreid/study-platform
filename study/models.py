@@ -320,3 +320,25 @@ class CardFeedback(models.Model):
     def __str__(self):
         return f"{self.get_feedback_type_display()} - {self.flashcard}"
 
+
+
+class CourseEnrollment(models.Model):
+    """Tracks user enrollment in courses with status"""
+    STATUS_CHOICES = [
+        ('studying', 'Studying'),
+        ('mastered', 'Mastered'),
+        ('shelved', 'Shelved'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='course_enrollments')
+    course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='enrollments')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='studying')
+    enrolled_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    class Meta:
+        unique_together = ['user', 'course']
+        ordering = ['-enrolled_at']
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.course.name} ({self.status})"

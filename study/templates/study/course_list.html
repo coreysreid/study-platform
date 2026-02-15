@@ -13,7 +13,14 @@
         <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem;">
             {% for course in courses %}
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 10px; color: white; box-shadow: 0 3px 10px rgba(0,0,0,0.1);">
-                    <h3 style="font-size: 1.3rem; margin-bottom: 0.5rem;">{{ course.name }}</h3>
+                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 0.5rem;">
+                        <h3 style="font-size: 1.3rem; flex: 1;">{{ course.name }}</h3>
+                        {% if course.created_by.username == 'system' %}
+                            <span style="background: rgba(255,255,255,0.3); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.85rem; white-space: nowrap; margin-left: 0.5rem;">
+                                📚 Public
+                            </span>
+                        {% endif %}
+                    </div>
                     {% if course.code %}
                         <p style="opacity: 0.9; margin-bottom: 1rem;">{{ course.code }}</p>
                     {% endif %}
