@@ -260,10 +260,6 @@
         
         const progress = ((currentIndex) / cards.length) * 100;
         document.getElementById('progressBar').style.width = progress + '%';
-        
-        if (isFlipped) {
-            flipCard();
-        }
     }
     
     function submitFeedback() {
@@ -301,7 +297,17 @@
     
     function nextCard() {
         currentIndex++;
-        loadCard();
+        // If card is flipped (showing answer), flip it back first
+        if (isFlipped) {
+            flipCard(); // Flip card back to question side
+            // Wait for flip animation to complete (600ms) before loading new content
+            setTimeout(() => {
+                loadCard();
+            }, 650); // Slightly longer than animation (600ms) to ensure completion
+        } else {
+            // Card not flipped, load immediately
+            loadCard();
+        }
     }
     
     function endSession() {
