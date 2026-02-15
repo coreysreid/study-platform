@@ -35,22 +35,30 @@ class Command(BaseCommand):
         username = options.get('user', 'system')
         skip_existing = options.get('skip_existing', False)
 
-        # Auto-create system user if it doesn't exist
-        user, created = User.objects.get_or_create(
-            username=username,
-            defaults={
-                'is_staff': False,
-                'is_active': True,
-                'email': f'{username}@system.local',
-                'first_name': 'System',
-                'last_name': 'Content'
-            }
-        )
-        
-        if created:
-            self.stdout.write(
-                self.style.SUCCESS(f'✓ Created system user: {username}')
+        # Only auto-create the special "system" user; require other users to pre-exist
+        if username == 'system':
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults={
+                    'is_staff': False,
+                    'is_active': True,
+                    'email': f'{username}@system.local',
+                    'first_name': 'System',
+                    'last_name': 'Content'
+                }
             )
+            
+            if created:
+                self.stdout.write(
+                    self.style.SUCCESS(f'✓ Created system user: {username}')
+                )
+        else:
+            try:
+                user = User.objects.get(username=username)
+            except User.DoesNotExist:
+                raise CommandError(
+                    f'User "{username}" does not exist. Please create this user before running this command.'
+                )
 
         # Get the Engineering Mathematics course
         try:

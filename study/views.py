@@ -9,7 +9,8 @@ from django.db.models import Count, Avg, Sum, Q
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import HttpResponseForbidden
-from functools import wraps, lru_cache
+from django.views.decorators.http import require_POST
+from functools import wraps
 from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback, CourseEnrollment
 from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
 from .utils import generate_parameterized_card
@@ -19,9 +20,8 @@ import json
 # Create your views here.
 
 # Utility functions for public content
-@lru_cache(maxsize=1)
 def get_system_user():
-    """Get the system user for public content. Cached to avoid repeated queries."""
+    """Get the system user for public content."""
     return User.objects.filter(username='system').first()
 
 def get_public_content_filter(user, model_class):
@@ -122,13 +122,22 @@ def logout_view(request):
 
 @login_required
 def course_list(request):
-    """My Courses - Show only courses the user is enrolled in"""
+    """My Courses - Show courses the user is enrolled in and courses they created"""
     enrollments = CourseEnrollment.objects.filter(user=request.user).select_related('course').annotate(
         topic_count=Count('course__topics', distinct=True),
         flashcard_count=Count('course__topics__flashcards', distinct=True)
     ).order_by('-enrolled_at')
     
-    return render(request, 'study/my_courses.html', {'enrollments': enrollments})
+    # Also include courses created by the user
+    owned_courses = Course.objects.filter(created_by=request.user).annotate(
+        topic_count=Count('topics', distinct=True),
+        flashcard_count=Count('topics__flashcards', distinct=True)
+    ).order_by('name')
+    
+    return render(request, 'study/my_courses.html', {
+        'enrollments': enrollments,
+        'owned_courses': owned_courses,
+    })
 
 
 @login_required
@@ -182,6 +191,7 @@ def course_detail(request, course_id):
 
 
 @login_required
+@require_POST
 def enroll_course(request, course_id):
     """Enroll in a public course"""
     system_user = get_system_user()
@@ -205,6 +215,7 @@ def enroll_course(request, course_id):
 
 
 @login_required
+@require_POST
 def unenroll_course(request, course_id):
     """Remove a course from My Courses"""
     enrollment = get_object_or_404(CourseEnrollment, user=request.user, course_id=course_id)
@@ -215,20 +226,20 @@ def unenroll_course(request, course_id):
 
 
 @login_required
+@require_POST
 def update_enrollment_status(request, course_id):
     """Update the status of an enrolled course"""
-    if request.method == 'POST':
-        enrollment = get_object_or_404(CourseEnrollment, user=request.user, course_id=course_id)
-        new_status = request.POST.get('status')
-        
-        # Check if status is valid (efficient membership check)
-        valid_statuses = {'studying', 'mastered', 'shelved'}
-        if new_status in valid_statuses:
-            enrollment.status = new_status
-            enrollment.save()
-            messages.success(request, f'Updated status to "{enrollment.get_status_display()}".')
-        else:
-            messages.error(request, 'Invalid status.')
+    enrollment = get_object_or_404(CourseEnrollment, user=request.user, course_id=course_id)
+    new_status = request.POST.get('status')
+    
+    # Check if status is valid using the model's STATUS_CHOICES as the single source of truth
+    valid_statuses = {choice[0] for choice in CourseEnrollment.STATUS_CHOICES}
+    if new_status in valid_statuses:
+        enrollment.status = new_status
+        enrollment.save()
+        messages.success(request, f'Updated status to "{enrollment.get_status_display()}".')
+    else:
+        messages.error(request, 'Invalid status.')
     
     return redirect('course_list')
 
@@ -238,12 +249,12 @@ def topic_detail(request, topic_id):
     """View details of a specific topic - user must be enrolled in the course"""
     topic = get_object_or_404(Topic.objects.select_related('course'), id=topic_id)
     
-    # Check if user is enrolled in this course
+    # Check if user is enrolled in this course or is the owner
     enrollment = CourseEnrollment.objects.filter(user=request.user, course=topic.course).first()
-    system_user = get_system_user()
+    is_owner = topic.course.created_by == request.user
     
-    # Allow access if enrolled OR if viewing catalog (not studying)
-    if not enrollment and topic.course.created_by != system_user:
+    # Allow access only if enrolled or owner
+    if not enrollment and not is_owner:
         messages.error(request, 'You must be enrolled in this course to view topics.')
         return redirect('course_catalog')
     
@@ -364,12 +375,16 @@ def update_flashcard_progress(request, flashcard_id):
     if request.method == 'POST':
         flashcard = get_object_or_404(Flashcard, id=flashcard_id)
         
-        # Verify user has access to this flashcard's course (either own or public)
-        system_user = get_system_user()
-        has_access = (
-            flashcard.topic.course.created_by == request.user or
-            (system_user and flashcard.topic.course.created_by == system_user)
-        )
+        # Verify user has access to this flashcard's course:
+        # - Owners (course.created_by) always have access
+        # - Other users must have an active CourseEnrollment for the course
+        course = flashcard.topic.course
+        is_owner = (course.created_by == request.user)
+        has_enrollment = CourseEnrollment.objects.filter(
+            user=request.user,
+            course=course
+        ).exists()
+        has_access = is_owner or has_enrollment
         
         if not has_access:
             return HttpResponseForbidden("You don't have permission to update progress for this flashcard")

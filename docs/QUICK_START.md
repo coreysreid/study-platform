@@ -9,18 +9,19 @@ This guide will get you up and running with the Engineering Mathematics curricul
 
 ## For Students: Just Log In!
 
-**Good news!** If you're a student and the platform administrator has already set up the curriculum, you don't need to do anything. Just:
+**Good news!** If you're a student and the platform administrator has already set up the curriculum, you can access it easily:
 
 1. Log in to your account
-2. Navigate to **My Courses**
-3. You'll see the "Engineering Mathematics" course marked with a **📚 Public** badge
-4. Start studying immediately!
+2. Navigate to **Course Catalog** in the navigation
+3. Find the "Engineering Mathematics" course with a **📚 Public** badge
+4. Click **"+ Add to My Courses"** to enroll
+5. The course appears in **My Courses** where you can start studying!
 
-All public content is automatically available to all users - no setup required.
+Public courses are available in the Course Catalog. Enroll once to add them to **My Courses**.
 
 ## For Administrators: One-Time Setup
 
-Run these commands **once** during initial deployment to create public content visible to all users:
+Run these commands **once** during initial deployment to create public content available in the catalog:
 
 ```bash
 # Initialize the public math curriculum (automatically creates 'system' user)
@@ -28,10 +29,10 @@ python manage.py populate_math_curriculum
 python manage.py populate_comprehensive_math_cards
 ```
 
-**That's it!** The curriculum is now available to all users who log in.
+**That's it!** The curriculum is now available in the Course Catalog for all users to enroll in.
 
 **What gets created:**
-- ✅ 1 course: "Engineering Mathematics" (owned by system user)
+- ✅ 1 course: "Engineering Mathematics" (owned by system user, visible in catalog)
 - ✅ 13 topics: From Basic Arithmetic to Laplace Transforms
 - ✅ 68 foundational skills
 - ✅ 22 prerequisite relationships
@@ -63,7 +64,7 @@ Setting up prerequisite relationships...
 
 ## Optional: Create Personal Copy
 
-If you want to create a **personal copy** for editing or customization:
+If you want to create a **personal copy** for editing or customization (you must create the user first):
 
 ```bash
 python manage.py populate_math_curriculum --user=<your_username>

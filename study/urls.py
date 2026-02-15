@@ -9,6 +9,7 @@ urlpatterns = [
     
     # Course URLs
     path('my-courses/', views.course_list, name='course_list'),
+    path('courses/', views.course_list, name='course_list_legacy'),  # Backward compatibility
     path('catalog/', views.course_catalog, name='course_catalog'),
     path('course/<int:course_id>/', views.course_detail, name='course_detail'),
     path('course/<int:course_id>/enroll/', views.enroll_course, name='enroll_course'),

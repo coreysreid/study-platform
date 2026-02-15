@@ -55,6 +55,7 @@
                             <div style="display: flex; gap: 0.5rem;">
                                 {% if topic.course.created_by == request.user %}
                                     <a href="{% url 'flashcard_edit' flashcard.id %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Edit</a>
+                                {% endif %}
                                 <a href="{% url 'submit_feedback' flashcard.id %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Feedback</a>
                             </div>
                         </div>

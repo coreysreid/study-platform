@@ -229,19 +229,25 @@ The platform includes a comprehensive Engineering Mathematics curriculum designe
 **For Administrators** - Initialize the Engineering Mathematics curriculum as globally available public content:
 
 ```bash
-# Run once during initial deployment (creates public content visible to all users)
+# Run once during initial deployment (creates public content available in the catalog)
 python manage.py populate_math_curriculum
 python manage.py populate_comprehensive_math_cards
 ```
 
-This creates a **"system" user** that owns the public content, which is automatically visible to all logged-in users. No need to specify a username - it defaults to creating/using the system user.
+This creates a **"system" user** that owns the public content. The courses appear in the **Course Catalog** where users can browse and enroll. No need to specify a username - it defaults to creating/using the system user.
 
 **What gets created:**
-- The "Engineering Mathematics" course owned by the system user
+- The "Engineering Mathematics" course owned by the system user (visible in catalog)
 - All 13 topics with descriptions
 - 68 foundational skills
 - Prerequisite relationships between topics
 - 59+ comprehensive flashcards covering all topics
+
+**For Students** - To access the curriculum:
+1. Log in to the platform
+2. Go to **Course Catalog**
+3. Click **"+ Add to My Courses"** on the Engineering Mathematics course
+4. The course will appear in **My Courses** where you can start studying
 
 **Optional: Create personal copy** - If you want to create a personal copy for editing:
 
