@@ -1,5 +1,6 @@
 from django.test import TestCase
 from django.contrib.auth.models import User
+from django.db.models import Q
 from .models import Course, Topic, Flashcard, Skill
 from .utils import ParameterGenerator, TemplateRenderer, generate_parameterized_card
 
@@ -408,3 +409,158 @@ class SecurityTestCase(TestCase):
         gen = ParameterGenerator(spec)
         with self.assertRaises(Exception):
             gen.generate()
+
+
+class GlobalCurriculumTestCase(TestCase):
+    """Test public/global curriculum functionality"""
+    
+    def test_system_user_creation(self):
+        """Test that system user is created when running management commands"""
+        from django.core.management import call_command
+        
+        # System user should not exist initially
+        self.assertFalse(User.objects.filter(username='system').exists())
+        
+        # Run the command
+        call_command('populate_math_curriculum')
+        
+        # System user should now exist
+        system_user = User.objects.get(username='system')
+        self.assertEqual(system_user.email, 'system@system.local')
+        self.assertTrue(system_user.is_active)
+        self.assertFalse(system_user.is_staff)
+        self.assertEqual(system_user.first_name, 'System')
+        self.assertEqual(system_user.last_name, 'Content')
+    
+    def test_public_course_creation(self):
+        """Test that public course is created under system user"""
+        from django.core.management import call_command
+        
+        call_command('populate_math_curriculum')
+        
+        system_user = User.objects.get(username='system')
+        course = Course.objects.get(name='Engineering Mathematics', created_by=system_user)
+        
+        self.assertEqual(course.code, 'ENGMATH')
+        self.assertIn('mathematics curriculum', course.description.lower())
+        
+        # Check topics were created
+        topics = course.topics.all()
+        self.assertEqual(topics.count(), 13)
+        
+        # Check skills were created
+        self.assertGreater(Skill.objects.count(), 60)
+    
+    def test_public_content_visibility_in_views(self):
+        """Test that public content is visible to all users in views"""
+        from django.core.management import call_command
+        
+        # Create system user and public course
+        call_command('populate_math_curriculum')
+        system_user = User.objects.get(username='system')
+        
+        # Create a regular user
+        regular_user = User.objects.create_user('testuser', 'test@test.com', 'password')
+        
+        # Create a personal course for the regular user
+        personal_course = Course.objects.create(
+            name='Personal Course',
+            code='TEST',
+            description='Test course',
+            created_by=regular_user
+        )
+        
+        # Query courses like the view does
+        courses = Course.objects.filter(
+            Q(created_by=regular_user) | Q(created_by=system_user)
+        )
+        
+        # Regular user should see both their own course and public course
+        course_names = list(courses.values_list('name', flat=True))
+        self.assertIn('Engineering Mathematics', course_names)
+        self.assertIn('Personal Course', course_names)
+        self.assertEqual(courses.count(), 2)
+    
+    def test_user_cannot_edit_public_content(self):
+        """Test that edit views properly restrict access to owner only"""
+        from django.core.management import call_command
+        
+        # Create system user and public course
+        call_command('populate_math_curriculum')
+        system_user = User.objects.get(username='system')
+        public_course = Course.objects.get(name='Engineering Mathematics', created_by=system_user)
+        
+        # Create a regular user
+        regular_user = User.objects.create_user('testuser', 'test@test.com', 'password')
+        
+        # Verify the regular user cannot get the course through edit query
+        # This simulates what happens in course_edit view
+        edit_courses = Course.objects.filter(id=public_course.id, created_by=regular_user)
+        self.assertEqual(edit_courses.count(), 0)
+        
+        # But can access it through the public query
+        view_courses = Course.objects.filter(
+            Q(id=public_course.id) & (Q(created_by=regular_user) | Q(created_by=system_user))
+        )
+        self.assertEqual(view_courses.count(), 1)
+    
+    def test_user_can_track_progress_on_public_content(self):
+        """Test that users can track their progress on public flashcards"""
+        from django.core.management import call_command
+        from study.models import FlashcardProgress
+        
+        # Create system user and public content
+        call_command('populate_math_curriculum')
+        call_command('populate_comprehensive_math_cards')
+        
+        system_user = User.objects.get(username='system')
+        public_course = Course.objects.get(name='Engineering Mathematics', created_by=system_user)
+        
+        # Get a public flashcard
+        public_topic = public_course.topics.first()
+        public_flashcard = public_topic.flashcards.first()
+        
+        # Create a regular user
+        regular_user = User.objects.create_user('testuser', 'test@test.com', 'password')
+        
+        # User should be able to create progress on public flashcard
+        progress = FlashcardProgress.objects.create(
+            user=regular_user,
+            flashcard=public_flashcard,
+            times_reviewed=5,
+            times_correct=4
+        )
+        
+        self.assertEqual(progress.user, regular_user)
+        self.assertEqual(progress.flashcard, public_flashcard)
+        self.assertEqual(progress.times_reviewed, 5)
+        self.assertEqual(progress.times_correct, 4)
+        
+        # Multiple users can track progress on the same public flashcard
+        another_user = User.objects.create_user('another', 'another@test.com', 'password')
+        another_progress = FlashcardProgress.objects.create(
+            user=another_user,
+            flashcard=public_flashcard,
+            times_reviewed=3,
+            times_correct=2
+        )
+        
+        # Both progress records should exist
+        self.assertEqual(FlashcardProgress.objects.filter(flashcard=public_flashcard).count(), 2)
+    
+    def test_command_with_custom_username(self):
+        """Test that commands still work with custom username parameter"""
+        from django.core.management import call_command
+        
+        # Create a custom user
+        custom_user = User.objects.create_user('customuser', 'custom@test.com', 'password')
+        
+        # Run command with custom user
+        call_command('populate_math_curriculum', user='customuser')
+        
+        # Course should be created under custom user, not system
+        course = Course.objects.get(name='Engineering Mathematics', created_by=custom_user)
+        self.assertEqual(course.created_by, custom_user)
+        
+        # System user might or might not exist, but course should be under custom user
+        self.assertEqual(course.created_by.username, 'customuser')
