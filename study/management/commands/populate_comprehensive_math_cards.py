@@ -435,6 +435,7 @@ class Command(BaseCommand):
         }
         
         cards = [
+            # Easy difficulty cards (4 cards)
             {
                 'question': 'State the Pythagorean theorem.',
                 'answer': 'In a right triangle, a² + b² = c², where c is the hypotenuse and a, b are the other two sides.',
@@ -446,13 +447,6 @@ class Command(BaseCommand):
                 'question': 'What is the formula for the area of a circle?',
                 'answer': 'A = πr², where r is the radius',
                 'difficulty': 'easy',
-                'uses_latex': True,
-                'skills': ['area_volume_calculations'],
-            },
-            {
-                'question': 'What is the formula for the volume of a sphere?',
-                'answer': 'V = (4/3)πr³, where r is the radius',
-                'difficulty': 'medium',
                 'uses_latex': True,
                 'skills': ['area_volume_calculations'],
             },
@@ -477,6 +471,75 @@ class Command(BaseCommand):
                 'hint': 'Area = length × width',
                 'skills': ['area_volume_calculations'],
             },
+            # Medium difficulty cards (6 cards)
+            {
+                'question': 'What is the formula for the volume of a sphere?',
+                'answer': 'V = (4/3)πr³, where r is the radius',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['area_volume_calculations'],
+            },
+            {
+                'question': 'What is the formula for the circumference of a circle?',
+                'answer': 'C = 2πr or C = πd, where r is the radius and d is the diameter',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['area_volume_calculations'],
+            },
+            {
+                'question': 'What is the formula for the volume of a cylinder?',
+                'answer': 'V = πr²h, where r is the radius and h is the height',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Think of it as the area of the base times the height',
+                'skills': ['area_volume_calculations'],
+            },
+            {
+                'question': 'What are the properties of an equilateral triangle?',
+                'answer': 'All three sides are equal, all three angles are 60°, it has three lines of symmetry',
+                'difficulty': 'medium',
+                'skills': ['geometric_reasoning'],
+            },
+            {
+                'question': 'When two parallel lines are cut by a transversal, what angles are equal?',
+                'answer': 'Corresponding angles are equal, alternate interior angles are equal, alternate exterior angles are equal',
+                'difficulty': 'medium',
+                'hint': 'Think about the patterns formed by parallel lines and a transversal',
+                'skills': ['geometric_reasoning'],
+            },
+            {
+                'question': 'What is the distance formula between two points (x₁, y₁) and (x₂, y₂)?',
+                'answer': 'd = √[(x₂ - x₁)² + (y₂ - y₁)²]',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'It\'s derived from the Pythagorean theorem',
+                'skills': ['pythagorean_theorem'],
+            },
+            # Hard difficulty cards (2 cards)
+            {
+                'question': 'What is the formula for the volume of a cone?',
+                'answer': 'V = (1/3)πr²h, where r is the radius and h is the height',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'It\'s one-third the volume of a cylinder with the same base and height',
+                'skills': ['area_volume_calculations'],
+            },
+            {
+                'question_type': 'parameterized',
+                'question_template': 'Find the hypotenuse of a right triangle with legs {a} and {b}.',
+                'answer_template': '{hypotenuse}',
+                'parameter_spec': {
+                    'variables': {
+                        'a': {'type': 'random_choice', 'choices': [3, 5, 6, 8, 9, 12]},
+                        'b': {'type': 'random_choice', 'choices': [4, 12, 8, 15, 12, 16]},
+                        'hypotenuse': {'type': 'computed', 'formula': 'round((a**2 + b**2)**0.5, 2)'},
+                    }
+                },
+                'difficulty': 'hard',
+                'hint': 'Use the Pythagorean theorem: a² + b² = c²',
+                'skills': ['pythagorean_theorem'],
+                'uses_latex': True,
+            },
         ]
         
         return self._create_cards(topic, cards, skills)
@@ -489,6 +552,7 @@ class Command(BaseCommand):
         }
         
         cards = [
+            # Easy difficulty cards (5 cards)
             {
                 'question': 'Define sin(θ) in a right triangle.',
                 'answer': 'sin(θ) = opposite / hypotenuse',
@@ -511,13 +575,6 @@ class Command(BaseCommand):
                 'skills': ['trigonometric_ratios'],
             },
             {
-                'question': 'What is the Pythagorean identity for trigonometry?',
-                'answer': 'sin²(θ) + cos²(θ) = 1',
-                'difficulty': 'medium',
-                'uses_latex': True,
-                'skills': ['trigonometric_identities'],
-            },
-            {
                 'question': 'What is sin(30°)?',
                 'answer': '1/2 or 0.5',
                 'difficulty': 'easy',
@@ -529,6 +586,62 @@ class Command(BaseCommand):
                 'answer': '1/2 or 0.5',
                 'difficulty': 'easy',
                 'hint': 'Remember special angles: 30°, 45°, 60°',
+                'skills': ['trigonometric_ratios'],
+            },
+            # Medium difficulty cards (5 cards)
+            {
+                'question': 'What is the Pythagorean identity for trigonometry?',
+                'answer': 'sin²(θ) + cos²(θ) = 1',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['trigonometric_identities'],
+            },
+            {
+                'question': 'What are the reciprocal trigonometric functions?',
+                'answer': 'csc(θ) = 1/sin(θ), sec(θ) = 1/cos(θ), cot(θ) = 1/tan(θ)',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Cosecant, secant, and cotangent',
+                'skills': ['trigonometric_ratios'],
+            },
+            {
+                'question': 'What is sin(45°)?',
+                'answer': '√2/2 ≈ 0.707',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'This is the same as cos(45°)',
+                'skills': ['trigonometric_ratios'],
+            },
+            {
+                'question': 'How do you convert degrees to radians?',
+                'answer': 'Multiply by π/180. For example, 180° = π radians, 90° = π/2 radians',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Think about how many degrees are in a full circle (360°) vs radians (2π)',
+                'skills': ['trigonometric_ratios'],
+            },
+            {
+                'question': 'What is the double angle formula for sin(2θ)?',
+                'answer': 'sin(2θ) = 2sin(θ)cos(θ)',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['trigonometric_identities'],
+            },
+            # Hard difficulty cards (2 cards)
+            {
+                'question': 'What is the Law of Sines?',
+                'answer': 'a/sin(A) = b/sin(B) = c/sin(C), where a, b, c are sides and A, B, C are opposite angles',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Used for solving non-right triangles',
+                'skills': ['trigonometric_ratios'],
+            },
+            {
+                'question': 'What is the Law of Cosines?',
+                'answer': 'c² = a² + b² - 2ab·cos(C), where c is a side and C is the opposite angle',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Generalizes the Pythagorean theorem to any triangle',
                 'skills': ['trigonometric_ratios'],
             },
         ]
@@ -544,12 +657,32 @@ class Command(BaseCommand):
         }
         
         cards = [
+            # Easy difficulty cards (4 cards)
             {
                 'question': 'What is the definition of a function?',
                 'answer': 'A function is a relation where each input (x) has exactly one output (y).',
                 'difficulty': 'easy',
                 'skills': ['function_analysis'],
             },
+            {
+                'question': 'What is e (Euler\'s number) approximately equal to?',
+                'answer': 'Approximately 2.71828',
+                'difficulty': 'easy',
+                'skills': ['exponential_logarithmic'],
+            },
+            {
+                'question': 'What is the domain of a function?',
+                'answer': 'The domain is the set of all possible input values (x-values) for which the function is defined.',
+                'difficulty': 'easy',
+                'skills': ['function_analysis'],
+            },
+            {
+                'question': 'What is the range of a function?',
+                'answer': 'The range is the set of all possible output values (y-values) that the function can produce.',
+                'difficulty': 'easy',
+                'skills': ['function_analysis'],
+            },
+            # Medium difficulty cards (6 cards)
             {
                 'question': 'What is the logarithm rule: log(ab)?',
                 'answer': 'log(ab) = log(a) + log(b)',
@@ -571,10 +704,42 @@ class Command(BaseCommand):
                 'skills': ['limit_concepts'],
             },
             {
-                'question': 'What is e (Euler\'s number) approximately equal to?',
-                'answer': 'Approximately 2.71828',
-                'difficulty': 'easy',
+                'question': 'What is the logarithm rule: log(a^n)?',
+                'answer': 'log(a^n) = n·log(a)',
+                'difficulty': 'medium',
+                'uses_latex': True,
                 'skills': ['exponential_logarithmic'],
+            },
+            {
+                'question': 'What is a composite function?',
+                'answer': 'A composite function (f ∘ g)(x) = f(g(x)) means you apply g first, then apply f to the result.',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Think of it as a function of a function',
+                'skills': ['function_analysis'],
+            },
+            {
+                'question': 'How do you find the inverse of a function f(x)?',
+                'answer': 'Swap x and y, then solve for y. The result is f⁻¹(x). The function must be one-to-one.',
+                'difficulty': 'medium',
+                'hint': 'Inverse functions "undo" each other',
+                'skills': ['function_analysis'],
+            },
+            # Hard difficulty cards (2 cards)
+            {
+                'question': 'What is exponential growth formula?',
+                'answer': 'A(t) = A₀e^(kt), where A₀ is initial amount, k is growth rate, and t is time',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Used in population growth, compound interest, etc.',
+                'skills': ['exponential_logarithmic'],
+            },
+            {
+                'question': 'What transformation does f(x-h) + k represent?',
+                'answer': 'Horizontal shift right by h units and vertical shift up by k units',
+                'difficulty': 'hard',
+                'hint': 'Remember: horizontal shifts are opposite to what you might expect',
+                'skills': ['function_analysis'],
             },
         ]
         
