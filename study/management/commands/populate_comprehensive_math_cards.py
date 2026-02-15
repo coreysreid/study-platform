@@ -1141,12 +1141,26 @@ class Command(BaseCommand):
         }
         
         cards = [
+            # Easy difficulty cards (3 cards)
             {
                 'question': 'What is an ordinary differential equation (ODE)?',
                 'answer': 'An equation containing a function of one variable and its derivatives.',
                 'difficulty': 'easy',
                 'skills': ['ode_classification'],
             },
+            {
+                'question': 'What is the order of a differential equation?',
+                'answer': 'The order is the highest derivative that appears in the equation',
+                'difficulty': 'easy',
+                'skills': ['ode_classification'],
+            },
+            {
+                'question': 'What is a linear differential equation?',
+                'answer': 'An ODE where the dependent variable and its derivatives appear only to the first power and are not multiplied together',
+                'difficulty': 'easy',
+                'skills': ['ode_classification'],
+            },
+            # Medium difficulty cards (5 cards)
             {
                 'question': 'What is the general form of a first-order linear ODE?',
                 'answer': 'dy/dx + P(x)y = Q(x)',
@@ -1161,6 +1175,44 @@ class Command(BaseCommand):
                 'uses_latex': True,
                 'skills': ['first_order_ode_solving'],
             },
+            {
+                'question': 'What is an integrating factor for first-order linear ODEs?',
+                'answer': 'μ(x) = e^(∫P(x)dx), used to solve dy/dx + P(x)y = Q(x) by multiplying both sides',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'It makes the left side an exact derivative',
+                'skills': ['first_order_ode_solving'],
+            },
+            {
+                'question': 'What is the general solution form for a second-order linear homogeneous ODE?',
+                'answer': 'y = c₁y₁ + c₂y₂, where y₁ and y₂ are linearly independent solutions',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['ode_classification'],
+            },
+            {
+                'question': 'What is the characteristic equation for ay\'\' + by\' + cy = 0?',
+                'answer': 'ar² + br + c = 0, where r represents the roots that give solutions e^(rx)',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Replace y with e^(rx) and solve for r',
+                'skills': ['first_order_ode_solving'],
+            },
+            # Hard difficulty cards (2 cards)
+            {
+                'question': 'What is the method of undetermined coefficients?',
+                'answer': 'A technique for finding particular solutions to non-homogeneous linear ODEs by guessing a form based on the non-homogeneous term',
+                'difficulty': 'hard',
+                'hint': 'Used when the right-hand side is polynomial, exponential, sine, or cosine',
+                'skills': ['first_order_ode_solving'],
+            },
+            {
+                'question': 'What is variation of parameters?',
+                'answer': 'A method to find particular solutions of non-homogeneous ODEs by replacing constants in the homogeneous solution with functions',
+                'difficulty': 'hard',
+                'hint': 'More general than undetermined coefficients, works for any continuous function',
+                'skills': ['first_order_ode_solving'],
+            },
         ]
         
         return self._create_cards(topic, cards, skills)
@@ -1173,12 +1225,26 @@ class Command(BaseCommand):
         }
         
         cards = [
+            # Easy difficulty cards (3 cards)
             {
                 'question': 'What is a partial differential equation (PDE)?',
                 'answer': 'An equation containing a function of multiple variables and its partial derivatives.',
                 'difficulty': 'easy',
                 'skills': ['pde_classification'],
             },
+            {
+                'question': 'What is a boundary condition in PDEs?',
+                'answer': 'Conditions specifying the values of the solution or its derivatives at the boundary of the domain',
+                'difficulty': 'easy',
+                'skills': ['pde_classification'],
+            },
+            {
+                'question': 'What is an initial condition in PDEs?',
+                'answer': 'Conditions specifying the value of the solution and/or its derivatives at time t=0',
+                'difficulty': 'easy',
+                'skills': ['pde_classification'],
+            },
+            # Medium difficulty cards (5 cards)
             {
                 'question': 'Name the three main types of second-order PDEs.',
                 'answer': 'Elliptic, Parabolic, and Hyperbolic',
@@ -1192,6 +1258,44 @@ class Command(BaseCommand):
                 'uses_latex': True,
                 'skills': ['pde_classification'],
             },
+            {
+                'question': 'What is the wave equation?',
+                'answer': '∂²u/∂t² = c²∇²u, a hyperbolic PDE modeling wave propagation',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['pde_classification'],
+            },
+            {
+                'question': 'What is Laplace\'s equation?',
+                'answer': '∇²u = 0, an elliptic PDE describing steady-state phenomena',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Also called the harmonic equation',
+                'skills': ['pde_classification'],
+            },
+            {
+                'question': 'What is the method of separation of variables?',
+                'answer': 'A technique where you assume the solution can be written as a product of functions, each depending on only one variable',
+                'difficulty': 'medium',
+                'hint': 'For example, u(x,t) = X(x)T(t)',
+                'skills': ['separation_of_variables'],
+            },
+            # Hard difficulty cards (2 cards)
+            {
+                'question': 'What is the D\'Alembert solution to the wave equation?',
+                'answer': 'u(x,t) = f(x-ct) + g(x+ct), representing waves traveling in opposite directions',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Represents the general solution for the 1D wave equation',
+                'skills': ['pde_classification'],
+            },
+            {
+                'question': 'What role do Fourier series play in solving PDEs?',
+                'answer': 'They expand the solution in terms of orthogonal eigenfunctions, satisfying boundary conditions and simplifying the PDE',
+                'difficulty': 'hard',
+                'hint': 'Particularly useful with separation of variables',
+                'skills': ['separation_of_variables'],
+            },
         ]
         
         return self._create_cards(topic, cards, skills)
@@ -1204,6 +1308,26 @@ class Command(BaseCommand):
         }
         
         cards = [
+            # Easy difficulty cards (3 cards)
+            {
+                'question': 'What is the fundamental frequency?',
+                'answer': 'The lowest frequency in a Fourier series, determining the period of the function.',
+                'difficulty': 'easy',
+                'skills': ['fourier_series'],
+            },
+            {
+                'question': 'What is the period of a periodic function f(x)?',
+                'answer': 'The smallest positive value T such that f(x+T) = f(x) for all x',
+                'difficulty': 'easy',
+                'skills': ['fourier_series'],
+            },
+            {
+                'question': 'What are harmonics in Fourier series?',
+                'answer': 'Integer multiples of the fundamental frequency, representing the frequency components of the signal',
+                'difficulty': 'easy',
+                'skills': ['fourier_series'],
+            },
+            # Medium difficulty cards (5 cards)
             {
                 'question': 'What is a Fourier series?',
                 'answer': 'A representation of a periodic function as a sum of sine and cosine functions.',
@@ -1217,10 +1341,43 @@ class Command(BaseCommand):
                 'skills': ['fourier_transform'],
             },
             {
-                'question': 'What is the fundamental frequency?',
-                'answer': 'The lowest frequency in a Fourier series, determining the period of the function.',
-                'difficulty': 'easy',
+                'question': 'What is the general form of a Fourier series for period 2L?',
+                'answer': 'f(x) = a₀/2 + Σ[aₙcos(nπx/L) + bₙsin(nπx/L)]',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Sum goes from n=1 to infinity',
                 'skills': ['fourier_series'],
+            },
+            {
+                'question': 'How do even and odd functions simplify Fourier series?',
+                'answer': 'Even functions have only cosine terms (bₙ=0), odd functions have only sine terms (aₙ=0)',
+                'difficulty': 'medium',
+                'hint': 'Even: f(-x)=f(x), Odd: f(-x)=-f(x)',
+                'skills': ['fourier_series'],
+            },
+            {
+                'question': 'What is the inverse Fourier transform?',
+                'answer': 'f(t) = ∫F(ω)e^(iωt)dω/(2π), converts from frequency domain back to time domain',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['fourier_transform'],
+            },
+            # Hard difficulty cards (2 cards)
+            {
+                'question': 'What is the convolution theorem for Fourier transforms?',
+                'answer': 'The Fourier transform of a convolution is the product of the Fourier transforms: F{f*g} = F{f}·F{g}',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Convolution in time domain = multiplication in frequency domain',
+                'skills': ['fourier_transform'],
+            },
+            {
+                'question': 'What is Parseval\'s theorem?',
+                'answer': 'The total energy in time domain equals total energy in frequency domain: ∫|f(t)|²dt = ∫|F(ω)|²dω',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Energy is conserved between domains',
+                'skills': ['fourier_transform'],
             },
         ]
         
@@ -1235,13 +1392,7 @@ class Command(BaseCommand):
         }
         
         cards = [
-            {
-                'question': 'What is the Laplace transform?',
-                'answer': 'An integral transform that converts a function f(t) to F(s) = ∫₀^∞ e^(-st)f(t)dt',
-                'difficulty': 'medium',
-                'uses_latex': True,
-                'skills': ['laplace_transform_calculation'],
-            },
+            # Easy difficulty cards (3 cards)
             {
                 'question': 'What is L{1}?',
                 'answer': '1/s',
@@ -1257,9 +1408,62 @@ class Command(BaseCommand):
                 'skills': ['laplace_transform_calculation'],
             },
             {
+                'question': 'What is L{t^n} for n ≥ 0?',
+                'answer': 'n!/s^(n+1)',
+                'difficulty': 'easy',
+                'uses_latex': True,
+                'skills': ['laplace_transform_calculation'],
+            },
+            # Medium difficulty cards (5 cards)
+            {
+                'question': 'What is the Laplace transform?',
+                'answer': 'An integral transform that converts a function f(t) to F(s) = ∫₀^∞ e^(-st)f(t)dt',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['laplace_transform_calculation'],
+            },
+            {
                 'question': 'Why use Laplace transforms to solve ODEs?',
                 'answer': 'They convert differential equations into algebraic equations, which are easier to solve.',
                 'difficulty': 'medium',
+                'skills': ['solving_odes_with_laplace'],
+            },
+            {
+                'question': 'What is L{sin(ωt)}?',
+                'answer': 'ω/(s² + ω²)',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['laplace_transform_calculation'],
+            },
+            {
+                'question': 'What is L{cos(ωt)}?',
+                'answer': 's/(s² + ω²)',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['laplace_transform_calculation'],
+            },
+            {
+                'question': 'What is the linearity property of Laplace transforms?',
+                'answer': 'L{af(t) + bg(t)} = aL{f(t)} + bL{g(t)}, where a and b are constants',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['laplace_transform_calculation'],
+            },
+            # Hard difficulty cards (2 cards)
+            {
+                'question': 'What is the First Shifting Theorem (s-shift)?',
+                'answer': 'L{e^(at)f(t)} = F(s-a), where F(s) = L{f(t)}',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Multiplying by e^(at) shifts the transform by a',
+                'skills': ['laplace_transform_calculation'],
+            },
+            {
+                'question': 'What is the Laplace transform of a derivative L{f\'(t)}?',
+                'answer': 'sF(s) - f(0), where F(s) = L{f(t)}',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'This is why Laplace transforms are useful for ODEs',
                 'skills': ['solving_odes_with_laplace'],
             },
         ]
