@@ -753,13 +753,7 @@ class Command(BaseCommand):
         }
         
         cards = [
-            {
-                'question': 'What is the definition of a derivative?',
-                'answer': 'f\'(x) = lim(h→0) [f(x+h) - f(x)] / h',
-                'difficulty': 'medium',
-                'uses_latex': True,
-                'skills': ['derivative_calculation'],
-            },
+            # Easy difficulty cards (4 cards)
             {
                 'question': 'What is the power rule for derivatives?',
                 'answer': 'd/dx(x^n) = nx^(n-1)',
@@ -782,6 +776,21 @@ class Command(BaseCommand):
                 'skills': ['differentiation_rules'],
             },
             {
+                'question': 'What is the derivative of e^x?',
+                'answer': 'e^x (the derivative of e^x is itself)',
+                'difficulty': 'easy',
+                'uses_latex': True,
+                'skills': ['differentiation_rules'],
+            },
+            # Medium difficulty cards (6 cards)
+            {
+                'question': 'What is the definition of a derivative?',
+                'answer': 'f\'(x) = lim(h→0) [f(x+h) - f(x)] / h',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['derivative_calculation'],
+            },
+            {
                 'question': 'What is the product rule for derivatives?',
                 'answer': 'd/dx[f(x)g(x)] = f\'(x)g(x) + f(x)g\'(x)',
                 'difficulty': 'medium',
@@ -795,6 +804,44 @@ class Command(BaseCommand):
                 'uses_latex': True,
                 'skills': ['differentiation_rules'],
             },
+            {
+                'question': 'What is the quotient rule for derivatives?',
+                'answer': 'd/dx[f(x)/g(x)] = [f\'(x)g(x) - f(x)g\'(x)] / [g(x)]²',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Low d-high minus high d-low, square the bottom and away we go',
+                'skills': ['differentiation_rules'],
+            },
+            {
+                'question': 'What is the derivative of ln(x)?',
+                'answer': '1/x',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['differentiation_rules'],
+            },
+            {
+                'question': 'What is implicit differentiation?',
+                'answer': 'A technique to find dy/dx when y is not explicitly solved for, by differentiating both sides with respect to x',
+                'difficulty': 'medium',
+                'hint': 'Useful for equations like x² + y² = 1',
+                'skills': ['differentiation_rules'],
+            },
+            # Hard difficulty cards (2 cards)
+            {
+                'question': 'What is a critical point and how do you find it?',
+                'answer': 'A point where f\'(x) = 0 or f\'(x) is undefined. Find by setting the derivative equal to zero and solving.',
+                'difficulty': 'hard',
+                'hint': 'These points are candidates for local maxima and minima',
+                'skills': ['derivative_calculation'],
+            },
+            {
+                'question': 'What is L\'Hôpital\'s Rule?',
+                'answer': 'If lim f(x)/g(x) gives 0/0 or ∞/∞, then lim f(x)/g(x) = lim f\'(x)/g\'(x)',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Used to evaluate indeterminate forms by taking derivatives',
+                'skills': ['derivative_calculation'],
+            },
         ]
         
         return self._create_cards(topic, cards, skills)
@@ -807,13 +854,7 @@ class Command(BaseCommand):
         }
         
         cards = [
-            {
-                'question': 'State the Fundamental Theorem of Calculus (Part 1).',
-                'answer': 'If F\'(x) = f(x), then ∫[a to b] f(x)dx = F(b) - F(a)',
-                'difficulty': 'medium',
-                'uses_latex': True,
-                'skills': ['definite_integrals'],
-            },
+            # Easy difficulty cards (4 cards)
             {
                 'question': 'What is the power rule for integration?',
                 'answer': '∫x^n dx = x^(n+1)/(n+1) + C, where n ≠ -1',
@@ -842,6 +883,69 @@ class Command(BaseCommand):
                 'uses_latex': True,
                 'skills': ['integration_techniques'],
             },
+            # Medium difficulty cards (6 cards)
+            {
+                'question': 'State the Fundamental Theorem of Calculus (Part 1).',
+                'answer': 'If F\'(x) = f(x), then ∫[a to b] f(x)dx = F(b) - F(a)',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['definite_integrals'],
+            },
+            {
+                'question': 'What is ∫(1/x)dx?',
+                'answer': 'ln|x| + C',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['integration_techniques'],
+            },
+            {
+                'question': 'What is u-substitution in integration?',
+                'answer': 'A technique where you substitute u = g(x), du = g\'(x)dx to simplify the integral',
+                'difficulty': 'medium',
+                'hint': 'The reverse of the chain rule',
+                'skills': ['integration_techniques'],
+            },
+            {
+                'question': 'What is integration by parts formula?',
+                'answer': '∫u dv = uv - ∫v du',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'The reverse of the product rule',
+                'skills': ['integration_techniques'],
+            },
+            {
+                'question': 'How do you find the area between two curves f(x) and g(x) from a to b?',
+                'answer': 'A = ∫[a to b] |f(x) - g(x)|dx, or ∫[a to b] [upper function - lower function]dx',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Integrate the difference between the upper and lower functions',
+                'skills': ['definite_integrals'],
+            },
+            {
+                'question': 'What is the disk method for volume of revolution?',
+                'answer': 'V = π∫[a to b] [f(x)]² dx, used when rotating around the x-axis',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'Think of stacking circular disks',
+                'skills': ['definite_integrals'],
+            },
+            # Hard difficulty cards (2 cards)
+            {
+                'question': 'What is the average value of a function f(x) on [a, b]?',
+                'answer': 'f_avg = (1/(b-a))∫[a to b] f(x)dx',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'It\'s the definite integral divided by the interval length',
+                'skills': ['definite_integrals'],
+            },
+            {
+                'question': 'What is the shell method for volume of revolution?',
+                'answer': 'V = 2π∫[a to b] x·f(x)dx, used when rotating around the y-axis',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Think of cylindrical shells with radius x and height f(x)',
+                'skills': ['definite_integrals'],
+            },
         ]
         
         return self._create_cards(topic, cards, skills)
@@ -854,12 +958,7 @@ class Command(BaseCommand):
         }
         
         cards = [
-            {
-                'question': 'What is a partial derivative?',
-                'answer': 'The derivative of a multivariable function with respect to one variable, treating all other variables as constants.',
-                'difficulty': 'medium',
-                'skills': ['partial_derivatives'],
-            },
+            # Easy difficulty cards (3 cards)
             {
                 'question': 'How do you compute ∂f/∂x for f(x,y)?',
                 'answer': 'Take the derivative of f with respect to x, treating y as a constant.',
@@ -868,10 +967,69 @@ class Command(BaseCommand):
                 'skills': ['partial_derivatives'],
             },
             {
+                'question': 'What is a level curve?',
+                'answer': 'A curve in the xy-plane where a function f(x,y) has a constant value c, represented by f(x,y) = c',
+                'difficulty': 'easy',
+                'skills': ['partial_derivatives'],
+            },
+            {
+                'question': 'What is the notation for a double integral over region R?',
+                'answer': '∬_R f(x,y) dA or ∫∫_R f(x,y) dx dy',
+                'difficulty': 'easy',
+                'uses_latex': True,
+                'skills': ['multiple_integrals'],
+            },
+            # Medium difficulty cards (5 cards)
+            {
+                'question': 'What is a partial derivative?',
+                'answer': 'The derivative of a multivariable function with respect to one variable, treating all other variables as constants.',
+                'difficulty': 'medium',
+                'skills': ['partial_derivatives'],
+            },
+            {
                 'question': 'What is a double integral used for?',
                 'answer': 'Computing volumes under surfaces, areas of regions, or mass of 2D objects with varying density.',
                 'difficulty': 'medium',
                 'skills': ['multiple_integrals'],
+            },
+            {
+                'question': 'What is the gradient vector ∇f?',
+                'answer': '∇f = (∂f/∂x, ∂f/∂y, ∂f/∂z), a vector pointing in the direction of steepest increase',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'It contains all the partial derivatives',
+                'skills': ['partial_derivatives'],
+            },
+            {
+                'question': 'What is a directional derivative?',
+                'answer': 'The rate of change of f in the direction of a unit vector u, given by D_u f = ∇f · u',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'hint': 'It\'s the dot product of the gradient and the direction vector',
+                'skills': ['partial_derivatives'],
+            },
+            {
+                'question': 'What is the chain rule for multivariable functions?',
+                'answer': 'If z = f(x,y) where x = x(t) and y = y(t), then dz/dt = (∂f/∂x)(dx/dt) + (∂f/∂y)(dy/dt)',
+                'difficulty': 'medium',
+                'uses_latex': True,
+                'skills': ['partial_derivatives'],
+            },
+            # Hard difficulty cards (2 cards)
+            {
+                'question': 'What is a triple integral used for?',
+                'answer': 'Computing volumes in 3D space, mass of 3D objects, or other 3D accumulations: ∭_V f(x,y,z) dV',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'skills': ['multiple_integrals'],
+            },
+            {
+                'question': 'What is the divergence of a vector field F = (P, Q, R)?',
+                'answer': 'div F = ∇·F = ∂P/∂x + ∂Q/∂y + ∂R/∂z, a measure of how much the field spreads out',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'It\'s the dot product of del and the vector field',
+                'skills': ['partial_derivatives'],
             },
         ]
         
@@ -886,6 +1044,7 @@ class Command(BaseCommand):
         }
         
         cards = [
+            # Easy difficulty cards (4 cards)
             {
                 'question': 'What is the determinant of a 2×2 matrix [[a,b],[c,d]]?',
                 'answer': 'ad - bc',
@@ -893,6 +1052,26 @@ class Command(BaseCommand):
                 'uses_latex': True,
                 'skills': ['determinants'],
             },
+            {
+                'question': 'What is the identity matrix?',
+                'answer': 'A square matrix with 1s on the main diagonal and 0s elsewhere. Denoted as I.',
+                'difficulty': 'easy',
+                'skills': ['matrix_operations'],
+            },
+            {
+                'question': 'What is a zero matrix?',
+                'answer': 'A matrix where all elements are zero, denoted as O or 0',
+                'difficulty': 'easy',
+                'skills': ['matrix_operations'],
+            },
+            {
+                'question': 'What is the transpose of a matrix?',
+                'answer': 'The transpose A^T is formed by swapping rows and columns: (A^T)_ij = A_ji',
+                'difficulty': 'easy',
+                'uses_latex': True,
+                'skills': ['matrix_operations'],
+            },
+            # Medium difficulty cards (6 cards)
             {
                 'question': 'What is an eigenvalue?',
                 'answer': 'A scalar λ such that Av = λv for some non-zero vector v, where A is a square matrix.',
@@ -902,15 +1081,53 @@ class Command(BaseCommand):
             },
             {
                 'question': 'What is matrix multiplication rule?',
-                'answer': 'For matrices A(m×n) and B(n×p), the product AB is m×p, where (AB)ij = Σ(Aik × Bkj)',
+                'answer': 'For matrices A(m×n) and B(n×p), the product AB is m×p, where (AB)_ij = Σ(A_ik × B_kj)',
                 'difficulty': 'medium',
                 'skills': ['matrix_operations'],
             },
             {
-                'question': 'What is the identity matrix?',
-                'answer': 'A square matrix with 1s on the main diagonal and 0s elsewhere. Denoted as I.',
-                'difficulty': 'easy',
+                'question': 'What is the dot product of vectors u = (u1, u2) and v = (v1, v2)?',
+                'answer': 'u·v = u1v1 + u2v2, a scalar value',
+                'difficulty': 'medium',
+                'uses_latex': True,
                 'skills': ['matrix_operations'],
+            },
+            {
+                'question': 'What does it mean for a matrix to be invertible?',
+                'answer': 'A square matrix A is invertible if there exists a matrix A⁻¹ such that AA⁻¹ = A⁻¹A = I',
+                'difficulty': 'medium',
+                'hint': 'The determinant must be non-zero',
+                'skills': ['determinants'],
+            },
+            {
+                'question': 'What is a linear transformation?',
+                'answer': 'A function T: V → W that preserves vector addition and scalar multiplication: T(u+v) = T(u)+T(v) and T(cv) = cT(v)',
+                'difficulty': 'medium',
+                'skills': ['matrix_operations'],
+            },
+            {
+                'question': 'What is the rank of a matrix?',
+                'answer': 'The rank is the dimension of the column space (or row space), equal to the number of linearly independent rows or columns',
+                'difficulty': 'medium',
+                'hint': 'It tells you the dimension of the image of the linear transformation',
+                'skills': ['matrix_operations'],
+            },
+            # Hard difficulty cards (2 cards)
+            {
+                'question': 'What is the cross product of 3D vectors u = (u1,u2,u3) and v = (v1,v2,v3)?',
+                'answer': 'u×v = (u2v3-u3v2, u3v1-u1v3, u1v2-u2v1), a vector perpendicular to both u and v',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Use the determinant with i, j, k unit vectors',
+                'skills': ['matrix_operations'],
+            },
+            {
+                'question': 'What is the characteristic equation for finding eigenvalues?',
+                'answer': 'det(A - λI) = 0, where λ is an eigenvalue, A is the matrix, and I is the identity',
+                'difficulty': 'hard',
+                'uses_latex': True,
+                'hint': 'Set the determinant of (A - λI) equal to zero',
+                'skills': ['eigenvalue_problems'],
             },
         ]
         
