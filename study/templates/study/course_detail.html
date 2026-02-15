@@ -10,8 +10,15 @@
     
     <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white; margin-bottom: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: start;">
-            <div>
-                <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">{{ course.name }}</h1>
+            <div style="flex: 1;">
+                <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                    <h1 style="font-size: 2rem; margin: 0;">{{ course.name }}</h1>
+                    {% if course.created_by.username == 'system' %}
+                        <span style="background: rgba(255,255,255,0.3); padding: 0.25rem 0.75rem; border-radius: 15px; font-size: 0.85rem;">
+                            📚 Public Course
+                        </span>
+                    {% endif %}
+                </div>
                 {% if course.code %}
                     <p style="opacity: 0.9; font-size: 1.1rem; margin-bottom: 1rem;">{{ course.code }}</p>
                 {% endif %}
@@ -19,13 +26,17 @@
                     <p style="opacity: 0.9;">{{ course.description }}</p>
                 {% endif %}
             </div>
-            <a href="{% url 'course_edit' course.id %}" class="btn btn-secondary" style="background: rgba(255,255,255,0.2);">Edit Course</a>
+            {% if course.created_by == request.user %}
+                <a href="{% url 'course_edit' course.id %}" class="btn btn-secondary" style="background: rgba(255,255,255,0.2);">Edit Course</a>
+            {% endif %}
         </div>
     </div>
     
     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
         <h2 style="color: #667eea;">Topics</h2>
-        <a href="{% url 'topic_create_for_course' course.id %}" class="btn">+ Add Topic</a>
+        {% if course.created_by == request.user %}
+            <a href="{% url 'topic_create_for_course' course.id %}" class="btn">+ Add Topic</a>
+        {% endif %}
     </div>
     
     {% if topics %}
@@ -45,7 +56,9 @@
                     </div>
                     <div style="display: flex; gap: 0.5rem;">
                         <a href="{% url 'topic_detail' topic.id %}" class="btn btn-secondary">View</a>
-                        <a href="{% url 'topic_edit' topic.id %}" class="btn btn-secondary">Edit</a>
+                        {% if course.created_by == request.user %}
+                            <a href="{% url 'topic_edit' topic.id %}" class="btn btn-secondary">Edit</a>
+                        {% endif %}
                         {% if topic.flashcard_count > 0 %}
                             <a href="{% url 'study_session' topic.id %}" class="btn">Study</a>
                         {% endif %}
@@ -56,9 +69,11 @@
     {% else %}
         <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 10px;">
             <p style="font-size: 1.1rem; color: #666; margin-bottom: 1.5rem;">
-                No topics yet. Add topics to start studying!
+                No topics yet.{% if course.created_by == request.user %} Add topics to start studying!{% endif %}
             </p>
-            <a href="{% url 'topic_create_for_course' course.id %}" class="btn">Add First Topic</a>
+            {% if course.created_by == request.user %}
+                <a href="{% url 'topic_create_for_course' course.id %}" class="btn">Add First Topic</a>
+            {% endif %}
         </div>
     {% endif %}
 </div>
