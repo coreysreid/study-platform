@@ -179,6 +179,25 @@ class UpdateStudyModeViewTestCase(TestCase):
         self.assertEqual(response.status_code, 302)
         self.assertIn('login', response.url)
 
+    def test_update_study_mode_rejects_open_redirect(self):
+        """External URLs in next parameter should be rejected"""
+        response = self.client.post(reverse('update_study_mode'), {
+            'study_mode': 'visual',
+            'next': 'https://evil.example.com'
+        })
+        self.assertEqual(response.status_code, 302)
+        # Should redirect to home, not the external URL
+        self.assertEqual(response.url, reverse('home'))
+
+    def test_update_study_mode_allows_safe_redirect(self):
+        """Internal relative URLs in next parameter should be allowed"""
+        response = self.client.post(reverse('update_study_mode'), {
+            'study_mode': 'visual',
+            'next': '/statistics/'
+        })
+        self.assertEqual(response.status_code, 302)
+        self.assertEqual(response.url, '/statistics/')
+
 
 class StudySessionModeTestCase(TestCase):
     """Test study session view with mode parameter"""
@@ -202,24 +221,28 @@ class StudySessionModeTestCase(TestCase):
         self.assertEqual(response.context['study_mode'], 'visual')
 
     def test_study_session_mode_override_via_query(self):
-        """Mode parameter in URL should override saved preference and persist it"""
+        """Mode parameter in URL should override saved preference for the session only"""
         StudyPreference.objects.create(user=self.user, study_mode='standard')
         response = self.client.get(
             reverse('study_session', args=[self.topic.id]) + '?mode=challenge'
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['study_mode'], 'challenge')
-        # Verify the preference was persisted
+        # Verify the preference was NOT persisted (temporary override only)
         pref = StudyPreference.objects.get(user=self.user)
-        self.assertEqual(pref.study_mode, 'challenge')
+        self.assertEqual(pref.study_mode, 'standard')
 
-    def test_study_session_invalid_mode_defaults(self):
-        """Invalid mode parameter should fallback to standard"""
+    def test_study_session_invalid_mode_falls_back_to_preference(self):
+        """Invalid mode parameter should fallback to saved preference, not standard"""
+        StudyPreference.objects.create(user=self.user, study_mode='visual')
         response = self.client.get(
             reverse('study_session', args=[self.topic.id]) + '?mode=invalid'
         )
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.context['study_mode'], 'standard')
+        self.assertEqual(response.context['study_mode'], 'visual')
+        # Verify saved preference was not changed
+        pref = StudyPreference.objects.get(user=self.user)
+        self.assertEqual(pref.study_mode, 'visual')
 
     def test_study_session_includes_mode_list(self):
         """Study session context should include available modes"""

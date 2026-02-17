@@ -9,6 +9,7 @@ from django.db.models import Count, Avg, Sum, Q
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
 from django.http import HttpResponseForbidden
+from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from functools import wraps
 from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback, CourseEnrollment, StudyPreference
@@ -283,15 +284,13 @@ def study_session(request, topic_id):
     
     # Get user's study mode preference
     preference, _ = StudyPreference.objects.get_or_create(user=request.user)
-    study_mode = request.GET.get('mode', preference.study_mode)
     valid_modes = {choice[0] for choice in StudyPreference.STUDY_MODES}
-    if study_mode not in valid_modes:
-        study_mode = 'standard'
-    
-    # Persist the mode selection if it changed
-    if preference.study_mode != study_mode:
-        preference.study_mode = study_mode
-        preference.save()
+    mode_param = request.GET.get('mode')
+    if mode_param in valid_modes:
+        # Use the requested mode as a temporary override for this session only
+        study_mode = mode_param
+    else:
+        study_mode = preference.study_mode
     
     flashcards = list(topic.flashcards.prefetch_related('skills'))
     
@@ -656,9 +655,9 @@ def update_study_mode(request):
     
     messages.success(request, f'Study mode updated to "{preference.get_study_mode_display()}".')
     
-    # Redirect back to the referring page or home
+    # Redirect back to the referring page or home (validated to prevent open redirects)
     next_url = request.POST.get('next', '')
-    if next_url:
+    if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
         return redirect(next_url)
     return redirect('home')
 
