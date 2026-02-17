@@ -38,12 +38,72 @@ An interactive Python-Django study tool designed for electrical engineering stud
 
 ## Installation
 
-### Prerequisites
+### Quick Start with GitHub Codespaces / Docker 🚀
 
-- Python 3.8 or higher
+The easiest way to get started is with GitHub Codespaces or Docker - no local Python installation required!
+
+#### Option 1: GitHub Codespaces (One-Click Setup)
+
+1. Click the "Code" button on the GitHub repository
+2. Select "Create codespace on main"
+3. Wait for the container to build (this automatically runs `./scripts/setup.sh` and installs dependencies)
+4. Once the container finishes building, start the dev server with `./scripts/start.sh`
+
+**Benefits:**
+- ✅ No local setup required
+- ✅ Consistent environment across all developers
+- ✅ Pre-configured VS Code with extensions
+- ✅ Automatic dependency installation
+- ✅ Git update notifications on startup
+
+#### Option 2: Local Docker Setup
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop)
+2. Clone the repository:
+   ```bash
+   git clone https://github.com/coreysreid/study-platform.git
+   cd study-platform
+   ```
+3. Open in VS Code with Dev Containers extension, or run:
+   ```bash
+   docker-compose -f .devcontainer/docker-compose.yml up
+   ```
+4. Start the development server:
+   ```bash
+   ./scripts/start.sh
+   ```
+
+**What the startup script does:**
+- 🔍 Checks for git updates and notifies if your branch is behind
+- 🗄️ Runs database migrations automatically
+- 🚀 Starts the Django development server on port 8000
+
+#### First-Time Setup (Docker Compose Only)
+
+**Note:** If you're using GitHub Codespaces, skip this step - the setup runs automatically during container creation.
+
+For local Docker Compose users who are **not** using the VS Code Dev Containers extension:
+```bash
+./scripts/setup.sh
+```
+
+This script:
+- Creates `.env` from `.env.example` if it doesn't exist
+- Generates a random `SECRET_KEY` automatically
+- Sets `DEBUG=True` for development
+- Runs database migrations
+- Optionally creates a Django superuser when run with the `--create-superuser` flag (this runs `python manage.py createsuperuser` and will interactively prompt for username, email, and password)
+
+### Manual Installation (Traditional Setup)
+
+If you prefer not to use Docker/Codespaces:
+
+#### Prerequisites
+
+- Python 3.10 or higher
 - pip (Python package manager)
 
-### Setup Steps
+#### Setup Steps
 
 1. Clone the repository:
 ```bash
