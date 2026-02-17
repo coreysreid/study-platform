@@ -384,9 +384,10 @@
             };
             var label = typeLabels[feedbackType] || 'feedback';
 
-            var title = encodeURIComponent('[' + feedbackType.charAt(0).toUpperCase() + feedbackType.slice(1) + '] ' + feedbackTitle);
+            var typeDisplay = feedbackType.charAt(0).toUpperCase() + feedbackType.slice(1);
+            var title = encodeURIComponent('[' + typeDisplay + '] ' + feedbackTitle);
             var bodyParts = [
-                '## ' + feedbackType.charAt(0).toUpperCase() + feedbackType.slice(1),
+                '## ' + typeDisplay,
                 '',
                 description
             ];
