@@ -34,7 +34,9 @@ python manage.py migrate --noinput
 # Ensure public course catalog is populated
 echo "📚 Ensuring public course catalog is populated..."
 python manage.py populate_math_curriculum --skip-existing
-python manage.py populate_comprehensive_math_cards --skip-existing 2>/dev/null || true
+if ! python manage.py populate_comprehensive_math_cards --skip-existing; then
+    echo "⚠️  Warning: Failed to populate comprehensive math cards. See errors above for details." >&2
+fi
 
 echo ""
 echo "✅ Starting server on http://localhost:8000"

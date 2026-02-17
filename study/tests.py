@@ -593,9 +593,9 @@ class CourseCatalogTestCase(TestCase):
         user = User.objects.create_user('testuser', 'test@test.com', 'password')
         self.client.login(username='testuser', password='password')
 
-        response = self.client.get('/catalog/')
-        self.assertEqual(response.status_code, 302)
-        # Follow redirect and check for warning message
+        # Make a single request and follow redirects
         response = self.client.get('/catalog/', follow=True)
+        self.assertTrue(response.redirect_chain)
+        # Check for warning message
         messages = list(response.context['messages'])
         self.assertTrue(any('No public courses available yet' in str(m) for m in messages))
