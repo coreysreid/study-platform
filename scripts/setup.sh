@@ -15,15 +15,31 @@ if [ ! -f .env ]; then
     echo "📝 Creating .env file from .env.example..."
     cp .env.example .env
     
-    # Generate a random SECRET_KEY if not set
-    if ! grep -q "^SECRET_KEY=django-insecure-" .env 2>/dev/null || [ "$(grep "^SECRET_KEY=" .env | cut -d'=' -f2)" = "your-secret-key-here" ]; then
+    # Generate a random SECRET_KEY if not set or still using placeholder
+    CURRENT_KEY=$(grep "^SECRET_KEY=" .env | cut -d'=' -f2)
+    if [ "$CURRENT_KEY" = "your-secret-key-here" ]; then
         echo "🔑 Generating random SECRET_KEY..."
         SECRET_KEY=$(python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")
-        sed -i "s|^SECRET_KEY=.*|SECRET_KEY=${SECRET_KEY}|" .env
+        # Use Python to update the file for cross-platform compatibility
+        python -c "
+import re
+with open('.env', 'r') as f:
+    content = f.read()
+content = re.sub(r'^SECRET_KEY=.*', 'SECRET_KEY=${SECRET_KEY}', content, flags=re.MULTILINE)
+with open('.env', 'w') as f:
+    f.write(content)
+" SECRET_KEY="$SECRET_KEY"
     fi
     
-    # Set DEBUG=True for dev environment
-    sed -i "s|^DEBUG=.*|DEBUG=True|" .env
+    # Set DEBUG=True for dev environment using Python for cross-platform compatibility
+    python -c "
+import re
+with open('.env', 'r') as f:
+    content = f.read()
+content = re.sub(r'^DEBUG=.*', 'DEBUG=True', content, flags=re.MULTILINE)
+with open('.env', 'w') as f:
+    f.write(content)
+"
     echo "✅ .env file created and configured for development"
 else
     echo "✅ .env file already exists"
