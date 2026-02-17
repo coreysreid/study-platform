@@ -595,3 +595,7 @@ class CourseCatalogTestCase(TestCase):
 
         response = self.client.get('/catalog/')
         self.assertEqual(response.status_code, 302)
+        # Follow redirect and check for warning message
+        response = self.client.get('/catalog/', follow=True)
+        messages = list(response.context['messages'])
+        self.assertTrue(any('No public courses available yet' in str(m) for m in messages))
