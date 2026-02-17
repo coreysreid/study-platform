@@ -225,8 +225,8 @@
             <h1>📚 Study Platform</h1>
             <ul>
                 <li><a href="{% url 'home' %}">Home</a></li>
-                <li><a href="{% url 'course_catalog' %}">Course Catalog</a></li>
                 {% if user.is_authenticated %}
+                    <li><a href="{% url 'course_catalog' %}">Course Catalog</a></li>
                     <li><a href="{% url 'course_list' %}">My Courses</a></li>
                     <li class="dropdown">
                         <a href="#" class="dropbtn">Create ▼</a>

@@ -44,19 +44,13 @@
                         <a href="{% url 'course_detail' course.id %}" class="btn btn-secondary" style="background: rgba(255,255,255,0.3); flex: 1; text-align: center;">
                             View Details
                         </a>
-                        {% if user.is_authenticated %}
-                            {% if not course.is_enrolled %}
-                                <form method="post" action="{% url 'enroll_course' course.id %}" style="flex: 1;">
-                                    {% csrf_token %}
-                                    <button type="submit" class="btn" style="background: white; color: #4facfe; width: 100%; border: none; cursor: pointer;">
-                                        + Add to My Courses
-                                    </button>
-                                </form>
-                            {% endif %}
-                        {% else %}
-                            <a href="{% url 'register' %}" class="btn" style="background: white; color: #4facfe; flex: 1; text-align: center;">
-                                Register to Enroll
-                            </a>
+                        {% if not course.is_enrolled %}
+                            <form method="post" action="{% url 'enroll_course' course.id %}" style="flex: 1;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn" style="background: white; color: #4facfe; width: 100%; border: none; cursor: pointer;">
+                                    + Add to My Courses
+                                </button>
+                            </form>
                         {% endif %}
                     </div>
                 </div>
