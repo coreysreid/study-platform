@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    
+    volumes:
+      # Mount source code for live editing
+      - ..:/workspace:cached
+      # Persist pip cache
+      - pip-cache:/root/.cache/pip
+    
+    ports:
+      - "8000:8000"
+    
+    environment:
+      - DEBUG=True
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-dev-key-change-in-production}
+      - ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
+      - DJANGO_SETTINGS_MODULE=study_platform.settings
+    
+    # Keep container running
+    command: sleep infinity
+    
+    # Health check
+    healthcheck:
+      test: ["CMD", "python", "-c", "import django; django.setup()"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    # Set working directory
+    working_dir: /workspace
+
+volumes:
+  pip-cache:

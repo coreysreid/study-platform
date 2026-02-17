@@ -38,12 +38,70 @@ An interactive Python-Django study tool designed for electrical engineering stud
 
 ## Installation
 
-### Prerequisites
+### Quick Start with GitHub Codespaces / Docker 🚀
+
+The easiest way to get started is with GitHub Codespaces or Docker - no local Python installation required!
+
+#### Option 1: GitHub Codespaces (One-Click Setup)
+
+1. Click the "Code" button on the GitHub repository
+2. Select "Create codespace on main"
+3. Wait for the container to build (automatically installs dependencies)
+4. The dev server will be ready to run with `./scripts/start.sh`
+
+**Benefits:**
+- ✅ No local setup required
+- ✅ Consistent environment across all developers
+- ✅ Pre-configured VS Code with extensions
+- ✅ Automatic dependency installation
+- ✅ Git update notifications on startup
+
+#### Option 2: Local Docker Setup
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop)
+2. Clone the repository:
+   ```bash
+   git clone https://github.com/coreysreid/study-platform.git
+   cd study-platform
+   ```
+3. Open in VS Code with Dev Containers extension, or run:
+   ```bash
+   docker-compose -f .devcontainer/docker-compose.yml up
+   ```
+4. Start the development server:
+   ```bash
+   ./scripts/start.sh
+   ```
+
+**What the startup script does:**
+- 🔍 Checks for git updates and notifies if your branch is behind
+- 🗄️ Runs database migrations automatically
+- 🚀 Starts the Django development server on port 8000
+
+#### First-Time Setup
+
+After the container starts, run the setup script once:
+```bash
+./scripts/setup.sh
+```
+
+This script:
+- Creates `.env` from `.env.example` if it doesn't exist
+- Generates a random `SECRET_KEY` automatically
+- Sets `DEBUG=True` for development
+- Runs database migrations
+- Optionally creates a superuser (use `--create-superuser` flag)
+
+### Manual Installation (Traditional Setup)
+
+If you prefer not to use Docker/Codespaces:
+
+#### Prerequisites
 
 - Python 3.8 or higher
 - pip (Python package manager)
 
-### Setup Steps
+#### Setup Steps
 
 1. Clone the repository:
 ```bash
