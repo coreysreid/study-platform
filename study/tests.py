@@ -564,3 +564,50 @@ class GlobalCurriculumTestCase(TestCase):
         
         # System user might or might not exist, but course should be under custom user
         self.assertEqual(course.created_by.username, 'customuser')
+
+
+class PublicCatalogTestCase(TestCase):
+    """Test that the course catalog is publicly accessible without login"""
+
+    def test_catalog_accessible_without_login(self):
+        """Test that anonymous users can access the course catalog"""
+        response = self.client.get('/catalog/')
+        self.assertEqual(response.status_code, 200)
+
+    def test_catalog_shows_public_courses_to_anonymous(self):
+        """Test that anonymous users see public courses in the catalog"""
+        from django.core.management import call_command
+
+        call_command('populate_math_curriculum')
+
+        response = self.client.get('/catalog/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Engineering Mathematics')
+
+    def test_catalog_shows_register_link_for_anonymous(self):
+        """Test that anonymous users see a register link instead of enroll button"""
+        from django.core.management import call_command
+
+        call_command('populate_math_curriculum')
+
+        response = self.client.get('/catalog/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Register to Enroll')
+
+    def test_catalog_shows_enroll_for_authenticated(self):
+        """Test that authenticated users see the enroll button"""
+        from django.core.management import call_command
+
+        call_command('populate_math_curriculum')
+        user = User.objects.create_user('testuser', 'test@test.com', 'password')
+        self.client.login(username='testuser', password='password')
+
+        response = self.client.get('/catalog/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Add to My Courses')
+
+    def test_catalog_empty_without_system_user(self):
+        """Test that catalog renders with empty courses when no system user exists"""
+        response = self.client.get('/catalog/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'No courses available in the catalog yet.')

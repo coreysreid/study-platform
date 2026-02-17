@@ -145,14 +145,12 @@ def course_list(request):
     })
 
 
-@login_required
 def course_catalog(request):
     """Course Catalog - Browse all public courses available for enrollment"""
     system_user = get_system_user()
     
     if not system_user:
-        messages.warning(request, 'No public courses available yet.')
-        return redirect('course_list')
+        return render(request, 'study/course_catalog.html', {'courses': []})
     
     # Get all public courses
     public_courses = Course.objects.filter(created_by=system_user).annotate(
@@ -161,7 +159,10 @@ def course_catalog(request):
     ).order_by('name')
     
     # Get user's enrolled course IDs as a set for efficient membership checking
-    enrolled_course_ids = set(CourseEnrollment.objects.filter(user=request.user).values_list('course_id', flat=True))
+    if request.user.is_authenticated:
+        enrolled_course_ids = set(CourseEnrollment.objects.filter(user=request.user).values_list('course_id', flat=True))
+    else:
+        enrolled_course_ids = set()
     
     # Mark which courses are enrolled
     for course in public_courses:

@@ -225,8 +225,8 @@
             <h1>📚 Study Platform</h1>
             <ul>
                 <li><a href="{% url 'home' %}">Home</a></li>
+                <li><a href="{% url 'course_catalog' %}">Course Catalog</a></li>
                 {% if user.is_authenticated %}
-                    <li><a href="{% url 'course_catalog' %}">Course Catalog</a></li>
                     <li><a href="{% url 'course_list' %}">My Courses</a></li>
                     <li class="dropdown">
                         <a href="#" class="dropbtn">Create ▼</a>
@@ -274,6 +274,151 @@
     <footer>
         <p>&copy; 2026 Study Platform - Built for Electrical Engineering Studies</p>
     </footer>
+    
+    {% if GITHUB_REPO %}
+    <!-- GitHub Feedback & Report Issue UI -->
+    <div id="feedbackFab" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; display: flex; flex-direction: column; gap: 10px; align-items: flex-end;">
+        <button onclick="openFeedbackModal()" style="background: #667eea; color: white; border: none; border-radius: 50px; padding: 12px 20px; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px; transition: background 0.3s;">
+            💬 Feedback
+        </button>
+        <button onclick="reportIssue()" style="background: #dc3545; color: white; border: none; border-radius: 50px; padding: 12px 20px; font-size: 1rem; cursor: pointer; box-shadow: 0 4px 12px rgba(0,0,0,0.2); display: flex; align-items: center; gap: 8px; transition: background 0.3s;">
+            🐛 Report Issue
+        </button>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div id="feedbackModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;">
+        <div style="background: white; border-radius: 10px; padding: 2rem; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
+                <h2 style="color: #667eea; margin: 0;">Send Feedback</h2>
+                <button onclick="closeFeedbackModal()" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">&times;</button>
+            </div>
+            <form id="feedbackForm" onsubmit="submitGithubFeedback(event)">
+                <div style="margin-bottom: 1rem;">
+                    <label for="feedbackTitle" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Title</label>
+                    <input type="text" id="feedbackTitle" placeholder="Brief summary of your feedback" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; box-sizing: border-box;" required>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label for="feedbackType" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Type</label>
+                    <select id="feedbackType" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem;">
+                        <option value="feedback">General Feedback</option>
+                        <option value="bug">Bug Report</option>
+                        <option value="feature">Feature Request</option>
+                        <option value="content">Content Issue</option>
+                    </select>
+                </div>
+                <div style="margin-bottom: 1rem;">
+                    <label for="feedbackDescription" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Description</label>
+                    <textarea id="feedbackDescription" rows="5" placeholder="Describe the issue or feedback in detail..." style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; resize: vertical; box-sizing: border-box;" required></textarea>
+                </div>
+                <div style="margin-bottom: 1.5rem;">
+                    <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" id="includeSiteState" checked>
+                        <span>Include current page info (URL, browser info)</span>
+                    </label>
+                </div>
+                <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+                    <button type="button" onclick="closeFeedbackModal()" style="padding: 0.75rem 1.5rem; border: 1px solid #ddd; border-radius: 5px; background: white; cursor: pointer; font-size: 1rem;">Cancel</button>
+                    <button type="submit" style="padding: 0.75rem 1.5rem; background: #667eea; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 1rem;">Submit on GitHub</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        var GITHUB_REPO = '{{ GITHUB_REPO }}';
+
+        function getSiteState() {
+            return [
+                '**Page URL:** ' + window.location.href,
+                '**User Agent:** ' + navigator.userAgent,
+                '**Screen:** ' + window.screen.width + 'x' + window.screen.height,
+                '**Viewport:** ' + window.innerWidth + 'x' + window.innerHeight,
+                '**Timestamp:** ' + new Date().toISOString()
+            ].join('\n');
+        }
+
+        function getConsoleErrors() {
+            if (window._capturedErrors && window._capturedErrors.length > 0) {
+                return '\n\n### Console Errors\n```\n' + window._capturedErrors.join('\n') + '\n```';
+            }
+            return '';
+        }
+
+        function reportIssue() {
+            var title = encodeURIComponent('[Bug] Issue on ' + window.location.pathname);
+            var body = [
+                '## Bug Report',
+                '',
+                '**Describe the issue:**',
+                '',
+                '',
+                '## Debug Info',
+                getSiteState(),
+                getConsoleErrors()
+            ].join('\n');
+            var url = 'https://github.com/' + GITHUB_REPO + '/issues/new?title=' + title + '&body=' + encodeURIComponent(body) + '&labels=bug';
+            window.open(url, '_blank', 'noopener,noreferrer');
+        }
+
+        function openFeedbackModal() {
+            document.getElementById('feedbackModal').style.display = 'flex';
+        }
+
+        function closeFeedbackModal() {
+            document.getElementById('feedbackModal').style.display = 'none';
+        }
+
+        function submitGithubFeedback(event) {
+            event.preventDefault();
+            var feedbackTitle = document.getElementById('feedbackTitle').value;
+            var feedbackType = document.getElementById('feedbackType').value;
+            var description = document.getElementById('feedbackDescription').value;
+            var includeSiteState = document.getElementById('includeSiteState').checked;
+
+            var typeLabels = {
+                'feedback': 'feedback',
+                'bug': 'bug',
+                'feature': 'enhancement',
+                'content': 'content'
+            };
+            var label = typeLabels[feedbackType] || 'feedback';
+
+            var title = encodeURIComponent('[' + feedbackType.charAt(0).toUpperCase() + feedbackType.slice(1) + '] ' + feedbackTitle);
+            var bodyParts = [
+                '## ' + feedbackType.charAt(0).toUpperCase() + feedbackType.slice(1),
+                '',
+                description
+            ];
+
+            if (includeSiteState) {
+                bodyParts.push('');
+                bodyParts.push('## Site State');
+                bodyParts.push(getSiteState());
+                bodyParts.push(getConsoleErrors());
+            }
+
+            var body = encodeURIComponent(bodyParts.join('\n'));
+            var url = 'https://github.com/' + GITHUB_REPO + '/issues/new?title=' + title + '&body=' + body + '&labels=' + label;
+            window.open(url, '_blank', 'noopener,noreferrer');
+            closeFeedbackModal();
+
+            document.getElementById('feedbackForm').reset();
+        }
+
+        /* Close modal on backdrop click */
+        document.getElementById('feedbackModal').addEventListener('click', function(e) {
+            if (e.target === this) closeFeedbackModal();
+        });
+
+        /* Capture console errors for debug info */
+        window._capturedErrors = [];
+        window.addEventListener('error', function(e) {
+            window._capturedErrors.push(e.message + ' at ' + e.filename + ':' + e.lineno);
+            if (window._capturedErrors.length > 20) window._capturedErrors.shift();
+        });
+    </script>
+    {% endif %}
     
     <!-- Prism.js for code syntax highlighting -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>

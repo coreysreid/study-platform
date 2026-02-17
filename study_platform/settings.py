@@ -78,6 +78,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'study.context_processors.github_repo',
             ],
         },
     },
@@ -150,6 +151,11 @@ LOGOUT_REDIRECT_URL = 'home'
 GRAPH_TIMEOUT = 3  # seconds
 GRAPH_MAX_SIZE = (800, 600)  # pixels
 ENABLE_GRAPH_GENERATION = True
+
+# GitHub Integration for Issue Reporting
+# Set GITHUB_REPO to enable "Report Issue" and "Feedback" buttons
+# Format: "owner/repo" (e.g., "coreysreid/study-platform")
+GITHUB_REPO = os.getenv('GITHUB_REPO', '')
 
 # Security for code execution
 ALLOWED_GRAPH_IMPORTS = ['numpy', 'matplotlib.pyplot', 'math']
