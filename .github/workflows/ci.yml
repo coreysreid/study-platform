@@ -26,6 +26,7 @@ jobs:
 
     env:
       SECRET_KEY: ${{ secrets.SECRET_KEY || 'django-insecure-test-key-for-ci-only-do-not-use-in-production' }}
+      DEBUG: True
       ALLOWED_HOSTS: localhost,127.0.0.1
 
     steps:
