@@ -46,8 +46,8 @@ The easiest way to get started is with GitHub Codespaces or Docker - no local Py
 
 1. Click the "Code" button on the GitHub repository
 2. Select "Create codespace on main"
-3. Wait for the container to build (automatically installs dependencies)
-4. The dev server will be ready to run with `./scripts/start.sh`
+3. Wait for the container to build (this automatically runs `./scripts/setup.sh` and installs dependencies)
+4. Once the container finishes building, start the dev server with `./scripts/start.sh`
 
 **Benefits:**
 - ✅ No local setup required
@@ -78,9 +78,11 @@ The easiest way to get started is with GitHub Codespaces or Docker - no local Py
 - 🗄️ Runs database migrations automatically
 - 🚀 Starts the Django development server on port 8000
 
-#### First-Time Setup
+#### First-Time Setup (Docker Compose Only)
 
-After the container starts, run the setup script once:
+**Note:** If you're using GitHub Codespaces, skip this step - the setup runs automatically during container creation.
+
+For local Docker Compose users who are **not** using the VS Code Dev Containers extension:
 ```bash
 ./scripts/setup.sh
 ```
@@ -90,7 +92,7 @@ This script:
 - Generates a random `SECRET_KEY` automatically
 - Sets `DEBUG=True` for development
 - Runs database migrations
-- Optionally creates a superuser (use `--create-superuser` flag)
+- Optionally creates a Django superuser when run with the `--create-superuser` flag (this runs `python manage.py createsuperuser` and will interactively prompt for username, email, and password)
 
 ### Manual Installation (Traditional Setup)
 
@@ -98,7 +100,7 @@ If you prefer not to use Docker/Codespaces:
 
 #### Prerequisites
 
-- Python 3.8 or higher
+- Python 3.10 or higher
 - pip (Python package manager)
 
 #### Setup Steps

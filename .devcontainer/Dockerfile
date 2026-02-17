@@ -14,7 +14,9 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy project files
+# Copy project files into the image. Note: in the devcontainer/docker-compose setup,
+# the workspace is mounted as a volume at runtime and will shadow these files.
+# This COPY is kept to allow building/running the image standalone without a volume mount.
 COPY . .
 
 # Create media directory

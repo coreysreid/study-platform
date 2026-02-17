@@ -27,12 +27,12 @@
       "settings": {
         "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.linting.enabled": true,
-        "python.linting.pylintEnabled": true,
+        "python.linting.pylintEnabled": false,
         "python.testing.pytestEnabled": false,
         "python.testing.unittestEnabled": true,
         "editor.formatOnSave": true,
         "[python]": {
-          "editor.defaultFormatter": "ms-python.autopep8"
+          "editor.defaultFormatter": "ms-python.python"
         },
         "files.exclude": {
           "**/__pycache__": true,
@@ -50,10 +50,10 @@
   },
 
   // Run commands on container creation
-  "postCreateCommand": "bash -c 'pip install -r requirements.txt && bash scripts/setup.sh'",
+  "postCreateCommand": "bash scripts/setup.sh",
 
   // Run command after container starts (check for git updates)
-  "postStartCommand": "bash -c 'git fetch --quiet 2>/dev/null || true && BEHIND=$(git rev-list --count HEAD..@{u} 2>/dev/null || echo 0) && [ \"$BEHIND\" -gt 0 ] && echo \"⚠️  Your branch is $BEHIND commit(s) behind origin. Run git pull to update.\" || true'",
+  "postStartCommand": "bash scripts/check-git-updates.sh",
 
   // Set environment variables
   "remoteEnv": {

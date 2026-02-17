@@ -16,19 +16,22 @@ if [ ! -f .env ]; then
     cp .env.example .env
     
     # Generate a random SECRET_KEY if not set or still using placeholder
-    CURRENT_KEY=$(grep "^SECRET_KEY=" .env | cut -d'=' -f2)
-    if [ "$CURRENT_KEY" = "your-secret-key-here" ]; then
+    CURRENT_KEY_LINE=$(grep "^SECRET_KEY=" .env || true)
+    if [ -z "$CURRENT_KEY_LINE" ] || echo "$CURRENT_KEY_LINE" | grep -Eq '^SECRET_KEY=["'"'"']?your-secret-key-here["'"'"']?$'; then
         echo "🔑 Generating random SECRET_KEY..."
         SECRET_KEY=$(python -c "from django.core.management.utils import get_random_secret_key; print(get_random_secret_key())")
         # Use Python to update the file for cross-platform compatibility
+        export SECRET_KEY
         python -c "
+import os
 import re
+secret_key = os.environ.get('SECRET_KEY', '')
 with open('.env', 'r') as f:
     content = f.read()
-content = re.sub(r'^SECRET_KEY=.*', 'SECRET_KEY=${SECRET_KEY}', content, flags=re.MULTILINE)
+content = re.sub(r'^SECRET_KEY=.*', f'SECRET_KEY={secret_key}', content, flags=re.MULTILINE)
 with open('.env', 'w') as f:
     f.write(content)
-" SECRET_KEY="$SECRET_KEY"
+"
     fi
     
     # Set DEBUG=True for dev environment using Python for cross-platform compatibility

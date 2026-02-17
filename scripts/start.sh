@@ -14,12 +14,17 @@ git fetch --quiet 2>/dev/null || true
 # Get current branch
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "main")
 
+# Determine upstream (if any)
+UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null || echo "")
+
 # Check if behind remote
-BEHIND=$(git rev-list --count HEAD..@{u} 2>/dev/null || echo "0")
-if [ "$BEHIND" -gt 0 ]; then
-    echo "⚠️  Your branch is $BEHIND commit(s) behind origin/$CURRENT_BRANCH."
-    echo "   Run 'git pull' to update."
-    echo ""
+if [ -n "$UPSTREAM" ]; then
+    BEHIND=$(git rev-list --count HEAD..@{u} 2>/dev/null || echo "0")
+    if [ "$BEHIND" -gt 0 ]; then
+        echo "⚠️  Your branch is $BEHIND commit(s) behind $UPSTREAM."
+        echo "   Run 'git pull' to update."
+        echo ""
+    fi
 fi
 
 # Run migrations (in case there are new ones)
