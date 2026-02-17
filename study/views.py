@@ -288,6 +288,11 @@ def study_session(request, topic_id):
     if study_mode not in valid_modes:
         study_mode = 'standard'
     
+    # Persist the mode selection if it changed
+    if preference.study_mode != study_mode:
+        preference.study_mode = study_mode
+        preference.save()
+    
     flashcards = list(topic.flashcards.prefetch_related('skills'))
     
     if not flashcards:

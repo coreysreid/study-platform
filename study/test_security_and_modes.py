@@ -202,13 +202,16 @@ class StudySessionModeTestCase(TestCase):
         self.assertEqual(response.context['study_mode'], 'visual')
 
     def test_study_session_mode_override_via_query(self):
-        """Mode parameter in URL should override saved preference"""
+        """Mode parameter in URL should override saved preference and persist it"""
         StudyPreference.objects.create(user=self.user, study_mode='standard')
         response = self.client.get(
             reverse('study_session', args=[self.topic.id]) + '?mode=challenge'
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.context['study_mode'], 'challenge')
+        # Verify the preference was persisted
+        pref = StudyPreference.objects.get(user=self.user)
+        self.assertEqual(pref.study_mode, 'challenge')
 
     def test_study_session_invalid_mode_defaults(self):
         """Invalid mode parameter should fallback to standard"""
