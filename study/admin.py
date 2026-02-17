@@ -1,7 +1,8 @@
 from django.contrib import admin
 from .models import (
     Course, Topic, Flashcard, StudySession, FlashcardProgress, 
-    Skill, MultipleChoiceOption, CardTemplate, CardFeedback, CourseEnrollment
+    Skill, MultipleChoiceOption, CardTemplate, CardFeedback, CourseEnrollment,
+    StudyPreference
 )
 
 # Register your models here.
@@ -148,3 +149,10 @@ class CourseEnrollmentAdmin(admin.ModelAdmin):
     list_filter = ['status', 'enrolled_at', 'course']
     search_fields = ['user__username', 'course__name']
     ordering = ['-enrolled_at']
+
+
+@admin.register(StudyPreference)
+class StudyPreferenceAdmin(admin.ModelAdmin):
+    list_display = ['user', 'study_mode', 'updated_at']
+    list_filter = ['study_mode']
+    search_fields = ['user__username']

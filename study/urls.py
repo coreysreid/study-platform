@@ -41,4 +41,7 @@ urlpatterns = [
     
     # Statistics
     path('statistics/', views.statistics, name='statistics'),
+    
+    # Study Mode Preferences
+    path('study-mode/update/', views.update_study_mode, name='update_study_mode'),
 ]

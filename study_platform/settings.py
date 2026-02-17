@@ -166,4 +166,5 @@ except (ValueError, TypeError):
     SECURE_HSTS_SECONDS = 31536000 if not DEBUG else 0
 SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'True') == 'True' and not DEBUG
 # Note: SECURE_BROWSER_XSS_FILTER is deprecated and removed (modern browsers ignore X-XSS-Protection)
+SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'

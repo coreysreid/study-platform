@@ -11,7 +11,7 @@ from django.core.paginator import Paginator
 from django.http import HttpResponseForbidden
 from django.views.decorators.http import require_POST
 from functools import wraps
-from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback, CourseEnrollment
+from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback, CourseEnrollment, StudyPreference
 from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
 from .utils import generate_parameterized_card
 import random
@@ -118,8 +118,9 @@ def login_view(request):
 
 def logout_view(request):
     """User logout view"""
-    logout(request)
-    messages.info(request, 'You have been logged out.')
+    if request.method == 'POST':
+        logout(request)
+        messages.info(request, 'You have been logged out.')
     return redirect('home')
 
 
@@ -280,6 +281,13 @@ def study_session(request, topic_id):
         messages.error(request, 'You must be enrolled in this course to study.')
         return redirect('course_catalog')
     
+    # Get user's study mode preference
+    preference, _ = StudyPreference.objects.get_or_create(user=request.user)
+    study_mode = request.GET.get('mode', preference.study_mode)
+    valid_modes = {choice[0] for choice in StudyPreference.STUDY_MODES}
+    if study_mode not in valid_modes:
+        study_mode = 'standard'
+    
     flashcards = list(topic.flashcards.prefetch_related('skills'))
     
     if not flashcards:
@@ -351,6 +359,8 @@ def study_session(request, topic_id):
         'flashcards': flashcards,
         'flashcards_data': flashcards_data,
         'session': session,
+        'study_mode': study_mode,
+        'study_modes': StudyPreference.STUDY_MODES,
     })
 
 
@@ -360,7 +370,10 @@ def end_study_session(request, session_id):
     session = get_object_or_404(StudySession, id=session_id, user=request.user)
     
     if request.method == 'POST':
-        cards_studied = int(request.POST.get('cards_studied', 0))
+        try:
+            cards_studied = max(0, int(request.POST.get('cards_studied', 0)))
+        except (ValueError, TypeError):
+            cards_studied = 0
         session.cards_studied = cards_studied
         session.ended_at = timezone.now()
         session.save()
@@ -622,4 +635,25 @@ def update_feedback_status(request, feedback_id):
     
     return redirect('admin_feedback_review')
 
+
+@login_required
+@require_POST
+def update_study_mode(request):
+    """Update user's study mode preference"""
+    new_mode = request.POST.get('study_mode', 'standard')
+    valid_modes = {choice[0] for choice in StudyPreference.STUDY_MODES}
+    if new_mode not in valid_modes:
+        new_mode = 'standard'
+    
+    preference, _ = StudyPreference.objects.get_or_create(user=request.user)
+    preference.study_mode = new_mode
+    preference.save()
+    
+    messages.success(request, f'Study mode updated to "{preference.get_study_mode_display()}".')
+    
+    # Redirect back to the referring page or home
+    next_url = request.POST.get('next', '')
+    if next_url:
+        return redirect(next_url)
+    return redirect('home')
 
