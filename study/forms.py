@@ -110,3 +110,10 @@ class CardFeedbackForm(forms.ModelForm):
             'difficulty_rating': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 5}),
             'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Please provide details about your feedback...'}),
         }
+    
+    def clean_difficulty_rating(self):
+        """Validate difficulty_rating is within the allowed range"""
+        rating = self.cleaned_data.get('difficulty_rating')
+        if rating is not None and (rating < 1 or rating > 5):
+            raise forms.ValidationError('Difficulty rating must be between 1 and 5.')
+        return rating

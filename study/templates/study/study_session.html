@@ -80,6 +80,89 @@
         height: auto;
         border-radius: 5px;
     }
+    
+    /* Study Mode Selector */
+    .study-mode-bar {
+        display: flex;
+        justify-content: center;
+        gap: 0.5rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+    }
+    
+    .study-mode-bar .mode-btn {
+        padding: 0.4rem 1rem;
+        border-radius: 20px;
+        border: 2px solid #667eea;
+        background: white;
+        color: #667eea;
+        cursor: pointer;
+        font-size: 0.9rem;
+        text-decoration: none;
+        transition: all 0.3s;
+    }
+    
+    .study-mode-bar .mode-btn:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    .study-mode-bar .mode-btn.active {
+        background: #667eea;
+        color: white;
+    }
+    
+    /* Visual mode: larger cards, emphasis on images/diagrams */
+    .mode-visual .flashcard-face {
+        min-height: 400px;
+        font-size: 1.1rem;
+    }
+    .mode-visual .graph-container img,
+    .mode-visual .diagram-container {
+        transform: scale(1.1);
+        margin: 1.5rem auto;
+    }
+    
+    /* Text-heavy mode: more compact, text-focused */
+    .mode-text_heavy .flashcard-face {
+        min-height: 250px;
+        padding: 1.5rem;
+    }
+    .mode-text_heavy .graph-container,
+    .mode-text_heavy .diagram-container {
+        display: none;
+    }
+    .mode-text_heavy #question,
+    .mode-text_heavy #answer {
+        font-size: 1.3rem;
+        line-height: 1.8;
+    }
+    
+    /* Challenge mode: timer bar, no hints */
+    .mode-challenge .flashcard-front {
+        background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    }
+    .mode-challenge .flashcard-back {
+        background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    }
+    
+    .timer-bar {
+        display: none;
+        height: 6px;
+        background: #e9ecef;
+        border-radius: 3px;
+        margin-bottom: 1rem;
+        overflow: hidden;
+    }
+    .timer-fill {
+        height: 100%;
+        background: #e74c3c;
+        transition: width 0.1s linear;
+        width: 100%;
+    }
+    .mode-challenge .timer-bar {
+        display: block;
+    }
 </style>
 {% endblock %}
 
@@ -94,6 +177,20 @@
     <h1 style="text-align: center; color: #667eea; margin-bottom: 1rem;">
         Study Session: {{ topic.name }}
     </h1>
+    
+    <!-- Study Mode Selector -->
+    <div class="study-mode-bar">
+        {% for mode_key, mode_label in study_modes %}
+        <a href="?mode={{ mode_key }}" class="mode-btn {% if study_mode == mode_key %}active{% endif %}">
+            {% if mode_key == 'standard' %}📖{% elif mode_key == 'visual' %}🎨{% elif mode_key == 'text_heavy' %}📝{% elif mode_key == 'challenge' %}⚡{% endif %}
+            {{ mode_label }}
+        </a>
+        {% endfor %}
+    </div>
+    
+    <div class="timer-bar">
+        <div class="timer-fill" id="timerBar"></div>
+    </div>
     
     <div class="progress-bar">
         <div class="progress-fill" id="progressBar" style="width: 0%;"></div>
@@ -152,12 +249,50 @@
 {{ flashcards_data|json_script:"flashcards-data" }}
 <script>
     const cards = JSON.parse(document.getElementById('flashcards-data').textContent);
+    const studyMode = '{{ study_mode }}';
     let currentIndex = 0;
     let cardsStudied = 0;
     let isFlipped = false;
+    let timerInterval = null;
+    
+    // Apply study mode class to container
+    document.querySelector('.content').classList.add('mode-' + studyMode);
     
     // Animation duration constant (matches CSS transition: transform 0.6s)
     const FLIP_ANIMATION_DURATION = 650; // 650ms to ensure animation completes (600ms + buffer)
+    
+    // Challenge mode: timer duration in seconds
+    const CHALLENGE_TIMER_SECONDS = 30;
+    
+    function startTimer() {
+        if (studyMode !== 'challenge') return;
+        
+        let timeLeft = CHALLENGE_TIMER_SECONDS;
+        const timerBar = document.getElementById('timerBar');
+        timerBar.style.width = '100%';
+        
+        if (timerInterval) clearInterval(timerInterval);
+        timerInterval = setInterval(function() {
+            timeLeft -= 0.1;
+            const pct = (timeLeft / CHALLENGE_TIMER_SECONDS) * 100;
+            timerBar.style.width = Math.max(0, pct) + '%';
+            
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                // Auto-flip to reveal answer when time runs out
+                if (!isFlipped) {
+                    flipCard();
+                }
+            }
+        }, 100);
+    }
+    
+    function stopTimer() {
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+    }
     
     function loadCard() {
         if (currentIndex >= cards.length) {
@@ -253,7 +388,10 @@
         const feedbackBtn = document.getElementById('feedbackBtn');
         feedbackBtn.href = '/flashcard/' + card.id + '/feedback/';
         
-        if (card.hint) {
+        // In challenge mode, hide hints
+        if (studyMode === 'challenge') {
+            document.getElementById('hintBtn').style.display = 'none';
+        } else if (card.hint) {
             document.getElementById('hintBtn').style.display = 'inline-block';
         } else {
             document.getElementById('hintBtn').style.display = 'none';
@@ -263,6 +401,9 @@
         
         const progress = ((currentIndex) / cards.length) * 100;
         document.getElementById('progressBar').style.width = progress + '%';
+        
+        // Start timer for challenge mode
+        startTimer();
     }
     
     function submitFeedback() {
@@ -274,6 +415,9 @@
         const flashcard = document.getElementById('flashcard');
         flashcard.classList.toggle('flipped');
         isFlipped = !isFlipped;
+        if (isFlipped) {
+            stopTimer();
+        }
     }
     
     function showHint() {
@@ -299,6 +443,7 @@
     }
     
     function nextCard() {
+        stopTimer();
         currentIndex++;
         // If card is flipped (showing answer), flip it back first
         if (isFlipped) {
@@ -314,6 +459,7 @@
     }
     
     function endSession() {
+        stopTimer();
         document.getElementById('cardsStudied').value = cardsStudied;
         document.getElementById('endSessionForm').submit();
     }

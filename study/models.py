@@ -342,3 +342,20 @@ class CourseEnrollment(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.course.name} ({self.status})"
+
+
+class StudyPreference(models.Model):
+    """User preferences for study mode customization"""
+    STUDY_MODES = [
+        ('standard', 'Standard'),
+        ('visual', 'Visual (emphasis on diagrams and images)'),
+        ('text_heavy', 'Text Heavy (focus on text content)'),
+        ('challenge', 'Challenge (timed, no hints)'),
+    ]
+    
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='study_preference')
+    study_mode = models.CharField(max_length=20, choices=STUDY_MODES, default='standard')
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.get_study_mode_display()}"
