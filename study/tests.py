@@ -564,3 +564,38 @@ class GlobalCurriculumTestCase(TestCase):
         
         # System user might or might not exist, but course should be under custom user
         self.assertEqual(course.created_by.username, 'customuser')
+
+
+class CourseCatalogTestCase(TestCase):
+    """Test that the course catalog works for signed-in users with populated content"""
+
+    def test_catalog_requires_login(self):
+        """Test that anonymous users are redirected to login"""
+        response = self.client.get('/catalog/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+
+    def test_catalog_shows_courses_when_populated(self):
+        """Test that signed-in users see courses after curriculum is populated"""
+        from django.core.management import call_command
+
+        call_command('populate_math_curriculum')
+        user = User.objects.create_user('testuser', 'test@test.com', 'password')
+        self.client.login(username='testuser', password='password')
+
+        response = self.client.get('/catalog/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Engineering Mathematics')
+        self.assertContains(response, 'Add to My Courses')
+
+    def test_catalog_redirects_when_no_system_user(self):
+        """Test that catalog redirects with warning when no system user exists"""
+        user = User.objects.create_user('testuser', 'test@test.com', 'password')
+        self.client.login(username='testuser', password='password')
+
+        # Make a single request and follow redirects
+        response = self.client.get('/catalog/', follow=True)
+        self.assertTrue(response.redirect_chain)
+        # Check for warning message
+        messages = list(response.context['messages'])
+        self.assertTrue(any('No public courses available yet' in str(m) for m in messages))
