@@ -1,5 +1,21 @@
 from django import forms
+from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
 from .models import Course, Topic, Flashcard, CardFeedback, Skill
+
+
+class RegistrationForm(UserCreationForm):
+    """Custom registration form with optional email and privacy warning."""
+    email = forms.EmailField(
+        required=False,
+        widget=forms.EmailInput(attrs={'class': 'form-control', 'placeholder': 'Optional email address'}),
+        help_text='Optional. Providing an email allows password recovery. Without it, there is no way to reset a forgotten password.',
+    )
+
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'password1', 'password2']
+
 
 class CourseForm(forms.ModelForm):
     class Meta:

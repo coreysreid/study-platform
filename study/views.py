@@ -13,7 +13,7 @@ from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from functools import wraps
 from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback, CourseEnrollment, StudyPreference
-from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
+from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm, RegistrationForm
 from .utils import generate_parameterized_card
 import random
 import json
@@ -84,14 +84,14 @@ def register(request):
         return redirect('home')
     
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = RegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
-            login(request, user)
+            login(request, user, backend='django.contrib.auth.backends.ModelBackend')
             messages.success(request, 'Registration successful!')
             return redirect('home')
     else:
-        form = UserCreationForm()
+        form = RegistrationForm()
     
     return render(request, 'study/register.html', {'form': form})
 

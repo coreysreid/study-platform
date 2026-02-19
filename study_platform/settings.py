@@ -53,8 +53,16 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.github',
+    'allauth.socialaccount.providers.google',
     'study',
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -64,6 +72,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
 ]
 
 ROOT_URLCONF = 'study_platform.urls'
@@ -79,6 +88,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'study.context_processors.github_repo',
+                'study.context_processors.oauth_providers',
             ],
         },
     },
@@ -174,3 +184,46 @@ SECURE_HSTS_INCLUDE_SUBDOMAINS = os.getenv('SECURE_HSTS_INCLUDE_SUBDOMAINS', 'Tr
 # Note: SECURE_BROWSER_XSS_FILTER is deprecated and removed (modern browsers ignore X-XSS-Protection)
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = 'DENY'
+
+# Authentication backends
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# django-allauth configuration
+ACCOUNT_SIGNUP_FIELDS = ['email', 'username*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_VERIFICATION = 'optional'
+ACCOUNT_LOGIN_METHODS = {'username'}
+ACCOUNT_LOGIN_ON_SIGNUP = True
+ACCOUNT_LOGOUT_ON_GET = False
+
+# Social account configuration
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_LOGIN_ON_GET = False
+
+# Only configure social providers when credentials are present,
+# so that missing env vars effectively disable the provider.
+SOCIALACCOUNT_PROVIDERS = {}
+
+_github_client_id = os.getenv('GITHUB_OAUTH_CLIENT_ID')
+_github_secret = os.getenv('GITHUB_OAUTH_SECRET')
+if _github_client_id and _github_secret:
+    SOCIALACCOUNT_PROVIDERS['github'] = {
+        'APP': {
+            'client_id': _github_client_id,
+            'secret': _github_secret,
+        },
+        'SCOPE': ['read:user'],
+    }
+
+_google_client_id = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
+_google_secret = os.getenv('GOOGLE_OAUTH_SECRET')
+if _google_client_id and _google_secret:
+    SOCIALACCOUNT_PROVIDERS['google'] = {
+        'APP': {
+            'client_id': _google_client_id,
+            'secret': _google_secret,
+        },
+        'SCOPE': ['profile'],
+    }

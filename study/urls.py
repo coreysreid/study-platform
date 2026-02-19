@@ -36,8 +36,8 @@ urlpatterns = [
     
     # Feedback URLs
     path('flashcard/<int:flashcard_id>/feedback/', views.submit_feedback, name='submit_feedback'),
-    path('admin/feedback/review/', views.admin_feedback_review, name='admin_feedback_review'),
-    path('admin/feedback/<int:feedback_id>/update/', views.update_feedback_status, name='update_feedback_status'),
+    path('staff/feedback/review/', views.admin_feedback_review, name='admin_feedback_review'),
+    path('staff/feedback/<int:feedback_id>/update/', views.update_feedback_status, name='update_feedback_status'),
     
     # Statistics
     path('statistics/', views.statistics, name='statistics'),
