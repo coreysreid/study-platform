@@ -88,6 +88,7 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'study.context_processors.github_repo',
+                'study.context_processors.oauth_providers',
             ],
         },
     },
@@ -200,19 +201,29 @@ ACCOUNT_LOGOUT_ON_GET = False
 # Social account configuration
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_LOGIN_ON_GET = False
-SOCIALACCOUNT_PROVIDERS = {
-    'github': {
+
+# Only configure social providers when credentials are present,
+# so that missing env vars effectively disable the provider.
+SOCIALACCOUNT_PROVIDERS = {}
+
+_github_client_id = os.getenv('GITHUB_OAUTH_CLIENT_ID')
+_github_secret = os.getenv('GITHUB_OAUTH_SECRET')
+if _github_client_id and _github_secret:
+    SOCIALACCOUNT_PROVIDERS['github'] = {
         'APP': {
-            'client_id': os.getenv('GITHUB_OAUTH_CLIENT_ID', ''),
-            'secret': os.getenv('GITHUB_OAUTH_SECRET', ''),
+            'client_id': _github_client_id,
+            'secret': _github_secret,
         },
         'SCOPE': ['read:user'],
-    },
-    'google': {
+    }
+
+_google_client_id = os.getenv('GOOGLE_OAUTH_CLIENT_ID')
+_google_secret = os.getenv('GOOGLE_OAUTH_SECRET')
+if _google_client_id and _google_secret:
+    SOCIALACCOUNT_PROVIDERS['google'] = {
         'APP': {
-            'client_id': os.getenv('GOOGLE_OAUTH_CLIENT_ID', ''),
-            'secret': os.getenv('GOOGLE_OAUTH_SECRET', ''),
+            'client_id': _google_client_id,
+            'secret': _google_secret,
         },
         'SCOPE': ['profile'],
-    },
-}
+    }

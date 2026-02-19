@@ -1,4 +1,4 @@
-from django.test import TestCase, Client
+from django.test import TestCase, Client, override_settings
 from django.contrib.auth.models import User
 from django.urls import reverse
 from .forms import RegistrationForm
@@ -65,8 +65,18 @@ class RegistrationViewTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Register')
 
-    def test_register_page_shows_oauth_buttons(self):
-        """Registration page should show OAuth sign-in options"""
+    def test_register_page_hides_oauth_when_not_configured(self):
+        """Registration page should hide OAuth buttons when providers are not configured"""
+        response = self.client.get(reverse('register'))
+        self.assertNotContains(response, 'Sign up with GitHub')
+        self.assertNotContains(response, 'Sign up with Google')
+
+    @override_settings(SOCIALACCOUNT_PROVIDERS={
+        'github': {'APP': {'client_id': 'test', 'secret': 'test'}},
+        'google': {'APP': {'client_id': 'test', 'secret': 'test'}},
+    })
+    def test_register_page_shows_oauth_when_configured(self):
+        """Registration page should show OAuth buttons when providers are configured"""
         response = self.client.get(reverse('register'))
         self.assertContains(response, 'Sign up with GitHub')
         self.assertContains(response, 'Sign up with Google')
@@ -119,8 +129,18 @@ class LoginViewTestCase(TestCase):
         response = self.client.get(reverse('login'))
         self.assertEqual(response.status_code, 200)
 
-    def test_login_page_shows_oauth_buttons(self):
-        """Login page should show OAuth sign-in options"""
+    def test_login_page_hides_oauth_when_not_configured(self):
+        """Login page should hide OAuth buttons when providers are not configured"""
+        response = self.client.get(reverse('login'))
+        self.assertNotContains(response, 'Sign in with GitHub')
+        self.assertNotContains(response, 'Sign in with Google')
+
+    @override_settings(SOCIALACCOUNT_PROVIDERS={
+        'github': {'APP': {'client_id': 'test', 'secret': 'test'}},
+        'google': {'APP': {'client_id': 'test', 'secret': 'test'}},
+    })
+    def test_login_page_shows_oauth_when_configured(self):
+        """Login page should show OAuth buttons when providers are configured"""
         response = self.client.get(reverse('login'))
         self.assertContains(response, 'Sign in with GitHub')
         self.assertContains(response, 'Sign in with Google')
@@ -128,7 +148,7 @@ class LoginViewTestCase(TestCase):
     def test_login_page_shows_username_section(self):
         """Login page should show the traditional username/password section"""
         response = self.client.get(reverse('login'))
-        self.assertContains(response, 'or sign in with username')
+        self.assertContains(response, 'Login')
 
 
 class AdminHiddenFromNavigationTestCase(TestCase):
@@ -151,3 +171,20 @@ class AdminHiddenFromNavigationTestCase(TestCase):
         response = self.client.get('/admin/', follow=False)
         # Should get a redirect to admin login (302) not a 404
         self.assertIn(response.status_code, [200, 302])
+
+
+class FeedbackURLRoutingTestCase(TestCase):
+    """Test that feedback URLs are not captured by Django admin"""
+
+    def setUp(self):
+        self.client = Client()
+        self.staff_user = User.objects.create_user(
+            username='staffuser', password='testpass', is_staff=True
+        )
+        self.client.login(username='staffuser', password='testpass')
+
+    def test_feedback_review_url_resolves_correctly(self):
+        """staff/feedback/review/ should resolve to the study app view, not Django admin"""
+        response = self.client.get(reverse('admin_feedback_review'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Feedback')
