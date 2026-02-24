@@ -12,8 +12,8 @@ from django.http import HttpResponseForbidden
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from functools import wraps
-from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CardFeedback, CourseEnrollment, StudyPreference
-from .forms import CourseForm, TopicForm, FlashcardForm, CardFeedbackForm
+from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CourseEnrollment, StudyPreference
+from .forms import CourseForm, TopicForm, FlashcardForm
 from .utils import generate_parameterized_card
 import random
 import json
@@ -569,75 +569,6 @@ def flashcard_edit(request, flashcard_id):
     
     return render(request, 'study/flashcard_form.html', {'form': form, 'title': 'Edit Flashcard', 'flashcard': flashcard})
 
-
-# Feedback Views
-
-@login_required
-def submit_feedback(request, flashcard_id):
-    """Submit feedback for a flashcard"""
-    flashcard = get_object_or_404(Flashcard, id=flashcard_id)
-    
-    if request.method == 'POST':
-        form = CardFeedbackForm(request.POST)
-        if form.is_valid():
-            feedback = form.save(commit=False)
-            feedback.flashcard = flashcard
-            feedback.user = request.user
-            feedback.save()
-            messages.success(request, 'Thank you for your feedback!')
-            # Return to topic detail page
-            return redirect('topic_detail', topic_id=flashcard.topic.id)
-    else:
-        form = CardFeedbackForm()
-    
-    return render(request, 'study/feedback_form.html', {'form': form, 'flashcard': flashcard})
-
-
-@staff_required
-def admin_feedback_review(request):
-    """Admin dashboard for reviewing feedback (staff only)"""
-    # Get filter parameters
-    status_filter = request.GET.get('status', 'pending')
-    feedback_type_filter = request.GET.get('feedback_type', '')
-    page_number = request.GET.get('page', 1)
-    
-    # Build query
-    feedback_list = CardFeedback.objects.select_related('flashcard', 'user', 'reviewed_by')
-    
-    if status_filter:
-        feedback_list = feedback_list.filter(status=status_filter)
-    if feedback_type_filter:
-        feedback_list = feedback_list.filter(feedback_type=feedback_type_filter)
-    
-    # Add pagination
-    paginator = Paginator(feedback_list, 25)  # 25 items per page
-    page_obj = paginator.get_page(page_number)
-    
-    context = {
-        'feedback_list': page_obj,
-        'status_filter': status_filter,
-        'feedback_type_filter': feedback_type_filter,
-    }
-    
-    return render(request, 'study/admin_feedback_review.html', context)
-
-
-@staff_required
-def update_feedback_status(request, feedback_id):
-    """Update feedback status (staff only)"""
-    feedback = get_object_or_404(CardFeedback, id=feedback_id)
-    
-    if request.method == 'POST':
-        new_status = request.POST.get('status')
-        if new_status in ['pending', 'reviewed', 'resolved']:
-            feedback.status = new_status
-            if new_status in ['reviewed', 'resolved']:
-                feedback.reviewed_at = timezone.now()
-                feedback.reviewed_by = request.user
-            feedback.save()
-            messages.success(request, f'Feedback marked as {new_status}.')
-    
-    return redirect('admin_feedback_review')
 
 
 @login_required

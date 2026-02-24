@@ -56,7 +56,7 @@
                                 {% if topic.course.created_by == request.user %}
                                     <a href="{% url 'flashcard_edit' flashcard.id %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Edit</a>
                                 {% endif %}
-                                <a href="{% url 'submit_feedback' flashcard.id %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Feedback</a>
+                                <button onclick="openCardFeedback('{{ flashcard.question|escapejs }}', {{ flashcard.id }})" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Feedback</button>
                             </div>
                         </div>
                         <div>
@@ -80,11 +80,6 @@
                                 border-radius: 15px; font-size: 0.9rem;">
                                 {{ flashcard.get_difficulty_display }}
                             </span>
-                            {% if flashcard.feedback.count > 0 %}
-                                <span style="padding: 0.25rem 0.75rem; background: #e3f2fd; border-radius: 15px; font-size: 0.9rem;">
-                                    {{ flashcard.feedback.count }} feedback item{{ flashcard.feedback.count|pluralize }}
-                                </span>
-                            {% endif %}
                         </div>
                     </div>
                 {% endfor %}
@@ -97,4 +92,17 @@
         {% endif %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function openCardFeedback(question, cardId) {
+    if (typeof openFeedbackModal === 'function') {
+        document.getElementById('feedbackTitle').value = 'Flashcard Feedback: ' + question.substring(0, 60);
+        document.getElementById('feedbackType').value = 'content';
+        document.getElementById('feedbackDescription').value = 'Flashcard ID: ' + cardId + '\n\nPlease describe the issue with this flashcard:\n';
+        openFeedbackModal();
+    }
+}
+</script>
 {% endblock %}

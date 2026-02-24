@@ -34,11 +34,6 @@ urlpatterns = [
     path('session/<int:session_id>/end/', views.end_study_session, name='end_study_session'),
     path('flashcard/<int:flashcard_id>/progress/', views.update_flashcard_progress, name='update_flashcard_progress'),
     
-    # Feedback URLs
-    path('flashcard/<int:flashcard_id>/feedback/', views.submit_feedback, name='submit_feedback'),
-    path('admin/feedback/review/', views.admin_feedback_review, name='admin_feedback_review'),
-    path('admin/feedback/<int:feedback_id>/update/', views.update_feedback_status, name='update_feedback_status'),
-    
     # Statistics
     path('statistics/', views.statistics, name='statistics'),
     

@@ -237,7 +237,7 @@
         <button onclick="markCorrect()" class="btn" style="background: #28a745;">✓ Got it!</button>
         <button onclick="markIncorrect()" class="btn btn-danger">✗ Missed</button>
         <button onclick="nextCard()" class="btn btn-secondary">Skip</button>
-        <a href="#" onclick="submitFeedback(); return false;" class="btn btn-secondary" id="feedbackBtn">💬 Feedback</a>
+        <button onclick="submitFeedback()" class="btn btn-secondary" id="feedbackBtn">💬 Feedback</button>
     </div>
     
     <form id="endSessionForm" method="post" action="{% url 'end_study_session' session.id %}" style="display: none;">
@@ -384,9 +384,9 @@
             mermaid.init(undefined, '.mermaid');
         }
         
-        // Update feedback button
-        const feedbackBtn = document.getElementById('feedbackBtn');
-        feedbackBtn.href = '/flashcard/' + card.id + '/feedback/';
+        // Store current card id on the button for feedback context
+        document.getElementById('feedbackBtn').dataset.cardId = card.id;
+        document.getElementById('feedbackBtn').dataset.cardQuestion = card.question;
         
         // In challenge mode, hide hints
         if (studyMode === 'challenge') {
@@ -407,8 +407,15 @@
     }
     
     function submitFeedback() {
-        const card = cards[currentIndex];
-        window.location.href = '/flashcard/' + card.id + '/feedback/';
+        const btn = document.getElementById('feedbackBtn');
+        const question = (btn.dataset.cardQuestion || '').substring(0, 60);
+        const cardId = btn.dataset.cardId || '';
+        if (typeof openFeedbackModal === 'function') {
+            document.getElementById('feedbackTitle').value = 'Flashcard Feedback: ' + question;
+            document.getElementById('feedbackType').value = 'content';
+            document.getElementById('feedbackDescription').value = 'Flashcard ID: ' + cardId + '\n\nPlease describe the issue with this flashcard:\n';
+            openFeedbackModal();
+        }
     }
     
     function flipCard() {

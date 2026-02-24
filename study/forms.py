@@ -1,5 +1,5 @@
 from django import forms
-from .models import Course, Topic, Flashcard, CardFeedback, Skill
+from .models import Course, Topic, Flashcard, Skill
 
 class CourseForm(forms.ModelForm):
     class Meta:
@@ -101,19 +101,3 @@ class FlashcardForm(forms.ModelForm):
         return cleaned_data
 
 
-class CardFeedbackForm(forms.ModelForm):
-    class Meta:
-        model = CardFeedback
-        fields = ['feedback_type', 'difficulty_rating', 'comment']
-        widgets = {
-            'feedback_type': forms.Select(attrs={'class': 'form-control'}),
-            'difficulty_rating': forms.NumberInput(attrs={'class': 'form-control', 'min': 1, 'max': 5}),
-            'comment': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Please provide details about your feedback...'}),
-        }
-    
-    def clean_difficulty_rating(self):
-        """Validate difficulty_rating is within the allowed range"""
-        rating = self.cleaned_data.get('difficulty_rating')
-        if rating is not None and (rating < 1 or rating > 5):
-            raise forms.ValidationError('Difficulty rating must be between 1 and 5.')
-        return rating
