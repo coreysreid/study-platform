@@ -5,10 +5,10 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.utils import timezone
-from django.db.models import Count, Avg, Sum, Q
+from django.db.models import Count, Avg, Sum, Q, F
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.http import HttpResponseForbidden
+from django.http import HttpResponseForbidden, JsonResponse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from functools import wraps
@@ -403,7 +403,6 @@ def end_study_session(request, session_id):
 @require_POST
 def update_flashcard_progress(request, flashcard_id):
     """Update per-card (or per-step) progress. Returns JSON."""
-    from django.http import JsonResponse
 
     flashcard = get_object_or_404(Flashcard, id=flashcard_id)
 
@@ -427,13 +426,14 @@ def update_flashcard_progress(request, flashcard_id):
         step_index=step_index,
     )
 
-    progress.times_reviewed += 1
+    progress.times_reviewed = F('times_reviewed') + 1
     if correct:
-        progress.times_correct += 1
+        progress.times_correct = F('times_correct') + 1
         progress.confidence_level = min(5, progress.confidence_level + 1)
     else:
         progress.confidence_level = max(0, progress.confidence_level - 1)
     progress.save()
+    progress.refresh_from_db()
 
     return JsonResponse({
         'confidence_level': progress.confidence_level,
