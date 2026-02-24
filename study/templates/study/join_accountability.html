@@ -1,0 +1,26 @@
+{% extends 'study/base.html' %}
+
+{% block title %}Join Accountability - Study Platform{% endblock %}
+
+{% block content %}
+<div style="max-width: 500px; margin: 3rem auto;">
+    <h1 style="color: #667eea; margin-bottom: 0.5rem;">Follow Someone's Progress</h1>
+    <p style="color: #666; margin-bottom: 2rem;">Enter the sharing code given to you by a peer, mentor, or teacher.</p>
+
+    <div style="background: #f8f9fa; padding: 2rem; border-radius: 10px;">
+        <form method="post">
+            {% csrf_token %}
+            <div style="margin-bottom: 1.25rem;">
+                <label style="display: block; font-weight: 500; margin-bottom: 0.5rem;">Sharing Code</label>
+                <input type="text" name="code" maxlength="10" placeholder="e.g. ABC12345"
+                       style="width: 100%; padding: 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1.2rem; letter-spacing: 3px; text-transform: uppercase; font-family: monospace; box-sizing: border-box;"
+                       autofocus required>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <button type="submit" class="btn">Join</button>
+                <a href="{% url 'accountability_settings' %}" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

@@ -36,6 +36,11 @@ urlpatterns = [
     
     # Statistics
     path('statistics/', views.statistics, name='statistics'),
+
+    # Accountability & Motivation
+    path('accountability/', views.accountability_settings, name='accountability_settings'),
+    path('accountability/join/', views.join_accountability, name='join_accountability'),
+    path('accountability/<str:code>/dashboard/', views.observer_dashboard, name='observer_dashboard'),
     
     # Study Mode Preferences
     path('study-mode/update/', views.update_study_mode, name='update_study_mode'),

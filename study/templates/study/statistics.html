@@ -6,20 +6,43 @@
 <div>
     <h1 style="color: #667eea; margin-bottom: 2rem;">Study Statistics</h1>
     
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
         <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white; text-align: center;">
             <h3 style="font-size: 1.2rem; margin-bottom: 1rem; opacity: 0.9;">Total Study Sessions</h3>
             <p style="font-size: 3rem; font-weight: bold;">{{ total_sessions }}</p>
         </div>
-        
+
         <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 2rem; border-radius: 10px; color: white; text-align: center;">
             <h3 style="font-size: 1.2rem; margin-bottom: 1rem; opacity: 0.9;">Cards Studied</h3>
             <p style="font-size: 3rem; font-weight: bold;">{{ total_cards }}</p>
         </div>
-        
+
         <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 2rem; border-radius: 10px; color: white; text-align: center;">
             <h3 style="font-size: 1.2rem; margin-bottom: 1rem; opacity: 0.9;">Average Success Rate</h3>
             <p style="font-size: 3rem; font-weight: bold;">{{ average_success_rate|floatformat:0 }}%</p>
+        </div>
+
+        <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); padding: 2rem; border-radius: 10px; color: white; text-align: center;">
+            <h3 style="font-size: 1.2rem; margin-bottom: 1rem; opacity: 0.9;">Current Streak</h3>
+            <p style="font-size: 3rem; font-weight: bold;">{{ streak }} 📅</p>
+        </div>
+    </div>
+
+    <!-- Badges -->
+    <div style="margin-bottom: 3rem;">
+        <h2 style="color: #667eea; margin-bottom: 1rem;">🏅 Badges</h2>
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem;">
+            {% for badge in badges %}
+            <div style="padding: 1rem; border-radius: 8px; text-align: center;
+                        background: {% if badge.earned %}white{% else %}#f0f0f0{% endif %};
+                        opacity: {% if badge.earned %}1{% else %}0.4{% endif %};
+                        box-shadow: {% if badge.earned %}0 2px 8px rgba(0,0,0,0.08){% else %}none{% endif %};">
+                <div style="font-size: 2rem; margin-bottom: 0.25rem;">{{ badge.icon }}</div>
+                <div style="font-weight: 600; font-size: 0.9rem; color: #333;">{{ badge.name }}</div>
+                <div style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">{{ badge.description }}</div>
+                {% if badge.earned %}<div style="font-size: 0.7rem; color: #667eea; margin-top: 0.4rem;">{{ badge.earned_at|date:"M d, Y" }}</div>{% endif %}
+            </div>
+            {% endfor %}
         </div>
     </div>
     

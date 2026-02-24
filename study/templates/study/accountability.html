@@ -1,0 +1,130 @@
+{% extends 'study/base.html' %}
+
+{% block title %}Accountability - Study Platform{% endblock %}
+
+{% block content %}
+<div>
+    <h1 style="color: #667eea; margin-bottom: 0.5rem;">Accountability & Goals</h1>
+    <p style="color: #666; margin-bottom: 2rem;">Track your progress, share with mentors, and stay motivated.</p>
+
+    <!-- Stats Summary -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 2.5rem;">
+        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 1.5rem; border-radius: 10px; color: white; text-align: center;">
+            <p style="opacity: 0.85; margin-bottom: 0.25rem; font-size: 0.9rem;">Today's Cards</p>
+            <p style="font-size: 2.5rem; font-weight: bold; margin: 0;">{{ cards_today }}</p>
+            {% if goal.daily_cards > 0 %}
+                <p style="opacity: 0.8; font-size: 0.85rem; margin-top: 0.25rem;">Goal: {{ goal.daily_cards }}</p>
+            {% endif %}
+        </div>
+        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 1.5rem; border-radius: 10px; color: white; text-align: center;">
+            <p style="opacity: 0.85; margin-bottom: 0.25rem; font-size: 0.9rem;">Current Streak</p>
+            <p style="font-size: 2.5rem; font-weight: bold; margin: 0;">{{ streak }} 📅</p>
+            <p style="opacity: 0.8; font-size: 0.85rem; margin-top: 0.25rem;">days in a row</p>
+        </div>
+        {% if goal.daily_cards > 0 %}
+        <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 1.5rem; border-radius: 10px; color: white; text-align: center;">
+            <p style="opacity: 0.85; margin-bottom: 0.25rem; font-size: 0.9rem;">Daily Goal</p>
+            {% with pct=cards_today|add:0 %}
+            <p style="font-size: 2.5rem; font-weight: bold; margin: 0;">
+                {% if cards_today >= goal.daily_cards %}✅{% else %}{{ cards_today }}/{{ goal.daily_cards }}{% endif %}
+            </p>
+            {% endwith %}
+            <p style="opacity: 0.8; font-size: 0.85rem; margin-top: 0.25rem;">cards today</p>
+        </div>
+        {% endif %}
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; margin-bottom: 2.5rem;">
+
+        <!-- Daily Goal -->
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px;">
+            <h2 style="color: #667eea; margin-bottom: 1rem; font-size: 1.2rem;">📊 Daily Goal</h2>
+            <form method="post">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="set_goal">
+                <div style="display: flex; gap: 0.75rem; align-items: center;">
+                    <input type="number" name="daily_cards" value="{{ goal.daily_cards }}" min="0" max="9999"
+                           style="width: 100px; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem;">
+                    <span style="color: #666;">cards per day</span>
+                    <button type="submit" class="btn" style="padding: 0.5rem 1rem;">Save</button>
+                </div>
+                <p style="color: #888; font-size: 0.85rem; margin-top: 0.5rem;">Set to 0 to remove the goal.</p>
+            </form>
+        </div>
+
+        <!-- Join via Code -->
+        <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px;">
+            <h2 style="color: #667eea; margin-bottom: 1rem; font-size: 1.2rem;">🔗 Follow Someone</h2>
+            <p style="color: #666; font-size: 0.9rem; margin-bottom: 1rem;">Enter a sharing code to observe a peer or mentor's progress.</p>
+            <a href="{% url 'join_accountability' %}" class="btn btn-secondary">Enter Code</a>
+        </div>
+    </div>
+
+    <!-- Sharing Codes -->
+    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px; margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <h2 style="color: #667eea; font-size: 1.2rem; margin: 0;">🔑 Your Sharing Codes</h2>
+            <form method="post" style="display: flex; gap: 0.5rem; align-items: center;">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="create_link">
+                <input type="text" name="label" placeholder="Label (optional)" maxlength="100"
+                       style="padding: 0.4rem 0.75rem; border: 1px solid #ddd; border-radius: 5px; font-size: 0.9rem;">
+                <button type="submit" class="btn" style="padding: 0.5rem 1rem;">+ New Code</button>
+            </form>
+        </div>
+
+        {% if links %}
+            <div style="display: grid; gap: 0.75rem;">
+                {% for link in links %}
+                <div style="background: white; padding: 1rem 1.25rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,0.07);">
+                    <div>
+                        <span style="font-family: monospace; font-size: 1.3rem; font-weight: bold; color: #667eea; letter-spacing: 2px;">{{ link.code }}</span>
+                        {% if link.label %}<span style="color: #888; margin-left: 0.75rem; font-size: 0.9rem;">— {{ link.label }}</span>{% endif %}
+                        <span style="color: #aaa; font-size: 0.8rem; margin-left: 0.75rem;">{{ link.observers.count }} observer{{ link.observers.count|pluralize }}</span>
+                    </div>
+                    <div style="display: flex; gap: 0.5rem; align-items: center;">
+                        <a href="{% url 'observer_dashboard' link.code %}" class="btn btn-secondary" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">View Dashboard</a>
+                        <form method="post">
+                            {% csrf_token %}
+                            <input type="hidden" name="action" value="revoke_link">
+                            <input type="hidden" name="link_id" value="{{ link.id }}">
+                            <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;"
+                                    onclick="return confirm('Revoke this code? Observers will lose access.');">Revoke</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #888; font-size: 0.9rem;">No sharing codes yet. Create one to let peers or teachers view your progress.</p>
+        {% endif %}
+    </div>
+
+    <!-- People You're Observing -->
+    {% if observing %}
+    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px;">
+        <h2 style="color: #667eea; font-size: 1.2rem; margin-bottom: 1rem;">👥 You're Following</h2>
+        <div style="display: grid; gap: 0.75rem;">
+            {% for rel in observing %}
+            <div style="background: white; padding: 1rem 1.25rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 1px 4px rgba(0,0,0,0.07);">
+                <div>
+                    <strong style="color: #333;">{{ rel.link.sharer.username }}</strong>
+                    {% if rel.link.label %}<span style="color: #888; margin-left: 0.5rem; font-size: 0.9rem;">({{ rel.link.label }})</span>{% endif %}
+                    <span style="color: #aaa; font-size: 0.8rem; margin-left: 0.75rem;">since {{ rel.joined_at|date:"M d, Y" }}</span>
+                </div>
+                <div style="display: flex; gap: 0.5rem;">
+                    <a href="{% url 'observer_dashboard' rel.link.code %}" class="btn btn-secondary" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">View Progress</a>
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="leave">
+                        <input type="hidden" name="relationship_id" value="{{ rel.id }}">
+                        <button type="submit" class="btn btn-danger" style="padding: 0.4rem 0.75rem; font-size: 0.85rem;">Unfollow</button>
+                    </form>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

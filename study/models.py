@@ -1,5 +1,21 @@
 from django.db import models
 from django.contrib.auth.models import User
+import secrets
+import string
+
+BADGE_DEFINITIONS = [
+    {'slug': 'first_session',      'name': 'First Steps',       'icon': '🎯', 'description': 'Complete your first study session',  'type': 'sessions', 'threshold': 1},
+    {'slug': 'ten_sessions',       'name': 'Getting Into It',   'icon': '📚', 'description': 'Complete 10 study sessions',          'type': 'sessions', 'threshold': 10},
+    {'slug': 'fifty_sessions',     'name': 'Committed',         'icon': '🏆', 'description': 'Complete 50 study sessions',          'type': 'sessions', 'threshold': 50},
+    {'slug': 'hundred_cards',      'name': 'Card Centurion',    'icon': '🔥', 'description': 'Study 100 cards total',               'type': 'cards',    'threshold': 100},
+    {'slug': 'five_hundred_cards', 'name': 'Dedicated Learner', 'icon': '💪', 'description': 'Study 500 cards total',               'type': 'cards',    'threshold': 500},
+    {'slug': 'thousand_cards',     'name': 'Study Machine',     'icon': '⚡', 'description': 'Study 1,000 cards total',             'type': 'cards',    'threshold': 1000},
+    {'slug': 'week_streak',        'name': 'Week Warrior',      'icon': '📅', 'description': 'Study 7 days in a row',               'type': 'streak',   'threshold': 7},
+]
+
+def generate_accountability_code():
+    chars = string.ascii_uppercase + string.digits
+    return ''.join(secrets.choice(chars) for _ in range(8))
 
 # Create your models here.
 
@@ -288,6 +304,55 @@ class FlashcardProgress(models.Model):
             return 0
         return (self.times_correct / self.times_reviewed) * 100
 
+
+
+class StudyGoal(models.Model):
+    """User's daily card study target"""
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='study_goal')
+    daily_cards = models.IntegerField(default=0, help_text='Target cards per day (0 = no goal)')
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} - {self.daily_cards} cards/day"
+
+
+class AccountabilityLink(models.Model):
+    """A shareable code that lets others observe your progress"""
+    sharer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='accountability_links')
+    code = models.CharField(max_length=10, unique=True, default=generate_accountability_code)
+    label = models.CharField(max_length=100, blank=True, help_text='Optional label (e.g., "Teacher", "Study Group")')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.sharer.username} - {self.code}"
+
+
+class AccountabilityRelationship(models.Model):
+    """Records an observer following a sharer via an accountability link"""
+    observer = models.ForeignKey(User, on_delete=models.CASCADE, related_name='observing')
+    link = models.ForeignKey(AccountabilityLink, on_delete=models.CASCADE, related_name='observers')
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['observer', 'link']
+
+    def __str__(self):
+        return f"{self.observer.username} observing {self.link.sharer.username}"
+
+
+class UserBadge(models.Model):
+    """Records a badge earned by a user"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='badges')
+    badge_slug = models.CharField(max_length=50)
+    earned_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'badge_slug']
+        ordering = ['earned_at']
+
+    def __str__(self):
+        return f"{self.user.username} - {self.badge_slug}"
 
 
 class CourseEnrollment(models.Model):

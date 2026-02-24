@@ -12,7 +12,11 @@ from django.http import HttpResponseForbidden
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 from functools import wraps
-from .models import Course, Topic, Flashcard, StudySession, FlashcardProgress, CourseEnrollment, StudyPreference
+from .models import (Course, Topic, Flashcard, StudySession, FlashcardProgress,
+                     CourseEnrollment, StudyPreference, StudyGoal,
+                     AccountabilityLink, AccountabilityRelationship,
+                     UserBadge, BADGE_DEFINITIONS)
+import datetime
 from .forms import CourseForm, TopicForm, FlashcardForm
 from .utils import generate_parameterized_card
 import random
@@ -383,6 +387,13 @@ def end_study_session(request, session_id):
         session.save()
         
         messages.success(request, f'Study session completed! You studied {cards_studied} cards.')
+
+        # Award any newly earned badges
+        stats = _get_user_stats(request.user)
+        new_badges = _award_badges(request.user, stats)
+        for badge in new_badges:
+            messages.success(request, f"{badge['icon']} Badge earned: {badge['name']}!")
+
         return redirect('topic_detail', topic_id=session.topic.id)
     
     return redirect('home')
@@ -456,9 +467,11 @@ def statistics(request):
         'total_cards': session_stats['total_cards'] or 0,
         'total_sessions': session_stats['total_sessions'],
         'average_success_rate': avg_success_rate,
+        'streak': _calculate_streak(request.user),
+        'badges': _enrich_badges(request.user),
         'recent_sessions': sessions.select_related('topic', 'topic__course')[:10],
     }
-    
+
     return render(request, 'study/statistics.html', context)
 
 
@@ -591,4 +604,191 @@ def update_study_mode(request):
     if next_url and url_has_allowed_host_and_scheme(next_url, allowed_hosts={request.get_host()}, require_https=request.is_secure()):
         return redirect(next_url)
     return redirect('home')
+
+
+# ── Accountability & Motivation ──────────────────────────────────────────────
+
+def _calculate_streak(user):
+    """Return the current consecutive-day study streak for a user."""
+    today = timezone.now().date()
+    streak = 0
+    check_date = today
+    while True:
+        if StudySession.objects.filter(user=user, started_at__date=check_date).exists():
+            streak += 1
+            check_date -= datetime.timedelta(days=1)
+        else:
+            break
+    return streak
+
+
+def _get_user_stats(user):
+    """Return a dict of aggregated stats used by multiple views."""
+    session_agg = StudySession.objects.filter(user=user).aggregate(
+        total_sessions=Count('id'),
+        total_cards=Sum('cards_studied'),
+    )
+    progress_agg = FlashcardProgress.objects.filter(user=user).aggregate(
+        total_reviewed=Sum('times_reviewed'),
+        total_correct=Sum('times_correct'),
+    )
+    total_reviewed = progress_agg['total_reviewed'] or 0
+    total_correct = progress_agg['total_correct'] or 0
+    return {
+        'total_sessions': session_agg['total_sessions'] or 0,
+        'total_cards': session_agg['total_cards'] or 0,
+        'average_success_rate': (total_correct / total_reviewed * 100) if total_reviewed else 0,
+        'streak': _calculate_streak(user),
+    }
+
+
+def _award_badges(user, stats):
+    """Check all badge thresholds and award any newly earned badges. Returns list of new badge dicts."""
+    earned_slugs = set(UserBadge.objects.filter(user=user).values_list('badge_slug', flat=True))
+    new_badges = []
+    for badge in BADGE_DEFINITIONS:
+        if badge['slug'] in earned_slugs:
+            continue
+        if badge['type'] == 'sessions' and stats['total_sessions'] >= badge['threshold']:
+            UserBadge.objects.create(user=user, badge_slug=badge['slug'])
+            new_badges.append(badge)
+        elif badge['type'] == 'cards' and stats['total_cards'] >= badge['threshold']:
+            UserBadge.objects.create(user=user, badge_slug=badge['slug'])
+            new_badges.append(badge)
+        elif badge['type'] == 'streak' and stats['streak'] >= badge['threshold']:
+            UserBadge.objects.create(user=user, badge_slug=badge['slug'])
+            new_badges.append(badge)
+    return new_badges
+
+
+def _enrich_badges(user):
+    """Return list of all badge defs annotated with earned status and date."""
+    earned = {ub.badge_slug: ub.earned_at for ub in UserBadge.objects.filter(user=user)}
+    result = []
+    for badge in BADGE_DEFINITIONS:
+        b = dict(badge)
+        b['earned'] = badge['slug'] in earned
+        b['earned_at'] = earned.get(badge['slug'])
+        result.append(b)
+    return result
+
+
+@login_required
+def accountability_settings(request):
+    """Manage study goals, sharing codes, and observer relationships."""
+    if request.method == 'POST':
+        action = request.POST.get('action')
+
+        if action == 'set_goal':
+            try:
+                daily = max(0, int(request.POST.get('daily_cards', 0)))
+            except (ValueError, TypeError):
+                daily = 0
+            goal, _ = StudyGoal.objects.get_or_create(user=request.user)
+            goal.daily_cards = daily
+            goal.save()
+            messages.success(request, 'Study goal updated.')
+
+        elif action == 'create_link':
+            label = request.POST.get('label', '').strip()[:100]
+            link = AccountabilityLink.objects.create(sharer=request.user, label=label)
+            messages.success(request, f'New sharing code created: {link.code}')
+
+        elif action == 'revoke_link':
+            link_id = request.POST.get('link_id')
+            AccountabilityLink.objects.filter(id=link_id, sharer=request.user).update(is_active=False)
+            messages.success(request, 'Sharing code deactivated.')
+
+        elif action == 'leave':
+            rel_id = request.POST.get('relationship_id')
+            AccountabilityRelationship.objects.filter(id=rel_id, observer=request.user).delete()
+            messages.success(request, 'You are no longer observing that user.')
+
+        return redirect('accountability_settings')
+
+    goal, _ = StudyGoal.objects.get_or_create(user=request.user)
+    links = AccountabilityLink.objects.filter(sharer=request.user, is_active=True).prefetch_related('observers__observer')
+    observing = AccountabilityRelationship.objects.filter(
+        observer=request.user, link__is_active=True
+    ).select_related('link__sharer')
+
+    # Today's card count for goal progress
+    today = timezone.now().date()
+    cards_today = StudySession.objects.filter(
+        user=request.user, started_at__date=today
+    ).aggregate(total=Sum('cards_studied'))['total'] or 0
+
+    return render(request, 'study/accountability.html', {
+        'goal': goal,
+        'links': links,
+        'observing': observing,
+        'cards_today': cards_today,
+        'streak': _calculate_streak(request.user),
+    })
+
+
+@login_required
+def join_accountability(request):
+    """Enter a sharing code to observe someone's progress."""
+    if request.method == 'POST':
+        code = request.POST.get('code', '').strip().upper()
+        try:
+            link = AccountabilityLink.objects.get(code=code, is_active=True)
+        except AccountabilityLink.DoesNotExist:
+            messages.error(request, 'Invalid or expired code.')
+            return redirect('join_accountability')
+
+        if link.sharer == request.user:
+            messages.error(request, "You can't follow your own code.")
+            return redirect('join_accountability')
+
+        _, created = AccountabilityRelationship.objects.get_or_create(
+            observer=request.user, link=link
+        )
+        if created:
+            messages.success(request, f"You are now following {link.sharer.username}'s progress.")
+        else:
+            messages.info(request, f"You are already following {link.sharer.username}.")
+        return redirect('observer_dashboard', code=code)
+
+    return render(request, 'study/join_accountability.html')
+
+
+@login_required
+def observer_dashboard(request, code):
+    """Read-only view of a sharer's study progress."""
+    link = get_object_or_404(AccountabilityLink, code=code, is_active=True)
+
+    # Must be an observer or the sharer themselves
+    is_sharer = (link.sharer == request.user)
+    is_observer = AccountabilityRelationship.objects.filter(
+        observer=request.user, link=link
+    ).exists()
+
+    if not is_sharer and not is_observer:
+        messages.error(request, 'You need a valid code to view this dashboard.')
+        return redirect('join_accountability')
+
+    sharer = link.sharer
+    stats = _get_user_stats(sharer)
+    recent_sessions = StudySession.objects.filter(user=sharer).select_related(
+        'topic', 'topic__course'
+    )[:10]
+    badges = _enrich_badges(sharer)
+    goal, _ = StudyGoal.objects.get_or_create(user=sharer)
+
+    today = timezone.now().date()
+    cards_today = StudySession.objects.filter(
+        user=sharer, started_at__date=today
+    ).aggregate(total=Sum('cards_studied'))['total'] or 0
+
+    return render(request, 'study/observer_dashboard.html', {
+        'sharer': sharer,
+        'stats': stats,
+        'recent_sessions': recent_sessions,
+        'badges': badges,
+        'goal': goal,
+        'cards_today': cards_today,
+        'is_sharer': is_sharer,
+    })
 
