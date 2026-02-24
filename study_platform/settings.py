@@ -53,13 +53,22 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sites',
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.github',
+    'allauth.socialaccount.providers.google',
     'study',
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -148,6 +157,41 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'home'
 LOGOUT_REDIRECT_URL = 'home'
+
+# Authentication backends (allauth)
+AUTHENTICATION_BACKENDS = [
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
+]
+
+# django-allauth configuration
+ACCOUNT_SIGNUP_FIELDS = ['username*', 'password1*', 'password2*']
+ACCOUNT_EMAIL_VERIFICATION = 'none'
+SOCIALACCOUNT_AUTO_SIGNUP = True
+SOCIALACCOUNT_LOGIN_ON_GET = True
+
+# OAuth providers — only enabled when env vars are set
+SOCIALACCOUNT_PROVIDERS = {}
+
+_github_id = os.getenv('GITHUB_OAUTH_CLIENT_ID', '')
+_github_secret = os.getenv('GITHUB_OAUTH_SECRET', '')
+if _github_id and _github_secret:
+    SOCIALACCOUNT_PROVIDERS['github'] = {
+        'APP': {'client_id': _github_id, 'secret': _github_secret},
+        'SCOPE': ['read:user', 'user:email'],
+    }
+
+_google_id = os.getenv('GOOGLE_OAUTH_CLIENT_ID', '')
+_google_secret = os.getenv('GOOGLE_OAUTH_SECRET', '')
+if _google_id and _google_secret:
+    SOCIALACCOUNT_PROVIDERS['google'] = {
+        'APP': {'client_id': _google_id, 'secret': _google_secret},
+        'SCOPE': ['profile', 'email'],
+        'AUTH_PARAMS': {'access_type': 'online'},
+    }
+
+GITHUB_OAUTH_ENABLED = bool(_github_id and _github_secret)
+GOOGLE_OAUTH_ENABLED = bool(_google_id and _google_secret)
 
 # Graph generation settings
 GRAPH_TIMEOUT = 3  # seconds

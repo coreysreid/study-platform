@@ -2,7 +2,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
-from django.contrib.auth.forms import UserCreationForm, AuthenticationForm
+from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Count, Avg, Sum, Q
@@ -17,7 +17,7 @@ from .models import (Course, Topic, Flashcard, StudySession, FlashcardProgress,
                      AccountabilityLink, AccountabilityRelationship,
                      UserBadge, BADGE_DEFINITIONS)
 import datetime
-from .forms import CourseForm, TopicForm, FlashcardForm
+from .forms import CourseForm, TopicForm, FlashcardForm, CustomRegistrationForm
 from .utils import generate_parameterized_card
 import random
 import json
@@ -88,14 +88,14 @@ def register(request):
         return redirect('home')
     
     if request.method == 'POST':
-        form = UserCreationForm(request.POST)
+        form = CustomRegistrationForm(request.POST)
         if form.is_valid():
             user = form.save()
             login(request, user)
             messages.success(request, 'Registration successful!')
             return redirect('home')
     else:
-        form = UserCreationForm()
+        form = CustomRegistrationForm()
     
     return render(request, 'study/register.html', {'form': form})
 
