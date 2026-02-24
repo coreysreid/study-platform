@@ -683,3 +683,47 @@ class ProgressUpdateAjaxTest(TestCase):
         self.assertEqual(data['step_index'], 0)
         prog = FlashcardProgress.objects.get(user=self.user, flashcard=self.card, step_index=0)
         self.assertEqual(prog.times_reviewed, 1)
+
+
+class StudySessionExpansionTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='sessuser', password='pass')
+        course = Course.objects.create(name='Course', created_by=self.user)
+        self.topic = Topic.objects.create(course=course, name='Topic')
+        from .models import CourseEnrollment
+        CourseEnrollment.objects.create(user=self.user, course=course)
+        self.step_card = Flashcard.objects.create(
+            topic=self.topic,
+            question='Solve dy/dx + 2y = 0',
+            answer='y = Ce^{-2x}',
+            question_type='step_by_step',
+            steps=[
+                {'move': 'Separate variables', 'detail': 'dy/y = -2 dx'},
+                {'move': 'Integrate both sides', 'detail': 'ln|y| = -2x + C'},
+                {'move': 'Solve for y', 'detail': 'y = Ce^{-2x}'},
+            ]
+        )
+        self.client.login(username='sessuser', password='pass')
+
+    def test_step_card_expands_to_n_virtual_cards(self):
+        response = self.client.get(f'/study/{self.topic.id}/')
+        self.assertEqual(response.status_code, 200)
+        flashcards_data = response.context['flashcards_data']
+        self.assertEqual(len(flashcards_data), 3)
+
+    def test_virtual_card_has_context_steps(self):
+        response = self.client.get(f'/study/{self.topic.id}/')
+        cards = response.context['flashcards_data']
+        self.assertEqual(cards[0]['step_index'], 0)
+        self.assertEqual(cards[0]['context_steps'], [])
+        self.assertEqual(cards[1]['step_index'], 1)
+        self.assertEqual(len(cards[1]['context_steps']), 1)
+        self.assertEqual(cards[1]['context_steps'][0]['move'], 'Separate variables')
+        self.assertEqual(len(cards[2]['context_steps']), 2)
+
+    def test_virtual_card_answer_is_move_label(self):
+        response = self.client.get(f'/study/{self.topic.id}/')
+        cards = response.context['flashcards_data']
+        self.assertEqual(cards[0]['answer'], 'Separate variables')
+        self.assertEqual(cards[0]['answer_detail'], 'dy/y = -2 dx')

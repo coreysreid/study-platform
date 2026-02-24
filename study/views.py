@@ -308,11 +308,10 @@ def study_session(request, topic_id):
     # Create study session
     session = StudySession.objects.create(user=request.user, topic=topic)
     
-    # Process flashcards - generate parameterized cards if needed
+    # Process flashcards - expand step_by_step cards into virtual cards
     flashcards_data = []
     for fc in flashcards:
-        # Base card data
-        card_data = {
+        base = {
             'id': fc.id,
             'hint': fc.hint,
             'difficulty': fc.difficulty,
@@ -323,42 +322,56 @@ def study_session(request, topic_id):
             'code_snippet': fc.code_snippet,
             'code_language': fc.code_language,
             'graph_image_url': fc.generated_graph_image.url if fc.generated_graph_image else None,
+            'question_image': fc.question_image.url if fc.question_image else None,
+            'answer_image': fc.answer_image.url if fc.answer_image else None,
+            'teacher_explanation': fc.teacher_explanation,
         }
-        
-        if fc.question_type == 'parameterized' and fc.parameter_spec:
-            try:
-                question, answer, values = generate_parameterized_card(
-                    fc.parameter_spec,
-                    fc.question_template,
-                    fc.answer_template
-                )
-                card_data.update({
-                    'question': question,
-                    'answer': answer,
-                    'is_parameterized': True,
-                    'question_image': fc.question_image.url if fc.question_image else None,
-                    'answer_image': fc.answer_image.url if fc.answer_image else None,
-                })
-            except Exception as e:
-                # Fallback to template if generation fails
-                messages.warning(request, f'Error generating parameterized card: {str(e)}')
-                card_data.update({
-                    'question': fc.question_template or fc.question,
-                    'answer': fc.answer_template or fc.answer,
+
+        if fc.question_type == 'step_by_step' and fc.steps:
+            steps = fc.steps
+            for k, step in enumerate(steps):
+                virtual = dict(base)
+                virtual.update({
+                    'step_index': k,
+                    'step_total': len(steps),
+                    'question': fc.question,
+                    'context_steps': steps[:k],
+                    'answer': step['move'],
+                    'answer_detail': step.get('detail', ''),
                     'is_parameterized': False,
-                    'question_image': fc.question_image.url if fc.question_image else None,
-                    'answer_image': fc.answer_image.url if fc.answer_image else None,
                 })
+                flashcards_data.append(virtual)
+
+        elif fc.question_type == 'parameterized' and fc.parameter_spec:
+            try:
+                question, answer, _ = generate_parameterized_card(
+                    fc.parameter_spec, fc.question_template, fc.answer_template
+                )
+            except Exception:
+                question = fc.question_template or fc.question
+                answer = fc.answer_template or fc.answer
+            base.update({
+                'step_index': -1,
+                'step_total': None,
+                'question': question,
+                'answer': answer,
+                'answer_detail': '',
+                'context_steps': [],
+                'is_parameterized': True,
+            })
+            flashcards_data.append(base)
+
         else:
-            card_data.update({
+            base.update({
+                'step_index': -1,
+                'step_total': None,
                 'question': fc.question,
                 'answer': fc.answer,
+                'answer_detail': '',
+                'context_steps': [],
                 'is_parameterized': False,
-                'question_image': fc.question_image.url if fc.question_image else None,
-                'answer_image': fc.answer_image.url if fc.answer_image else None,
             })
-        
-        flashcards_data.append(card_data)
+            flashcards_data.append(base)
     
     # Pass flashcards_data directly to template for json_script tag (don't pre-serialize)
     
