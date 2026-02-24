@@ -1,7 +1,8 @@
-from django.test import TestCase
+import json
+from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.db.models import Q
-from .models import Course, Topic, Flashcard, Skill
+from .models import Course, Topic, Flashcard, Skill, FlashcardProgress, TopicScore
 from .utils import ParameterGenerator, TemplateRenderer, generate_parameterized_card
 
 
@@ -599,3 +600,47 @@ class CourseCatalogTestCase(TestCase):
         # Check for warning message
         messages = list(response.context['messages'])
         self.assertTrue(any('No public courses available yet' in str(m) for m in messages))
+
+class StepByStepModelTest(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username='testuser', password='pass')
+        course = Course.objects.create(name='Test Course', created_by=self.user)
+        self.topic = Topic.objects.create(course=course, name='Test Topic')
+        self.card = Flashcard.objects.create(
+            topic=self.topic,
+            question='Solve dy/dx + 2y = 4x',
+            answer='y = 2x - 1 + Ce^{-2x}',
+            question_type='step_by_step',
+            steps=[
+                {'move': 'Find integrating factor', 'detail': 'e^{2x}'},
+                {'move': 'Multiply both sides', 'detail': 'd/dx[ye^{2x}] = 4xe^{2x}'},
+                {'move': 'Integrate both sides', 'detail': 'ye^{2x} = 2xe^{2x} - e^{2x} + C'},
+            ]
+        )
+
+    def test_step_card_has_steps_field(self):
+        self.assertIsNotNone(self.card.steps)
+        self.assertEqual(len(self.card.steps), 3)
+        self.assertEqual(self.card.steps[0]['move'], 'Find integrating factor')
+
+    def test_step_card_has_teacher_explanation_field(self):
+        self.card.teacher_explanation = 'We use an integrating factor because...'
+        self.card.save()
+        self.card.refresh_from_db()
+        self.assertIn('integrating factor', self.card.teacher_explanation)
+
+    def test_flashcard_progress_step_index_default(self):
+        progress = FlashcardProgress.objects.create(
+            user=self.user, flashcard=self.card
+        )
+        self.assertEqual(progress.step_index, -1)
+
+    def test_flashcard_progress_per_step_unique(self):
+        FlashcardProgress.objects.create(user=self.user, flashcard=self.card, step_index=0)
+        FlashcardProgress.objects.create(user=self.user, flashcard=self.card, step_index=1)
+        count = FlashcardProgress.objects.filter(user=self.user, flashcard=self.card).count()
+        self.assertEqual(count, 2)
+
+    def test_topic_score_creation(self):
+        ts = TopicScore.objects.create(user=self.user, topic=self.topic, score=0.75, attempt_count=10)
+        self.assertEqual(ts.score, 0.75)

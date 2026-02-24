@@ -140,6 +140,23 @@ class Flashcard(models.Model):
         null=True,
         help_text="JSON specification of parameters, ranges, and computations"
     )
+
+    # Step-by-step card fields
+    steps = models.JSONField(
+        null=True,
+        blank=True,
+        help_text=(
+            'Ordered solution steps for step_by_step cards. '
+            'List of {"move": "action label", "detail": "full working"}'
+        )
+    )
+    teacher_explanation = models.TextField(
+        blank=True,
+        help_text=(
+            'Full worked explanation written as a teacher would give it. '
+            'Shown only on user request. Include reasoning and common mistakes.'
+        )
+    )
     
     # LaTeX/Math equation support
     uses_latex = models.BooleanField(
@@ -283,6 +300,10 @@ class FlashcardProgress(models.Model):
     """Tracks individual flashcard progress for spaced repetition"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcard_progress')
     flashcard = models.ForeignKey(Flashcard, on_delete=models.CASCADE, related_name='progress')
+    step_index = models.IntegerField(
+        default=-1,
+        help_text='-1 = whole card; 0..N-1 = individual step index for step_by_step cards'
+    )
     times_reviewed = models.IntegerField(default=0)
     times_correct = models.IntegerField(default=0)
     last_reviewed = models.DateTimeField(auto_now=True)
@@ -290,14 +311,14 @@ class FlashcardProgress(models.Model):
         default=0,
         help_text="0-5 confidence level for spaced repetition"
     )
-    
+
     class Meta:
-        unique_together = ['user', 'flashcard']
+        unique_together = ['user', 'flashcard', 'step_index']
         ordering = ['-last_reviewed']
-    
+
     def __str__(self):
         return f"{self.user.username} - {self.flashcard.question[:30]}..."
-    
+
     @property
     def success_rate(self):
         if self.times_reviewed == 0:
@@ -392,3 +413,17 @@ class StudyPreference(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.get_study_mode_display()}"
+
+class TopicScore(models.Model):
+    """Rolling confidence score per user per topic, used for adaptive difficulty nudges"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='topic_scores')
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='user_scores')
+    score = models.FloatField(default=0.0, help_text='0.0-1.0 rolling average confidence')
+    attempt_count = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'topic')
+
+    def __str__(self):
+        return f"{self.user.username} - {self.topic.name}: {self.score:.2f}"
