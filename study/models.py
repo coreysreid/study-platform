@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.validators import MinValueValidator, MaxValueValidator
 from django.contrib.auth.models import User
 import secrets
 import string
@@ -302,6 +303,7 @@ class FlashcardProgress(models.Model):
     flashcard = models.ForeignKey(Flashcard, on_delete=models.CASCADE, related_name='progress')
     step_index = models.IntegerField(
         default=-1,
+        validators=[MinValueValidator(-1)],
         help_text='-1 = whole card; 0..N-1 = individual step index for step_by_step cards'
     )
     times_reviewed = models.IntegerField(default=0)
@@ -418,7 +420,11 @@ class TopicScore(models.Model):
     """Rolling confidence score per user per topic, used for adaptive difficulty nudges"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='topic_scores')
     topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='user_scores')
-    score = models.FloatField(default=0.0, help_text='0.0-1.0 rolling average confidence')
+    score = models.FloatField(
+        default=0.0,
+        validators=[MinValueValidator(0.0), MaxValueValidator(1.0)],
+        help_text='0.0-1.0 rolling average confidence'
+    )
     attempt_count = models.IntegerField(default=0)
     updated_at = models.DateTimeField(auto_now=True)
 

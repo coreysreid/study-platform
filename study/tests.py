@@ -636,10 +636,15 @@ class StepByStepModelTest(TestCase):
         self.assertEqual(progress.step_index, -1)
 
     def test_flashcard_progress_per_step_unique(self):
+        from django.db import IntegrityError
+        # Two different step indices for the same card are allowed
         FlashcardProgress.objects.create(user=self.user, flashcard=self.card, step_index=0)
         FlashcardProgress.objects.create(user=self.user, flashcard=self.card, step_index=1)
         count = FlashcardProgress.objects.filter(user=self.user, flashcard=self.card).count()
         self.assertEqual(count, 2)
+        # Duplicate (user, flashcard, step_index) must be rejected
+        with self.assertRaises(IntegrityError):
+            FlashcardProgress.objects.create(user=self.user, flashcard=self.card, step_index=0)
 
     def test_topic_score_creation(self):
         ts = TopicScore.objects.create(user=self.user, topic=self.topic, score=0.75, attempt_count=10)
