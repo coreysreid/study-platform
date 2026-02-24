@@ -649,3 +649,37 @@ class StepByStepModelTest(TestCase):
     def test_topic_score_creation(self):
         ts = TopicScore.objects.create(user=self.user, topic=self.topic, score=0.75, attempt_count=10)
         self.assertEqual(ts.score, 0.75)
+
+
+class ProgressUpdateAjaxTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='proguser', password='pass')
+        course = Course.objects.create(name='Course', created_by=self.user)
+        self.topic = Topic.objects.create(course=course, name='Topic')
+        self.card = Flashcard.objects.create(
+            topic=self.topic, question='Q', answer='A'
+        )
+        from .models import CourseEnrollment
+        CourseEnrollment.objects.create(user=self.user, course=course)
+        self.client.login(username='proguser', password='pass')
+
+    def test_progress_update_returns_json(self):
+        response = self.client.post(
+            f'/flashcard/{self.card.id}/progress/',
+            {'correct': 'true', 'step_index': '-1'},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertIn('confidence_level', data)
+
+    def test_progress_update_with_step_index(self):
+        response = self.client.post(
+            f'/flashcard/{self.card.id}/progress/',
+            {'correct': 'true', 'step_index': '0'},
+        )
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['step_index'], 0)
+        prog = FlashcardProgress.objects.get(user=self.user, flashcard=self.card, step_index=0)
+        self.assertEqual(prog.times_reviewed, 1)

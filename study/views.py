@@ -400,44 +400,46 @@ def end_study_session(request, session_id):
 
 
 @login_required
+@require_POST
 def update_flashcard_progress(request, flashcard_id):
-    """Update progress for a flashcard (AJAX endpoint)"""
-    if request.method == 'POST':
-        flashcard = get_object_or_404(Flashcard, id=flashcard_id)
-        
-        # Verify user has access to this flashcard's course:
-        # - Owners (course.created_by) always have access
-        # - Other users must have an active CourseEnrollment for the course
-        course = flashcard.topic.course
-        is_owner = (course.created_by == request.user)
-        has_enrollment = CourseEnrollment.objects.filter(
-            user=request.user,
-            course=course
-        ).exists()
-        has_access = is_owner or has_enrollment
-        
-        if not has_access:
-            return HttpResponseForbidden("You don't have permission to update progress for this flashcard")
-        
-        correct = request.POST.get('correct') == 'true'
-        
-        progress, created = FlashcardProgress.objects.get_or_create(
-            user=request.user,
-            flashcard=flashcard
-        )
-        
-        progress.times_reviewed += 1
-        if correct:
-            progress.times_correct += 1
-            progress.confidence_level = min(5, progress.confidence_level + 1)
-        else:
-            progress.confidence_level = max(0, progress.confidence_level - 1)
-        
-        progress.save()
-        
-        return redirect('study_session', topic_id=flashcard.topic.id)
-    
-    return redirect('home')
+    """Update per-card (or per-step) progress. Returns JSON."""
+    from django.http import JsonResponse
+
+    flashcard = get_object_or_404(Flashcard, id=flashcard_id)
+
+    course = flashcard.topic.course
+    is_owner = (course.created_by == request.user)
+    has_enrollment = CourseEnrollment.objects.filter(
+        user=request.user, course=course
+    ).exists()
+    if not (is_owner or has_enrollment):
+        return JsonResponse({'error': 'No access'}, status=403)
+
+    correct = request.POST.get('correct') == 'true'
+    try:
+        step_index = int(request.POST.get('step_index', '-1'))
+    except (ValueError, TypeError):
+        step_index = -1
+
+    progress, _ = FlashcardProgress.objects.get_or_create(
+        user=request.user,
+        flashcard=flashcard,
+        step_index=step_index,
+    )
+
+    progress.times_reviewed += 1
+    if correct:
+        progress.times_correct += 1
+        progress.confidence_level = min(5, progress.confidence_level + 1)
+    else:
+        progress.confidence_level = max(0, progress.confidence_level - 1)
+    progress.save()
+
+    return JsonResponse({
+        'confidence_level': progress.confidence_level,
+        'times_reviewed': progress.times_reviewed,
+        'step_index': step_index,
+    })
 
 
 @login_required
