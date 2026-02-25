@@ -727,3 +727,33 @@ class StudySessionExpansionTest(TestCase):
         cards = response.context['flashcards_data']
         self.assertEqual(cards[0]['answer'], 'Separate variables')
         self.assertEqual(cards[0]['answer_detail'], 'dy/y = -2 dx')
+
+
+class TopicScoreTest(TestCase):
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='scoreuser', password='pass')
+        course = Course.objects.create(name='Course', created_by=self.user)
+        self.topic = Topic.objects.create(course=course, name='Topic')
+        from .models import CourseEnrollment, StudySession
+        CourseEnrollment.objects.create(user=self.user, course=course)
+        self.session = StudySession.objects.create(user=self.user, topic=self.topic)
+        for i in range(5):
+            card = Flashcard.objects.create(
+                topic=self.topic, question=f'Q{i}', answer=f'A{i}'
+            )
+            FlashcardProgress.objects.create(
+                user=self.user, flashcard=card, step_index=-1,
+                confidence_level=1, times_reviewed=2
+            )
+        self.client.login(username='scoreuser', password='pass')
+
+    def test_end_session_updates_topic_score(self):
+        response = self.client.post(
+            f'/session/{self.session.id}/end/',
+            {'cards_studied': '5'}
+        )
+        self.assertEqual(response.status_code, 302)
+        ts = TopicScore.objects.filter(user=self.user, topic=self.topic).first()
+        self.assertIsNotNone(ts)
+        self.assertGreater(ts.attempt_count, 0)

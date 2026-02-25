@@ -15,7 +15,7 @@ from functools import wraps
 from .models import (Course, Topic, Flashcard, StudySession, FlashcardProgress,
                      CourseEnrollment, StudyPreference, StudyGoal,
                      AccountabilityLink, AccountabilityRelationship,
-                     UserBadge, BADGE_DEFINITIONS)
+                     UserBadge, BADGE_DEFINITIONS, TopicScore)
 import datetime
 from .forms import CourseForm, TopicForm, FlashcardForm, CustomRegistrationForm
 from .utils import generate_parameterized_card
@@ -374,7 +374,18 @@ def study_session(request, topic_id):
             flashcards_data.append(base)
     
     # Pass flashcards_data directly to template for json_script tag (don't pre-serialize)
-    
+
+    nudge_topics = []
+    my_score = TopicScore.objects.filter(user=request.user, topic=topic).first()
+    if my_score and my_score.score < 0.4 and my_score.attempt_count >= 10:
+        for prereq in topic.prerequisites.all():
+            prereq_score = TopicScore.objects.filter(user=request.user, topic=prereq).first()
+            if prereq_score is None or prereq_score.score < 0.7:
+                nudge_topics.append({
+                    'topic': prereq,
+                    'score_pct': int(prereq_score.score * 100) if prereq_score else None,
+                })
+
     return render(request, 'study/study_session.html', {
         'topic': topic,
         'flashcards': flashcards,
@@ -382,6 +393,7 @@ def study_session(request, topic_id):
         'session': session,
         'study_mode': study_mode,
         'study_modes': StudyPreference.STUDY_MODES,
+        'nudge_topics': nudge_topics,
     })
 
 
@@ -406,6 +418,8 @@ def end_study_session(request, session_id):
         new_badges = _award_badges(request.user, stats)
         for badge in new_badges:
             messages.success(request, f"{badge['icon']} Badge earned: {badge['name']}!")
+
+        _update_topic_score(request.user, session.topic)
 
         return redirect('topic_detail', topic_id=session.topic.id)
     
@@ -674,6 +688,31 @@ def _award_badges(user, stats):
             UserBadge.objects.create(user=user, badge_slug=badge['slug'])
             new_badges.append(badge)
     return new_badges
+
+def _update_topic_score(user, topic):
+    """Recompute and save rolling confidence score for user/topic."""
+    recent_progress = FlashcardProgress.objects.filter(
+        flashcard__topic=topic,
+        user=user,
+    ).order_by('-last_reviewed')[:10]
+
+    if not recent_progress:
+        return
+
+    # confidence_level is 0-5; normalise to 0.0-1.0
+    avg = sum(p.confidence_level for p in recent_progress) / (5.0 * len(recent_progress))
+
+    TopicScore.objects.update_or_create(
+        user=user,
+        topic=topic,
+        defaults={
+            'score': round(avg, 3),
+            'attempt_count': FlashcardProgress.objects.filter(
+                flashcard__topic=topic, user=user
+            ).count(),
+        }
+    )
+
 
 
 def _enrich_badges(user):

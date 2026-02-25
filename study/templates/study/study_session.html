@@ -167,6 +167,21 @@
 {% endblock %}
 
 {% block content %}
+{% if nudge_topics %}
+<div style="background:#fff8e1;border:1px solid #ffe082;border-radius:10px;padding:1.25rem;margin-bottom:1.5rem;max-width:640px;margin-left:auto;margin-right:auto;">
+    <strong>Heads up</strong>
+    <p style="margin:0.5rem 0;">Your recent scores on <em>{{ topic.name }}</em> suggest some prerequisite topics may need reinforcement.</p>
+    <ul style="margin:0.5rem 0 0.75rem;padding-left:1.25rem;">
+    {% for item in nudge_topics %}
+        <li>
+            <a href="{% url 'study_session' item.topic.id %}">{{ item.topic.name }}</a>
+            {% if item.score_pct is not None %}(score: {{ item.score_pct }}%){% else %}(no recent activity){% endif %}
+        </li>
+    {% endfor %}
+    </ul>
+    <a href="?" class="btn btn-secondary" style="font-size:0.85rem;padding:0.3rem 0.75rem;">Dismiss</a>
+</div>
+{% endif %}
 <div>
     <div style="margin-bottom: 2rem;">
         <a href="{% url 'topic_detail' topic.id %}" style="color: #667eea; text-decoration: none;">
