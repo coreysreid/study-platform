@@ -1,6 +1,10 @@
 """
 Django management command to populate the database with core mathematics curriculum.
 
+DEPRECATED: Superseded by data migration 0013_seed_course_structures.
+All course structures are now seeded automatically via `python manage.py migrate`.
+This command is kept for reference only.
+
 This command creates:
 1. A core "Engineering Mathematics" course
 2. All 13 topics outlined in the curriculum

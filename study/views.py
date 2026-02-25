@@ -92,6 +92,15 @@ def register(request):
         if form.is_valid():
             user = form.save()
             login(request, user, backend='django.contrib.auth.backends.ModelBackend')
+            # Auto-enroll new users in all system courses
+            system_user = get_system_user()
+            if system_user:
+                system_courses = Course.objects.filter(created_by=system_user)
+                for course in system_courses:
+                    CourseEnrollment.objects.get_or_create(
+                        user=user, course=course,
+                        defaults={'status': 'studying'}
+                    )
             messages.success(request, 'Registration successful!')
             return redirect('home')
     else:
