@@ -1,3 +1,5 @@
+import json
+
 from django import forms
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
@@ -58,12 +60,23 @@ class TopicForm(forms.ModelForm):
 
 
 class FlashcardForm(forms.ModelForm):
+    steps_json = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 6,
+            'placeholder': '[{"move": "Step label", "detail": "Full working"}, ...]',
+        }),
+        help_text='JSON array of steps for step_by_step cards. Each step needs a "move" key and optional "detail".',
+    )
+
     class Meta:
         model = Flashcard
         fields = [
-            'topic', 'question', 'question_image', 'answer', 'answer_image', 
+            'topic', 'question', 'question_image', 'answer', 'answer_image',
             'hint', 'difficulty', 'question_type', 'skills',
-            'question_template', 'answer_template', 'parameter_spec'
+            'question_template', 'answer_template', 'parameter_spec',
+            'teacher_explanation',
         ]
         widgets = {
             'topic': forms.Select(attrs={'class': 'form-control'}),
@@ -76,50 +89,79 @@ class FlashcardForm(forms.ModelForm):
             'question_template': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Template with {variable} placeholders'}),
             'answer_template': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Answer template with {variable} placeholders'}),
             'parameter_spec': forms.Textarea(attrs={'class': 'form-control', 'rows': 5, 'placeholder': 'JSON parameter specification'}),
+            'teacher_explanation': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 4,
+                'placeholder': 'Full worked explanation written as a teacher would give it. Include reasoning and common mistakes.',
+            }),
         }
-    
+
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if user:
-            # Limit topic selection to user's own topics
             self.fields['topic'].queryset = Topic.objects.filter(course__created_by=user)
-    
+        # Pre-populate steps_json from existing instance
+        if self.instance and self.instance.pk and self.instance.steps:
+            self.fields['steps_json'].initial = json.dumps(self.instance.steps, indent=2)
+
+    def clean_steps_json(self):
+        raw = self.cleaned_data.get('steps_json', '').strip()
+        if not raw:
+            return None
+        try:
+            parsed = json.loads(raw)
+        except json.JSONDecodeError as exc:
+            raise forms.ValidationError(f'Invalid JSON: {exc}')
+        if not isinstance(parsed, list):
+            raise forms.ValidationError('Steps must be a JSON array.')
+        for i, step in enumerate(parsed):
+            if 'move' not in step:
+                raise forms.ValidationError(f'Step {i} is missing required "move" key.')
+        return parsed
+
     def clean(self):
         """Validate parameterized card requirements"""
         cleaned_data = super().clean()
         question_type = cleaned_data.get('question_type')
-        
-        # Validate parameterized cards have required fields
+
         if question_type == 'parameterized':
             question_template = cleaned_data.get('question_template')
             answer_template = cleaned_data.get('answer_template')
             parameter_spec = cleaned_data.get('parameter_spec')
-            
+
             if not question_template:
                 raise forms.ValidationError(
                     "Parameterized cards require a question template with {variable} placeholders."
                 )
-            
+
             if not answer_template:
                 raise forms.ValidationError(
                     "Parameterized cards require an answer template."
                 )
-            
+
             if not parameter_spec:
                 raise forms.ValidationError(
                     "Parameterized cards require a parameter specification (JSON format)."
                 )
-            
-            # Validate parameter_spec is valid JSON
-            import json
+
             try:
                 json.loads(parameter_spec)
             except json.JSONDecodeError as e:
                 raise forms.ValidationError(
                     f"Parameter specification must be valid JSON: {str(e)}"
                 )
-        
+
         return cleaned_data
+
+    def save(self, commit=True):
+        instance = super().save(commit=False)
+        steps = self.cleaned_data.get('steps_json')
+        if steps is not None:
+            instance.steps = steps
+        if commit:
+            instance.save()
+            self._save_m2m()
+        return instance
 
 

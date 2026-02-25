@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Course, Topic, Flashcard, StudySession, FlashcardProgress,
     Skill, MultipleChoiceOption, CardTemplate, CourseEnrollment,
-    StudyPreference
+    StudyPreference, TopicScore
 )
 
 # Register your models here.
@@ -61,6 +61,11 @@ class FlashcardAdmin(admin.ModelAdmin):
             'fields': ('code_snippet', 'code_language'),
             'description': 'Syntax-highlighted code snippets',
             'classes': ('collapse',)
+        }),
+        ('Step-by-Step Fields', {
+            'fields': ('steps', 'teacher_explanation'),
+            'description': 'Steps JSON and teacher explanation for step_by_step cards',
+            'classes': ('collapse',),
         }),
     )
     
@@ -133,3 +138,11 @@ class StudyPreferenceAdmin(admin.ModelAdmin):
     list_display = ['user', 'study_mode', 'updated_at']
     list_filter = ['study_mode']
     search_fields = ['user__username']
+
+
+@admin.register(TopicScore)
+class TopicScoreAdmin(admin.ModelAdmin):
+    list_display = ['user', 'topic', 'score', 'attempt_count', 'updated_at']
+    list_filter = ['topic__course', 'updated_at']
+    search_fields = ['user__username', 'topic__name']
+    ordering = ['-updated_at']
