@@ -207,6 +207,11 @@ GITHUB_REPO = os.getenv('GITHUB_REPO', '')
 ALLOWED_GRAPH_IMPORTS = ['numpy', 'matplotlib.pyplot', 'math']
 
 # Production Security Settings
+# Railway (and most PaaS) terminate SSL at the load balancer and forward requests
+# as HTTP internally. This header tells Django the original connection was HTTPS,
+# preventing an infinite redirect loop that breaks health checks.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # These are enabled by default but can be disabled in development by setting environment variables
 SECURE_SSL_REDIRECT = os.getenv('SECURE_SSL_REDIRECT', 'True') == 'True' and not DEBUG
 SESSION_COOKIE_SECURE = os.getenv('SESSION_COOKIE_SECURE', 'True') == 'True' and not DEBUG
