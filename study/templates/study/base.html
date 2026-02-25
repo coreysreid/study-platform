@@ -291,6 +291,19 @@
                 <button onclick="closeFeedbackModal()" aria-label="Close" style="background: none; border: none; font-size: 1.5rem; cursor: pointer; color: #666;">&times;</button>
             </div>
             <form id="feedbackForm" onsubmit="submitGithubFeedback(event)">
+                <div style="margin-bottom:1rem;">
+                    <label style="display:block;margin-bottom:0.4rem;font-weight:600;">Issue type</label>
+                    <label style="margin-right:1.5rem;">
+                        <input type="radio" name="feedbackCategory" value="content" id="feedbackCategoryContent" checked>
+                        Content issue
+                        <span style="font-size:0.8rem;color:#666;">(wrong answer, confusing step, needs more cards)</span>
+                    </label><br>
+                    <label>
+                        <input type="radio" name="feedbackCategory" value="bug" id="feedbackCategoryBug">
+                        Bug / UX issue
+                        <span style="font-size:0.8rem;color:#666;">(page crash, broken feature)</span>
+                    </label>
+                </div>
                 <div style="margin-bottom: 1rem;">
                     <label for="feedbackTitle" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Title</label>
                     <input type="text" id="feedbackTitle" placeholder="Brief summary of your feedback" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 5px; font-size: 1rem; box-sizing: border-box;" required>
@@ -373,13 +386,9 @@
             var description = document.getElementById('feedbackDescription').value;
             var includeSiteState = document.getElementById('includeSiteState').checked;
 
-            var typeLabels = {
-                'feedback': 'feedback',
-                'bug': 'bug',
-                'feature': 'enhancement',
-                'content': 'content'
-            };
-            var label = typeLabels[feedbackType] || 'feedback';
+            var categoryEl = document.querySelector('input[name="feedbackCategory"]:checked');
+            var feedbackCategory = categoryEl ? categoryEl.value : 'bug';
+            var label = feedbackCategory === 'content' ? 'content-feedback' : 'bug';
 
             var typeDisplay = feedbackType.charAt(0).toUpperCase() + feedbackType.slice(1);
             var title = encodeURIComponent('[' + typeDisplay + '] ' + feedbackTitle);
