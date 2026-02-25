@@ -6,9 +6,4 @@ startCommand = "gunicorn study_platform.wsgi:application --bind 0.0.0.0:$PORT"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
-
-[[deploy.releaseCommands]]
-command = "/opt/venv/bin/python manage.py migrate --noinput"
-
-[[deploy.releaseCommands]]
-command = "/opt/venv/bin/python manage.py collectstatic --noinput"
+preDeployCommand = ["/opt/venv/bin/python manage.py migrate --noinput && /opt/venv/bin/python manage.py collectstatic --noinput"]
