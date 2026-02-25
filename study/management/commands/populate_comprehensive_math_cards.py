@@ -1,6 +1,10 @@
 """
 Management command to create comprehensive flashcard content for all math topics.
 
+DEPRECATED: Superseded by data migration 0014_flashcards_engineering_mathematics.
+All flashcard content is now seeded automatically via `python manage.py migrate`.
+This command is kept for reference only.
+
 This command creates a substantial set of flashcards across all 13 topics in the
 Engineering Mathematics curriculum, ensuring users can complete math courses
 right off installation.
