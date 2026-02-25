@@ -200,8 +200,8 @@
         <span id="cardCounter">0</span> of <span id="cardTotal"></span> cards
     </div>
     
-    <div class="flashcard-container">
-        <div class="flashcard" id="flashcard" onclick="flipCard()">
+    <div class="flashcard-container" id="flashcard-container">
+        <div class="flashcard" id="flashcard">
             <div class="flashcard-face flashcard-front">
                 <div style="text-align: center; width: 100%;">
                     <h2 style="font-size: 1.5rem; margin-bottom: 1rem;">Question</h2>
@@ -227,17 +227,44 @@
             </div>
         </div>
     </div>
+
+    <!-- Step card display (shown instead of flip card for step_by_step) -->
+    <div id="stepCardContainer" style="display:none; max-width: 640px; margin: 0 auto;">
+        <div style="background: #f8f9fa; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem;">
+            <div style="font-size: 0.8rem; color: #6c757d; margin-bottom: 0.5rem;" id="stepCounter"></div>
+            <strong>Problem:</strong>
+            <div id="stepQuestion" style="font-size: 1.1rem; margin: 0.5rem 0 1rem;"></div>
+            <div id="priorStepsContainer" style="border-top: 1px solid #dee2e6; padding-top: 0.75rem;"></div>
+            <div id="nextStepPrompt" style="margin-top: 0.75rem; color: #495057; font-style: italic;">
+                What is the next move?
+            </div>
+        </div>
+        <div id="stepReveal" style="display:none; background: #e8f5e9; border-radius: 12px; padding: 1.5rem; margin-bottom: 1rem;">
+            <strong>Step:</strong> <span id="stepMove" style="font-size: 1.1rem;"></span>
+            <div id="stepDetail" style="margin-top: 0.5rem; font-size: 0.95rem; color: #555;"></div>
+        </div>
+    </div>
+
+    <!-- Teacher explanation panel (hidden until requested) -->
+    <div id="teacherPanel" style="display:none; max-width: 640px; margin: 1rem auto; background: #fff8e1; border-radius: 12px; padding: 1.5rem;">
+        <strong>Teacher Explanation</strong>
+        <div id="teacherText" style="margin-top: 0.75rem; line-height: 1.6;"></div>
+    </div>
     
     <div id="hint" style="display: none; text-align: center; margin: 1rem auto; max-width: 600px; padding: 1rem; background: #fff3cd; border-radius: 10px;">
         <strong>Hint:</strong> <span id="hintText"></span>
     </div>
     
     <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap;">
-        <button onclick="showHint()" class="btn btn-secondary" id="hintBtn">Show Hint</button>
-        <button onclick="markCorrect()" class="btn" style="background: #28a745;">✓ Got it!</button>
-        <button onclick="markIncorrect()" class="btn btn-danger">✗ Missed</button>
+        <button onclick="markResult(true)" class="btn" style="background: #28a745;" id="gotItBtn">Got it</button>
+        <button onclick="markResult(null)" class="btn btn-secondary" id="nearlyBtn">Nearly</button>
+        <button onclick="markResult(false)" class="btn btn-danger" id="missedBtn">Missed it</button>
         <button onclick="nextCard()" class="btn btn-secondary">Skip</button>
-        <button onclick="submitFeedback()" class="btn btn-secondary" id="feedbackBtn">💬 Feedback</button>
+    </div>
+    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 0.5rem; flex-wrap: wrap;">
+        <button onclick="showHint()" class="btn btn-secondary" id="hintBtn">Show Hint</button>
+        <button onclick="toggleTeacherExplanation()" class="btn btn-secondary" id="teacherBtn" style="display:none;">Full Explanation</button>
+        <button onclick="submitFeedback()" class="btn btn-secondary" id="feedbackBtn">Feedback</button>
     </div>
     
     <form id="endSessionForm" method="post" action="{% url 'end_study_session' session.id %}" style="display: none;">
@@ -249,164 +276,214 @@
 {{ flashcards_data|json_script:"flashcards-data" }}
 <script>
     const cards = JSON.parse(document.getElementById('flashcards-data').textContent);
-    document.getElementById('cardTotal').textContent = cards.length;
     const studyMode = '{{ study_mode }}';
+    const csrfToken = '{{ csrf_token }}';
+
+    // Set total card count (uses expanded virtual cards count)
+    document.getElementById('cardTotal').textContent = cards.length;
+
     let currentIndex = 0;
     let cardsStudied = 0;
     let isFlipped = false;
+    let isStepCard = false;
     let timerInterval = null;
-    
-    // Apply study mode class to container
+
     document.querySelector('.content').classList.add('mode-' + studyMode);
-    
-    // Animation duration constant (matches CSS transition: transform 0.6s)
-    const FLIP_ANIMATION_DURATION = 650; // 650ms to ensure animation completes (600ms + buffer)
-    
-    // Challenge mode: timer duration in seconds
-    const CHALLENGE_TIMER_SECONDS = 30;
-    
+    const FLIP_DURATION = 650;
+    const CHALLENGE_SECONDS = 30;
+
     function startTimer() {
         if (studyMode !== 'challenge') return;
-        
-        let timeLeft = CHALLENGE_TIMER_SECONDS;
-        const timerBar = document.getElementById('timerBar');
-        timerBar.style.width = '100%';
-        
+        let timeLeft = CHALLENGE_SECONDS;
+        const bar = document.getElementById('timerBar');
+        bar.style.width = '100%';
         if (timerInterval) clearInterval(timerInterval);
         timerInterval = setInterval(function() {
             timeLeft -= 0.1;
-            const pct = (timeLeft / CHALLENGE_TIMER_SECONDS) * 100;
-            timerBar.style.width = Math.max(0, pct) + '%';
-            
-            if (timeLeft <= 0) {
-                clearInterval(timerInterval);
-                // Auto-flip to reveal answer when time runs out
-                if (!isFlipped) {
-                    flipCard();
-                }
-            }
+            bar.style.width = Math.max(0, (timeLeft / CHALLENGE_SECONDS) * 100) + '%';
+            if (timeLeft <= 0) { clearInterval(timerInterval); if (!isFlipped) revealCard(); }
         }, 100);
     }
-    
+
     function stopTimer() {
-        if (timerInterval) {
-            clearInterval(timerInterval);
-            timerInterval = null;
-        }
+        if (timerInterval) { clearInterval(timerInterval); timerInterval = null; }
     }
-    
+
     function loadCard() {
-        if (currentIndex >= cards.length) {
-            endSession();
-            return;
-        }
-        
+        if (currentIndex >= cards.length) { endSession(); return; }
+
         const card = cards[currentIndex];
-        
-        // Load text content
-        // Always use textContent for security - MathJax can typeset from text nodes
-        document.getElementById('question').textContent = card.question;
-        document.getElementById('answer').textContent = card.answer;
-        document.getElementById('cardCounter').textContent = currentIndex + 1;
-        document.getElementById('hintText').textContent = card.hint;
-        
-        // Clear previous rich media
-        document.getElementById('question-diagram').innerHTML = '';
-        document.getElementById('answer-diagram').innerHTML = '';
-        document.getElementById('question-code').innerHTML = '';
-        document.getElementById('answer-code').innerHTML = '';
-        document.getElementById('question-graph').innerHTML = '';
-        document.getElementById('answer-graph').innerHTML = '';
-        
-        // Load images
-        const questionImg = document.getElementById('questionImage');
-        const answerImg = document.getElementById('answerImage');
-        
-        // Clear previous images
-        questionImg.innerHTML = '';
-        answerImg.innerHTML = '';
-        
-        if (card.question_image_url) {
-            const img = document.createElement('img');
-            img.src = card.question_image_url;
-            img.alt = 'Question image';
-            img.style.maxWidth = '100%';
-            img.style.maxHeight = '200px';
-            img.style.borderRadius = '5px';
-            questionImg.appendChild(img);
-        }
-        
-        if (card.answer_image_url) {
-            const img = document.createElement('img');
-            img.src = card.answer_image_url;
-            img.alt = 'Answer image';
-            img.style.maxWidth = '100%';
-            img.style.maxHeight = '200px';
-            img.style.borderRadius = '5px';
-            answerImg.appendChild(img);
-        }
-        
-        // Render diagrams if present
-        if (card.diagram_code) {
-            const diagramDiv = document.createElement('div');
-            diagramDiv.className = 'mermaid';
-            diagramDiv.textContent = card.diagram_code;
-            document.getElementById('question-diagram').appendChild(diagramDiv);
-        }
-        
-        // Render code snippets if present
-        if (card.code_snippet && card.code_language) {
-            const preElement = document.createElement('pre');
-            const codeElement = document.createElement('code');
-            codeElement.className = `language-${card.code_language}`;
-            codeElement.textContent = card.code_snippet;
-            preElement.appendChild(codeElement);
-            document.getElementById('question-code').appendChild(preElement);
-            if (typeof Prism !== 'undefined') {
-                Prism.highlightElement(codeElement);
-            }
-        }
-        
-        // Render graph if present
-        if (card.graph_image_url) {
-            const imgElement = document.createElement('img');
-            imgElement.src = card.graph_image_url;
-            imgElement.alt = 'Graph';
-            document.getElementById('question-graph').appendChild(imgElement);
-        }
-        
-        // Trigger MathJax to re-render if present
-        if (card.uses_latex && typeof MathJax !== 'undefined') {
-            MathJax.typesetPromise().catch((err) => console.log('MathJax error:', err));
-        }
-        
-        // Trigger Mermaid to re-render diagrams
-        if (card.diagram_code && typeof mermaid !== 'undefined') {
-            mermaid.init(undefined, '.mermaid');
-        }
-        
-        // Store current card id on the button for feedback context
+        isStepCard = (card.question_type === 'step_by_step');
+        isFlipped = false;
+
+        document.getElementById('teacherPanel').style.display = 'none';
+        document.getElementById('teacherBtn').style.display = 'none';
+        document.getElementById('hint').style.display = 'none';
+        document.getElementById('stepReveal').style.display = 'none';
+        document.getElementById('nextStepPrompt').style.display = '';
         document.getElementById('feedbackBtn').dataset.cardId = card.id;
         document.getElementById('feedbackBtn').dataset.cardQuestion = card.question;
-        
-        // In challenge mode, hide hints
-        if (studyMode === 'challenge') {
-            document.getElementById('hintBtn').style.display = 'none';
-        } else if (card.hint) {
+
+        if (card.teacher_explanation) {
+            document.getElementById('teacherText').textContent = card.teacher_explanation;
+        }
+
+        if (isStepCard) {
+            loadStepCard(card);
+        } else {
+            loadFlipCard(card);
+        }
+
+        document.getElementById('cardCounter').textContent = currentIndex + 1;
+        document.getElementById('progressBar').style.width =
+            ((currentIndex / cards.length) * 100) + '%';
+        startTimer();
+    }
+
+    function loadFlipCard(card) {
+        document.getElementById('flashcard-container').style.display = '';
+        document.getElementById('stepCardContainer').style.display = 'none';
+
+        const fc = document.getElementById('flashcard');
+        if (fc.classList.contains('flipped')) fc.classList.remove('flipped');
+
+        document.getElementById('question').textContent = card.question;
+        document.getElementById('answer').textContent = card.answer;
+
+        setImage('questionImage', card.question_image);
+        setImage('answerImage', card.answer_image);
+        setImage('question-graph', card.graph_image_url);
+        document.getElementById('answer-graph').textContent = '';
+
+        const qDiag = document.getElementById('question-diagram');
+        qDiag.textContent = '';
+        if (card.diagram_code) {
+            const mermaidDiv = document.createElement('div');
+            mermaidDiv.className = 'mermaid';
+            mermaidDiv.textContent = card.diagram_code;
+            qDiag.appendChild(mermaidDiv);
+        }
+        document.getElementById('answer-diagram').textContent = '';
+        document.getElementById('question-code').textContent = '';
+        document.getElementById('answer-code').textContent = '';
+
+        if (studyMode !== 'challenge' && card.hint) {
             document.getElementById('hintBtn').style.display = 'inline-block';
+            document.getElementById('hintText').textContent = card.hint;
         } else {
             document.getElementById('hintBtn').style.display = 'none';
         }
-        
-        document.getElementById('hint').style.display = 'none';
-        
-        const progress = ((currentIndex) / cards.length) * 100;
-        document.getElementById('progressBar').style.width = progress + '%';
-        
-        // Start timer for challenge mode
-        startTimer();
+
+        if (typeof MathJax !== 'undefined') MathJax.typesetPromise();
+        if (card.diagram_code && typeof mermaid !== 'undefined') mermaid.init(undefined, '.mermaid');
     }
-    
+
+    function loadStepCard(card) {
+        document.getElementById('flashcard-container').style.display = 'none';
+        document.getElementById('stepCardContainer').style.display = '';
+        document.getElementById('hintBtn').style.display = 'none';
+
+        document.getElementById('stepCounter').textContent =
+            'Step ' + (card.step_index + 1) + ' of ' + card.step_total;
+        document.getElementById('stepQuestion').textContent = card.question;
+
+        const priorContainer = document.getElementById('priorStepsContainer');
+        priorContainer.textContent = '';
+        if (card.context_steps && card.context_steps.length > 0) {
+            card.context_steps.forEach(function(s, i) {
+                const div = document.createElement('div');
+                div.style.cssText = 'margin-bottom: 0.4rem; color: #495057;';
+                div.textContent = 'Step ' + (i + 1) + ': ' + s.move;
+                priorContainer.appendChild(div);
+            });
+        }
+
+        if (typeof MathJax !== 'undefined') MathJax.typesetPromise();
+    }
+
+    function setImage(containerId, url) {
+        const el = document.getElementById(containerId);
+        el.textContent = '';
+        if (url) {
+            const img = document.createElement('img');
+            img.src = url;
+            img.style.cssText = 'max-width:100%; max-height:200px;';
+            el.appendChild(img);
+        }
+    }
+
+    function revealCard() {
+        stopTimer();
+        if (isStepCard) {
+            const card = cards[currentIndex];
+            document.getElementById('stepMove').textContent = card.answer;
+            document.getElementById('stepDetail').textContent = card.answer_detail || '';
+            document.getElementById('stepReveal').style.display = '';
+            document.getElementById('nextStepPrompt').style.display = 'none';
+            if (card.teacher_explanation) {
+                document.getElementById('teacherBtn').style.display = 'inline-block';
+            }
+            if (typeof MathJax !== 'undefined') MathJax.typesetPromise();
+        } else {
+            document.getElementById('flashcard').classList.add('flipped');
+            const card = cards[currentIndex];
+            if (card.teacher_explanation) {
+                document.getElementById('teacherBtn').style.display = 'inline-block';
+            }
+        }
+        isFlipped = true;
+    }
+
+    document.getElementById('flashcard').onclick = function() {
+        if (!isFlipped) revealCard();
+    };
+
+    function toggleTeacherExplanation() {
+        const panel = document.getElementById('teacherPanel');
+        panel.style.display = (panel.style.display === 'none') ? '' : 'none';
+    }
+
+    function showHint() {
+        document.getElementById('hint').style.display = 'block';
+    }
+
+    function postProgress(cardId, stepIndex, correct) {
+        const url = '/flashcard/' + cardId + '/progress/';
+        const body = new URLSearchParams({
+            csrfmiddlewaretoken: csrfToken,
+            correct: correct ? 'true' : 'false',
+            step_index: stepIndex,
+        });
+        fetch(url, { method: 'POST', body: body }).catch(function() {});
+    }
+
+    function markResult(correct) {
+        if (!isFlipped) { revealCard(); return; }
+        const card = cards[currentIndex];
+        postProgress(card.id, card.step_index, correct === true);
+        cardsStudied++;
+        moveToNext();
+    }
+
+    function moveToNext() {
+        stopTimer();
+        currentIndex++;
+        if (isStepCard) {
+            loadCard();
+        } else {
+            if (isFlipped) {
+                document.getElementById('flashcard').classList.remove('flipped');
+                setTimeout(loadCard, FLIP_DURATION);
+            } else {
+                loadCard();
+            }
+        }
+    }
+
+    function nextCard() {
+        moveToNext();
+    }
+
     function submitFeedback() {
         const btn = document.getElementById('feedbackBtn');
         const question = (btn.dataset.cardQuestion || '').substring(0, 60);
@@ -414,65 +491,18 @@
         if (typeof openFeedbackModal === 'function') {
             document.getElementById('feedbackTitle').value = 'Flashcard Feedback: ' + question;
             document.getElementById('feedbackType').value = 'content';
-            document.getElementById('feedbackDescription').value = 'Flashcard ID: ' + cardId + '\n\nPlease describe the issue with this flashcard:\n';
+            document.getElementById('feedbackDescription').value =
+                'Flashcard ID: ' + cardId + '\n\nPlease describe the issue:\n';
             openFeedbackModal();
         }
     }
-    
-    function flipCard() {
-        const flashcard = document.getElementById('flashcard');
-        flashcard.classList.toggle('flipped');
-        isFlipped = !isFlipped;
-        if (isFlipped) {
-            stopTimer();
-        }
-    }
-    
-    function showHint() {
-        document.getElementById('hint').style.display = 'block';
-    }
-    
-    function markCorrect() {
-        if (!isFlipped) {
-            alert('Please reveal the answer first!');
-            return;
-        }
-        cardsStudied++;
-        nextCard();
-    }
-    
-    function markIncorrect() {
-        if (!isFlipped) {
-            alert('Please reveal the answer first!');
-            return;
-        }
-        cardsStudied++;
-        nextCard();
-    }
-    
-    function nextCard() {
-        stopTimer();
-        currentIndex++;
-        // If card is flipped (showing answer), flip it back first
-        if (isFlipped) {
-            flipCard(); // Flip card back to question side
-            // Wait for flip animation to complete before loading new content
-            setTimeout(() => {
-                loadCard();
-            }, FLIP_ANIMATION_DURATION);
-        } else {
-            // Card not flipped, load immediately
-            loadCard();
-        }
-    }
-    
+
     function endSession() {
         stopTimer();
         document.getElementById('cardsStudied').value = cardsStudied;
         document.getElementById('endSessionForm').submit();
     }
-    
-    // Load first card
+
     loadCard();
 </script>
 {% endblock %}
