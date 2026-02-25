@@ -197,7 +197,7 @@
     </div>
     
     <div style="text-align: center; margin-bottom: 1rem;">
-        <span id="cardCounter">0</span> of {{ flashcards|length }} cards
+        <span id="cardCounter">0</span> of <span id="cardTotal"></span> cards
     </div>
     
     <div class="flashcard-container">
@@ -249,6 +249,7 @@
 {{ flashcards_data|json_script:"flashcards-data" }}
 <script>
     const cards = JSON.parse(document.getElementById('flashcards-data').textContent);
+    document.getElementById('cardTotal').textContent = cards.length;
     const studyMode = '{{ study_mode }}';
     let currentIndex = 0;
     let cardsStudied = 0;
