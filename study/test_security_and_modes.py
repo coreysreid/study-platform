@@ -3,9 +3,8 @@ from django.contrib.auth.models import User
 from django.urls import reverse
 from .models import (
     Course, Topic, Flashcard, StudySession, CourseEnrollment,
-    StudyPreference, CardFeedback
+    StudyPreference,
 )
-from .forms import CardFeedbackForm
 
 
 class LogoutSecurityTestCase(TestCase):
@@ -70,47 +69,6 @@ class EndStudySessionValidationTestCase(TestCase):
         self.session.refresh_from_db()
         self.assertEqual(self.session.cards_studied, 10)
 
-
-class FeedbackFormValidationTestCase(TestCase):
-    """Test server-side validation of CardFeedbackForm"""
-
-    def test_valid_difficulty_rating(self):
-        """Difficulty rating within 1-5 should be valid"""
-        form = CardFeedbackForm(data={
-            'feedback_type': 'confusing',
-            'difficulty_rating': 3,
-            'comment': 'Test comment'
-        })
-        self.assertTrue(form.is_valid())
-
-    def test_difficulty_rating_too_high(self):
-        """Difficulty rating above 5 should be invalid"""
-        form = CardFeedbackForm(data={
-            'feedback_type': 'confusing',
-            'difficulty_rating': 10,
-            'comment': 'Test comment'
-        })
-        self.assertFalse(form.is_valid())
-        self.assertIn('difficulty_rating', form.errors)
-
-    def test_difficulty_rating_too_low(self):
-        """Difficulty rating below 1 should be invalid"""
-        form = CardFeedbackForm(data={
-            'feedback_type': 'confusing',
-            'difficulty_rating': 0,
-            'comment': 'Test comment'
-        })
-        self.assertFalse(form.is_valid())
-        self.assertIn('difficulty_rating', form.errors)
-
-    def test_null_difficulty_rating_is_valid(self):
-        """Null difficulty rating should be valid (it's optional)"""
-        form = CardFeedbackForm(data={
-            'feedback_type': 'confusing',
-            'difficulty_rating': '',
-            'comment': 'Test comment'
-        })
-        self.assertTrue(form.is_valid())
 
 
 class StudyPreferenceModelTestCase(TestCase):

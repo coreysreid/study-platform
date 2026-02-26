@@ -190,7 +190,7 @@
     </div>
     
     <h1 style="text-align: center; color: #667eea; margin-bottom: 1rem;">
-        Study Session: {{ topic.name }}
+        Study Session: {% if topic.code %}<span class="topic-code">{{ topic.code }}</span> · {% endif %}{{ topic.name }}
     </h1>
     
     <!-- Study Mode Selector -->
