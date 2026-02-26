@@ -17,14 +17,14 @@ new course development. Update when new courses are added to the platform.
 
 | Code | Unit Name | Platform Course | Coverage |
 |------|-----------|-----------------|----------|
-| SMA101 | Mathematics 1A | Engineering Mathematics (001A–003A Basic Arithmetic → Pre-Calculus) | ✅ |
-| SMA102 | Mathematics 1B | Engineering Mathematics (004A–007A Differential → Multivariable Calculus) | ✅ |
-| SMA209 | Mathematics 2A | Engineering Mathematics (007A–010B Linear Algebra → Laplace Transforms) | ✅ |
+| SMA101 | Mathematics 1A | Mathematics 1A (SMA101) | ✅ |
+| SMA102 | Mathematics 1B | Mathematics 1B (SMA102) | ✅ |
+| SMA209 | Mathematics 2A | Mathematics 2 (SMA209) | ✅ |
 | ENG151 | Statics | — | 🔲 |
 | ENG252 | Dynamics | — | 🔲 |
 | ENG175 | Internet of Things | Embedded Systems (009A IoT & Connectivity), Networking Fundamentals | ⚡ |
 | HIT137 | Software Now | — | 🔲 |
-| SMA212 | Data Analytics | — | 🔲 |
+| SMA212 | Data Analytics | Data Analytics (SMA212) | ✅ |
 | ENG305 | Safety, Risk and Reliability | Industrial Automation & Robotics (009A Functional Safety IEC 61508) | ⚡ |
 | PMO201 | Project Management | — | — |
 | ENG410 | Professional Practice for Engineers | — | — |
@@ -51,7 +51,8 @@ new course development. Update when new courses are added to the platform.
 | ENG365 | C Programming | — | 🔲 |
 | HIT391 | Machine Learning: Advancements and Applications | — | 🔲 |
 
-**EE coverage summary:** 10/14 technical units covered · 4 gaps · 5 out-of-scope
+**EE coverage summary:** 11/14 technical units covered · 3 gaps (ENG229, ENG377/573, ENG365) · 5 out-of-scope
+Note: SMA212 Data Analytics now covered. Foundation Mathematics (FOUND101) is a bonus pre-university bridging course not in the CDU EE degree list.
 
 ---
 
@@ -59,8 +60,8 @@ new course development. Update when new courses are added to the platform.
 
 | Code | Unit Name | Platform Course | Coverage |
 |------|-----------|-----------------|----------|
-| SMA101 | Mathematics 1A | Engineering Mathematics (001A–003A) | ✅ |
-| SMA102 | Mathematics 1B | Engineering Mathematics (004A–007A) | ✅ |
+| SMA101 | Mathematics 1A | Mathematics 1A (SMA101) | ✅ |
+| SMA102 | Mathematics 1B | Mathematics 1B (SMA102) | ✅ |
 | HIT172 | Operating Systems and Applications | Linux Fundamentals (LFCA) | ⚡ |
 | HIT274 | Network Engineering Applications | Networking Fundamentals | ✅ |
 | ENG229 | Digital Systems and Computer Architecture | — | 🔲 |
@@ -80,6 +81,7 @@ new course development. Update when new courses are added to the platform.
 | HIT401 | Capstone Project | — | — |
 
 **CS coverage summary:** 4/17 technical units covered · 13 gaps · 2 out-of-scope
+Note: SMA101 and SMA102 now have dedicated courses. SMA212/HIT140 gap remains (Data Analytics covers SMA212 topics but HIT140 may need extra content).
 
 ---
 
@@ -92,7 +94,7 @@ Ordered by: (a) appears in both degrees, (b) technical depth suited to flashcard
 | 1 | ENG229 | Digital Systems & Computer Architecture | Shared by both degrees. Logic gates → ISA → microarchitecture → pipelines |
 | 2 | ENG365 | C Programming | Shared. Syntax, pointers, memory, embedded C patterns |
 | 3 | ENG573, ENG377 | Communication Systems & Electromagnetics | EE core. Modulation, antennas, Maxwell's equations |
-| 4 | HIT140, SMA212 | Data Science & Analytics | Shared interest. Stats, pandas, ML foundations |
+| 4 | HIT140 | Data Science (foundations) | SMA212 now covered by Data Analytics course. HIT140 may need additional content (EDA, feature engineering) |
 | 5 | HIT220 | Algorithms & Complexity | CS core. Big-O, sorting, graphs, dynamic programming |
 | 6 | HIT333 | Cyber Security | Expand existing Network Security topic into full course |
 | 7 | HIT172 | Operating Systems | Expand Linux Fundamentals or add a dedicated OS course |
@@ -118,4 +120,4 @@ of the unit outline PDF text is ideal.
 
 ---
 
-*Last updated: 2026-02-26*
+*Last updated: 2026-02-26 — mathematics restructure (migration 0029)*
