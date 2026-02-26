@@ -5,13 +5,88 @@ Complete guide to using LaTeX equations, graphs, diagrams, and code snippets in 
 ## Table of Contents
 
 1. [LaTeX/Math Equations](#latex-math-equations)
-2. [Python Graph Generation](#python-graph-generation)
-3. [Mermaid.js Diagrams](#mermaidjs-diagrams)
-4. [Code Snippets](#code-snippets)
-5. [Combining Multiple Media Types](#combining-multiple-media-types)
-6. [Best Practices](#best-practices)
-7. [Security Considerations](#security-considerations)
-8. [Troubleshooting](#troubleshooting)
+2. [Circuit Diagrams (Schemdraw)](#circuit-diagrams-schemdraw)
+3. [Python Graph Generation](#python-graph-generation)
+4. [Mermaid.js Diagrams](#mermaidjs-diagrams)
+5. [Code Snippets](#code-snippets)
+6. [Combining Multiple Media Types](#combining-multiple-media-types)
+7. [Best Practices](#best-practices)
+8. [Security Considerations](#security-considerations)
+9. [Troubleshooting](#troubleshooting)
+
+---
+
+## Circuit Diagrams (Schemdraw)
+
+Circuit diagrams are generated offline using **Schemdraw** and stored as inline
+SVG text in the flashcard `question` or `answer` field.  No image files, no
+static-file serving — just plain text in the database that the browser renders
+natively.
+
+### Quick-start
+
+```bash
+pip install schemdraw          # dev only — not deployed to Railway
+python scripts/circuits/bjt_common_emitter.py   # produces bjt_common_emitter.svg
+```
+
+### Template
+
+Copy `scripts/circuits/_template.py`, fill in the TODO sections, run it.
+See that file for a full drawing cheat-sheet and flashcard integration pattern.
+
+### Embedding in a migration
+
+```python
+import pathlib
+
+SVG_DIR = pathlib.Path(__file__).resolve().parent.parent.parent / 'scripts' / 'circuits'
+
+def load_svg(filename):
+    """Read a pre-generated circuit SVG. Returns empty string if file missing."""
+    p = SVG_DIR / filename
+    return p.read_text() if p.exists() else ''
+
+# In the migration's RunPython function:
+svg = load_svg('bjt_common_emitter.svg')
+Flashcard.objects.get_or_create(
+    topic=topic,
+    question_type='standard',
+    question=(
+        f'<figure class="circuit-diagram">{svg}</figure>'
+        '<p>For the circuit above, calculate $V_B$, $I_C$, and $V_C$.</p>'
+    ),
+    defaults={
+        'answer': (
+            r'<p><strong>Q-point:</strong> $V_B = V_{CC} \frac{R_2}{R_1+R_2}$'
+            r' $= 12 \times \frac{10}{57} \approx 2.1$ V, …</p>'
+        ),
+    },
+)
+```
+
+### CSS
+
+Add this to the base stylesheet so diagrams render at a sensible size:
+
+```css
+figure.circuit-diagram {
+    display: flex;
+    justify-content: center;
+    margin: 1rem 0;
+}
+figure.circuit-diagram svg {
+    max-width: 480px;
+    width: 100%;
+    height: auto;
+}
+```
+
+### Planning document
+
+See `docs/circuit_diagram_plan.md` for the full list of ~42 diagrams needed
+across Circuit Analysis, Analog Electronics, Embedded Systems, Electrical
+Machines, and Power Systems, with status tracking.
 
 ---
 
