@@ -97,7 +97,11 @@ Blank-code topics sort first within a course (user-created topics in practice).
 
 | Course | Topics |
 |--------|--------|
-| Engineering Mathematics | 001A Basic Arithmetic & Number Sense, 001B Algebra Fundamentals, 002A Geometry, 002B Trigonometry Fundamentals, 003A Pre-Calculus, 004A Differential Calculus, 005A Integral Calculus, 006A Multivariable Calculus, 007A Linear Algebra, 008A Ordinary Differential Equations (ODEs), 009A Partial Differential Equations (PDEs), 010A Fourier Analysis, 010B Laplace Transforms |
+| Foundation Mathematics (FOUND101) | 001A Basic Arithmetic & Number Sense, 001B Algebra Fundamentals, 002A Geometry, 002B Trigonometry Fundamentals, 003A Pre-Calculus |
+| Mathematics 1A (SMA101) | 001A Functions & Limits, 001B Continuity & Exponential Functions, 002A Differential Calculus, 002B Curve Sketching & Optimisation, 003A Integral Calculus, 003B Applications of Integration, 004A Complex Numbers, 004B Vectors in 2D & 3D, 005A Linear Algebra, 005B Systems of Linear Equations |
+| Mathematics 1B (SMA102) | 001A Advanced Integration Techniques, 001B Volumes Surface Areas & Applications, 002A Numerical Methods, 003A Vector Spaces & Linear Transformations, 003B Eigenvalues & Eigenvectors, 004A Multivariable Calculus, 004B Vector Functions & Line Integrals, 005A Surface Integrals & Green's Theorem, 005B Gauss's Divergence Theorem |
+| Mathematics 2 (SMA209) | 001A Ordinary Differential Equations (ODEs), 001B Second-Order ODEs (Homogeneous), 002A Second-Order ODEs (Non-Homogeneous), 002B Systems of ODEs, 003A Fourier Analysis, 003B Fourier Transforms, 004A Laplace Transforms, 004B Laplace Transforms — Applications, 009A Partial Differential Equations (PDEs) |
+| Data Analytics (SMA212) | 001A–010A (Descriptive Statistics → Python & Pandas for Data Analytics) |
 | Circuit Analysis Fundamentals | 001A–006A (DC Circuit Analysis → AC Power Analysis) |
 | Analog Electronics | 001A–010A (Signals & Amplifiers → Oscillators) |
 | Digital Signal Processing | 001A–010A (Sinusoids & Phasors → MATLAB for DSP) |
@@ -109,7 +113,7 @@ Blank-code topics sort first within a course (user-created topics in practice).
 | Networking Fundamentals | 001A–008A (OSI Model & TCP/IP → Industrial Networking) |
 | Industrial Automation & Robotics | 001A–009A (PLC Fundamentals → Functional Safety (IEC 61508)) |
 
-Full detail is in `study/migrations/0027_set_topic_codes.py`.
+Full detail is in `study/migrations/0027_set_topic_codes.py` (original EE/CS courses) and `study/migrations/0029_restructure_mathematics.py` (mathematics split).
 
 ### Adding a new system topic
 
