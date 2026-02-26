@@ -123,7 +123,7 @@ def seed_courses(apps, schema_editor):
             ),
             'topics': [
                 {
-                    'order': 1, 'name': 'Basic Arithmetic & Number Sense',
+                    'order': 1, 'name': 'Basic Arithmetic & Number Sense', 'code': '001A',
                     'description': (
                         'Master operations with whole numbers, fractions, decimals, and percentages. '
                         'Understand order of operations (PEMDAS/BODMAS), work with positive and '
@@ -132,7 +132,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': [],
                 },
                 {
-                    'order': 2, 'name': 'Algebra Fundamentals',
+                    'order': 2, 'name': 'Algebra Fundamentals', 'code': '001B',
                     'description': (
                         'Manipulate algebraic expressions, solve linear equations and inequalities, '
                         'work with exponents and roots, factor polynomials, solve systems of equations.'
@@ -140,7 +140,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Basic Arithmetic & Number Sense'],
                 },
                 {
-                    'order': 3, 'name': 'Geometry',
+                    'order': 3, 'name': 'Geometry', 'code': '002A',
                     'description': (
                         'Understand geometric shapes and their properties, apply the Pythagorean theorem, '
                         'calculate areas, volumes, and surface areas, work with angles and triangles, '
@@ -149,7 +149,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Basic Arithmetic & Number Sense', 'Algebra Fundamentals'],
                 },
                 {
-                    'order': 4, 'name': 'Trigonometry Fundamentals',
+                    'order': 4, 'name': 'Trigonometry Fundamentals', 'code': '002B',
                     'description': (
                         'Understand trigonometric ratios, solve right triangles, apply trigonometric '
                         'identities, work with the unit circle, and solve trigonometric equations.'
@@ -157,7 +157,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Geometry', 'Algebra Fundamentals'],
                 },
                 {
-                    'order': 5, 'name': 'Pre-Calculus',
+                    'order': 5, 'name': 'Pre-Calculus', 'code': '003A',
                     'description': (
                         'Master functions and their properties, understand limits and continuity concepts, '
                         'work with complex numbers, analyze sequences and series, study conic sections.'
@@ -165,7 +165,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Algebra Fundamentals', 'Geometry', 'Trigonometry Fundamentals'],
                 },
                 {
-                    'order': 6, 'name': 'Differential Calculus',
+                    'order': 6, 'name': 'Differential Calculus', 'code': '004A',
                     'description': (
                         'Understand the concept of derivatives, master differentiation techniques, '
                         'apply derivatives to real-world problems, analyze function behavior using '
@@ -174,7 +174,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Pre-Calculus'],
                 },
                 {
-                    'order': 7, 'name': 'Integral Calculus',
+                    'order': 7, 'name': 'Integral Calculus', 'code': '005A',
                     'description': (
                         'Understand the concept of integration, master integration techniques, '
                         'apply integrals to calculate areas, volumes, and other quantities, '
@@ -183,7 +183,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Differential Calculus'],
                 },
                 {
-                    'order': 8, 'name': 'Multivariable Calculus',
+                    'order': 8, 'name': 'Multivariable Calculus', 'code': '006A',
                     'description': (
                         'Extend calculus to functions of several variables, calculate partial derivatives '
                         'and multiple integrals, work with vector calculus.'
@@ -191,7 +191,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Differential Calculus', 'Integral Calculus'],
                 },
                 {
-                    'order': 9, 'name': 'Linear Algebra',
+                    'order': 9, 'name': 'Linear Algebra', 'code': '007A',
                     'description': (
                         'Understand vector spaces and linear transformations, master matrix operations, '
                         'solve systems of linear equations, calculate eigenvalues and eigenvectors.'
@@ -199,7 +199,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Algebra Fundamentals', 'Pre-Calculus'],
                 },
                 {
-                    'order': 10, 'name': 'Ordinary Differential Equations (ODEs)',
+                    'order': 10, 'name': 'Ordinary Differential Equations (ODEs)', 'code': '008A',
                     'description': (
                         'Classify and solve different types of ODEs, understand solution methods for '
                         'first and higher-order equations, apply ODEs to model physical systems.'
@@ -207,7 +207,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Differential Calculus', 'Integral Calculus'],
                 },
                 {
-                    'order': 11, 'name': 'Partial Differential Equations (PDEs)',
+                    'order': 11, 'name': 'Partial Differential Equations (PDEs)', 'code': '009A',
                     'description': (
                         'Understand the nature of PDEs, classify PDEs, solve common PDEs, '
                         'apply PDEs to engineering problems.'
@@ -215,7 +215,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Multivariable Calculus', 'Ordinary Differential Equations (ODEs)'],
                 },
                 {
-                    'order': 12, 'name': 'Fourier Analysis',
+                    'order': 12, 'name': 'Fourier Analysis', 'code': '010A',
                     'description': (
                         'Understand Fourier series and their applications, compute Fourier coefficients, '
                         'apply Fourier transforms, use Fourier methods in signal processing.'
@@ -223,7 +223,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Integral Calculus', 'Trigonometry Fundamentals'],
                 },
                 {
-                    'order': 13, 'name': 'Laplace Transforms',
+                    'order': 13, 'name': 'Laplace Transforms', 'code': '010B',
                     'description': (
                         'Understand and compute Laplace transforms, apply inverse Laplace transforms, '
                         'use Laplace transforms to solve ODEs, apply transforms to engineering problems.'
@@ -241,7 +241,7 @@ def seed_courses(apps, schema_editor):
             ),
             'topics': [
                 {
-                    'order': 1, 'name': 'DC Circuit Analysis',
+                    'order': 1, 'name': 'DC Circuit Analysis', 'code': '001A',
                     'description': (
                         "Ohm's Law, KVL, KCL, series/parallel resistors, voltage and current dividers, "
                         'nodal and mesh analysis, power calculations.'
@@ -249,7 +249,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': [],
                 },
                 {
-                    'order': 2, 'name': 'Network Theorems',
+                    'order': 2, 'name': 'Network Theorems', 'code': '002A',
                     'description': (
                         'Superposition, Thevenin and Norton equivalents, maximum power transfer theorem, '
                         'source transformation, reciprocity and substitution theorems.'
@@ -257,7 +257,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['DC Circuit Analysis'],
                 },
                 {
-                    'order': 3, 'name': 'AC Phasor Analysis',
+                    'order': 3, 'name': 'AC Phasor Analysis', 'code': '003A',
                     'description': (
                         'Sinusoidal signals, RMS values, phasors, impedance of R/L/C elements, '
                         'phasor domain KVL/KCL, impedance combinations.'
@@ -265,7 +265,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['DC Circuit Analysis'],
                 },
                 {
-                    'order': 4, 'name': 'Transient Analysis',
+                    'order': 4, 'name': 'Transient Analysis', 'code': '004A',
                     'description': (
                         'First-order RC and RL circuits, time constants, step response, '
                         'second-order RLC circuits, natural and forced response, damping.'
@@ -273,7 +273,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['DC Circuit Analysis'],
                 },
                 {
-                    'order': 5, 'name': 'Frequency Response & Resonance',
+                    'order': 5, 'name': 'Frequency Response & Resonance', 'code': '005A',
                     'description': (
                         'Transfer functions, Bode magnitude and phase plots, resonance in series '
                         'and parallel RLC, bandwidth, Q factor, filter fundamentals.'
@@ -281,7 +281,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['AC Phasor Analysis', 'Transient Analysis'],
                 },
                 {
-                    'order': 6, 'name': 'AC Power Analysis',
+                    'order': 6, 'name': 'AC Power Analysis', 'code': '006A',
                     'description': (
                         'Instantaneous power, average power, reactive power, apparent power, '
                         'power factor and correction, three-phase circuits basics.'
@@ -299,7 +299,7 @@ def seed_courses(apps, schema_editor):
             ),
             'topics': [
                 {
-                    'order': 1, 'name': 'Signals & Amplifiers',
+                    'order': 1, 'name': 'Signals & Amplifiers', 'code': '001A',
                     'description': (
                         'Signal types, amplifier models, voltage/current/power gain in dB, '
                         'frequency response, bandwidth, ideal vs. real amplifier characteristics.'
@@ -307,7 +307,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': [],
                 },
                 {
-                    'order': 2, 'name': 'Operational Amplifiers',
+                    'order': 2, 'name': 'Operational Amplifiers', 'code': '002A',
                     'description': (
                         'Ideal op-amp model, virtual short and virtual open, inverting and non-inverting '
                         'amplifiers, summing, difference, integrator, differentiator, instrumentation amp.'
@@ -315,7 +315,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Signals & Amplifiers'],
                 },
                 {
-                    'order': 3, 'name': 'Diodes',
+                    'order': 3, 'name': 'Diodes', 'code': '003A',
                     'description': (
                         'P-N junction theory, diode equation, small-signal model, rectifiers (half/full-wave), '
                         'clippers, clampers, zener regulators, LED and photodiode basics.'
@@ -323,7 +323,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Signals & Amplifiers'],
                 },
                 {
-                    'order': 4, 'name': 'MOSFETs',
+                    'order': 4, 'name': 'MOSFETs', 'code': '004A',
                     'description': (
                         'MOSFET structure and operation (nMOS/pMOS), IV characteristics, '
                         'large-signal model, small-signal model (gm, ro), biasing circuits.'
@@ -331,7 +331,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Diodes'],
                 },
                 {
-                    'order': 5, 'name': 'Bipolar Junction Transistors (BJTs)',
+                    'order': 5, 'name': 'Bipolar Junction Transistors (BJTs)', 'code': '005A',
                     'description': (
                         'BJT structure and operation (NPN/PNP), IV characteristics, '
                         'large-signal model (active/saturation/cutoff), small-signal model (rπ, gm, ro).'
@@ -339,7 +339,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Diodes'],
                 },
                 {
-                    'order': 6, 'name': 'Transistor Amplifiers',
+                    'order': 6, 'name': 'Transistor Amplifiers', 'code': '006A',
                     'description': (
                         'Common-source, common-gate, common-drain MOSFET amplifiers; '
                         'common-emitter, common-base, common-collector BJT amplifiers; '
@@ -348,7 +348,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['MOSFETs', 'Bipolar Junction Transistors (BJTs)'],
                 },
                 {
-                    'order': 7, 'name': 'Frequency Response of Amplifiers',
+                    'order': 7, 'name': 'Frequency Response of Amplifiers', 'code': '007A',
                     'description': (
                         'Miller theorem, low-frequency response (coupling/bypass capacitors), '
                         'high-frequency response (Cgs, Cgd, Cπ, Cμ), dominant-pole approximation, '
@@ -357,7 +357,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Transistor Amplifiers'],
                 },
                 {
-                    'order': 8, 'name': 'Feedback Amplifiers',
+                    'order': 8, 'name': 'Feedback Amplifiers', 'code': '008A',
                     'description': (
                         'Feedback topologies (series-series, series-shunt, shunt-series, shunt-shunt), '
                         'effect on gain, bandwidth, input/output resistance, stability basics.'
@@ -365,7 +365,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Transistor Amplifiers'],
                 },
                 {
-                    'order': 9, 'name': 'Filters & Tuned Amplifiers',
+                    'order': 9, 'name': 'Filters & Tuned Amplifiers', 'code': '009A',
                     'description': (
                         'Active filter types (LP/HP/BP/BR), Butterworth and Chebyshev approximations, '
                         'Sallen-Key topology, second-order filter design, tuned amplifier basics.'
@@ -373,7 +373,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Operational Amplifiers', 'Frequency Response of Amplifiers'],
                 },
                 {
-                    'order': 10, 'name': 'Oscillators',
+                    'order': 10, 'name': 'Oscillators', 'code': '010A',
                     'description': (
                         'Barkhausen criterion, RC oscillators (Wien bridge, phase shift), '
                         'LC oscillators (Colpitts, Hartley), crystal oscillators, 555 timer.'
@@ -391,7 +391,7 @@ def seed_courses(apps, schema_editor):
             ),
             'topics': [
                 {
-                    'order': 1, 'name': 'Sinusoids & Phasors',
+                    'order': 1, 'name': 'Sinusoids & Phasors', 'code': '001A',
                     'description': (
                         'Complex exponentials, sinusoid representation, phasors, '
                         'adding sinusoids of the same frequency, beating phenomena.'
@@ -399,7 +399,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': [],
                 },
                 {
-                    'order': 2, 'name': 'Spectrum Representation',
+                    'order': 2, 'name': 'Spectrum Representation', 'code': '002A',
                     'description': (
                         'Two-sided spectrum, spectral lines, amplitude and phase spectrum, '
                         'spectrum of AM and FM signals, bandwidth definition.'
@@ -407,7 +407,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Sinusoids & Phasors'],
                 },
                 {
-                    'order': 3, 'name': 'Sampling & Aliasing',
+                    'order': 3, 'name': 'Sampling & Aliasing', 'code': '003A',
                     'description': (
                         'Sampling theorem (Nyquist), aliasing, reconstruction, '
                         'ideal sampling, anti-aliasing filters, practical ADC considerations.'
@@ -415,7 +415,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Spectrum Representation'],
                 },
                 {
-                    'order': 4, 'name': 'FIR Filters',
+                    'order': 4, 'name': 'FIR Filters', 'code': '004A',
                     'description': (
                         'Convolution sum, impulse response, FIR filter structure, '
                         'linear phase FIR, windowed sinc design, difference equation.'
@@ -423,7 +423,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Sampling & Aliasing'],
                 },
                 {
-                    'order': 5, 'name': 'Frequency Response of FIR Filters',
+                    'order': 5, 'name': 'Frequency Response of FIR Filters', 'code': '005A',
                     'description': (
                         'Frequency response H(e^jω), magnitude and phase response, '
                         'ideal filters, moving average filter, cascade filters.'
@@ -431,7 +431,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['FIR Filters'],
                 },
                 {
-                    'order': 6, 'name': 'DTFT',
+                    'order': 6, 'name': 'DTFT', 'code': '006A',
                     'description': (
                         'Discrete-time Fourier Transform definition, properties (linearity, shift, '
                         'convolution, Parseval), DTFT pairs, frequency-domain analysis.'
@@ -439,7 +439,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Frequency Response of FIR Filters'],
                 },
                 {
-                    'order': 7, 'name': 'DFT & FFT',
+                    'order': 7, 'name': 'DFT & FFT', 'code': '007A',
                     'description': (
                         'DFT definition and matrix form, DFT as sampled DTFT, zero-padding, '
                         'FFT algorithm (Cooley-Tukey), MATLAB fft(), spectral leakage, windowing.'
@@ -447,7 +447,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['DTFT'],
                 },
                 {
-                    'order': 8, 'name': 'z-Transforms',
+                    'order': 8, 'name': 'z-Transforms', 'code': '008A',
                     'description': (
                         'z-Transform definition and region of convergence, z-Transform pairs and properties, '
                         'inverse z-Transform, poles and zeros, relation to DTFT.'
@@ -455,7 +455,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['DTFT'],
                 },
                 {
-                    'order': 9, 'name': 'IIR Filters',
+                    'order': 9, 'name': 'IIR Filters', 'code': '009A',
                     'description': (
                         'IIR filter structure, recursive difference equations, pole-zero design, '
                         'bilinear transform from analog prototypes, Butterworth IIR, stability condition.'
@@ -463,7 +463,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['z-Transforms', 'FIR Filters'],
                 },
                 {
-                    'order': 10, 'name': 'MATLAB for DSP',
+                    'order': 10, 'name': 'MATLAB for DSP', 'code': '010A',
                     'description': (
                         'MATLAB syntax and workspace, vectors and matrices, plotting, '
                         'signal generation, fft/ifft, filter(), freqz(), spectrogram basics.'
@@ -481,7 +481,7 @@ def seed_courses(apps, schema_editor):
             ),
             'topics': [
                 {
-                    'order': 1, 'name': 'Microcontroller Architecture',
+                    'order': 1, 'name': 'Microcontroller Architecture', 'code': '001A',
                     'description': (
                         'Harvard vs von Neumann, CPU registers, ALU, memory map, '
                         'clock systems, reset sources, ARM Cortex-M overview.'
@@ -489,7 +489,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': [],
                 },
                 {
-                    'order': 2, 'name': 'GPIO & Digital I/O',
+                    'order': 2, 'name': 'GPIO & Digital I/O', 'code': '002A',
                     'description': (
                         'Port registers, input/output configuration, pull-up/pull-down resistors, '
                         'open-drain vs push-pull, debouncing, GPIO register programming.'
@@ -497,7 +497,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Microcontroller Architecture'],
                 },
                 {
-                    'order': 3, 'name': 'Interrupts & Timers',
+                    'order': 3, 'name': 'Interrupts & Timers', 'code': '003A',
                     'description': (
                         'Interrupt request (IRQ), NVIC, interrupt priority, ISR writing, '
                         'timer modes (output compare, input capture), systick timer.'
@@ -505,7 +505,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['GPIO & Digital I/O'],
                 },
                 {
-                    'order': 4, 'name': 'PWM Generation',
+                    'order': 4, 'name': 'PWM Generation', 'code': '004A',
                     'description': (
                         'PWM principles, duty cycle, frequency, timer-based PWM, '
                         'motor speed control, servo control, LED dimming applications.'
@@ -513,7 +513,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Interrupts & Timers'],
                 },
                 {
-                    'order': 5, 'name': 'ADC & DAC',
+                    'order': 5, 'name': 'ADC & DAC', 'code': '005A',
                     'description': (
                         'ADC resolution, sampling rate, input voltage range, SAR ADC, '
                         'ADC triggering, DMA with ADC, DAC operation, R-2R ladder.'
@@ -521,7 +521,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['GPIO & Digital I/O'],
                 },
                 {
-                    'order': 6, 'name': 'Serial Communication Protocols',
+                    'order': 6, 'name': 'Serial Communication Protocols', 'code': '006A',
                     'description': (
                         'UART framing and baud rate calculation, SPI (CPOL/CPHA modes), '
                         'I2C addressing and ACK/NACK, RS-485 basics, CAN bus introduction.'
@@ -529,7 +529,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['GPIO & Digital I/O'],
                 },
                 {
-                    'order': 7, 'name': 'Memory & Storage',
+                    'order': 7, 'name': 'Memory & Storage', 'code': '007A',
                     'description': (
                         'Flash memory, SRAM, EEPROM, wear leveling, memory-mapped I/O, '
                         'stack and heap layout, linker script basics, bootloaders.'
@@ -537,7 +537,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Microcontroller Architecture'],
                 },
                 {
-                    'order': 8, 'name': 'RTOS Concepts',
+                    'order': 8, 'name': 'RTOS Concepts', 'code': '008A',
                     'description': (
                         'Task scheduling, preemption, context switching, semaphores and mutexes, '
                         'message queues, FreeRTOS API basics, priority inversion.'
@@ -545,7 +545,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Interrupts & Timers'],
                 },
                 {
-                    'order': 9, 'name': 'IoT & Connectivity',
+                    'order': 9, 'name': 'IoT & Connectivity', 'code': '009A',
                     'description': (
                         'Wi-Fi and BLE modules (ESP32/Nordic), MQTT protocol, HTTP REST APIs, '
                         'JSON parsing on embedded targets, OTA firmware updates.'
@@ -563,7 +563,7 @@ def seed_courses(apps, schema_editor):
             ),
             'topics': [
                 {
-                    'order': 1, 'name': 'Laplace Transforms & Transfer Functions',
+                    'order': 1, 'name': 'Laplace Transforms & Transfer Functions', 'code': '001A',
                     'description': (
                         'Laplace transform review, transfer function derivation from differential equations, '
                         'poles, zeros, and system order, standard first and second-order forms.'
@@ -571,7 +571,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': [],
                 },
                 {
-                    'order': 2, 'name': 'Block Diagram Algebra',
+                    'order': 2, 'name': 'Block Diagram Algebra', 'code': '002A',
                     'description': (
                         'Series, parallel, and feedback block reductions, Mason\'s gain formula, '
                         'signal flow graphs, closed-loop transfer function derivation.'
@@ -579,7 +579,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Laplace Transforms & Transfer Functions'],
                 },
                 {
-                    'order': 3, 'name': 'Time-Domain Response',
+                    'order': 3, 'name': 'Time-Domain Response', 'code': '003A',
                     'description': (
                         'Step and impulse response, rise time, settling time, overshoot, '
                         'steady-state error, system type and error constants.'
@@ -587,7 +587,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Block Diagram Algebra'],
                 },
                 {
-                    'order': 4, 'name': 'Stability Analysis',
+                    'order': 4, 'name': 'Stability Analysis', 'code': '004A',
                     'description': (
                         'BIBO stability, Routh-Hurwitz criterion, marginal stability, '
                         'characteristic equation roots, gain and phase margins definitions.'
@@ -595,7 +595,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Time-Domain Response'],
                 },
                 {
-                    'order': 5, 'name': 'Root Locus',
+                    'order': 5, 'name': 'Root Locus', 'code': '005A',
                     'description': (
                         'Root locus rules (breakaway, asymptotes, angles), sketching root locus, '
                         'gain selection for desired pole placement, compensator design via root locus.'
@@ -603,7 +603,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Stability Analysis'],
                 },
                 {
-                    'order': 6, 'name': 'Bode & Nyquist Analysis',
+                    'order': 6, 'name': 'Bode & Nyquist Analysis', 'code': '006A',
                     'description': (
                         'Bode magnitude and phase plots, gain and phase margins graphically, '
                         'Nyquist plot and criterion, minimum-phase vs. non-minimum-phase.'
@@ -611,7 +611,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Stability Analysis'],
                 },
                 {
-                    'order': 7, 'name': 'PID Controllers',
+                    'order': 7, 'name': 'PID Controllers', 'code': '007A',
                     'description': (
                         'P, I, D action effects, PID transfer function, Ziegler-Nichols tuning rules, '
                         'anti-windup, derivative filter, practical PID implementation.'
@@ -619,7 +619,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Time-Domain Response', 'Stability Analysis'],
                 },
                 {
-                    'order': 8, 'name': 'State-Space Representation',
+                    'order': 8, 'name': 'State-Space Representation', 'code': '008A',
                     'description': (
                         'State variables, A/B/C/D matrices, conversion from transfer function, '
                         'state transition matrix, controllability and observability, Lyapunov stability.'
@@ -627,7 +627,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Laplace Transforms & Transfer Functions'],
                 },
                 {
-                    'order': 9, 'name': 'MATLAB & Simulink for Control',
+                    'order': 9, 'name': 'MATLAB & Simulink for Control', 'code': '009A',
                     'description': (
                         'tf(), ss(), bode(), rlocus(), step() in MATLAB, building Simulink block diagrams, '
                         'PID tuner app, linearisation, simulation of nonlinear systems.'
@@ -645,7 +645,7 @@ def seed_courses(apps, schema_editor):
             ),
             'topics': [
                 {
-                    'order': 1, 'name': 'Transformer Theory',
+                    'order': 1, 'name': 'Transformer Theory', 'code': '001A',
                     'description': (
                         'Ideal transformer, turns ratio, impedance transformation, '
                         'equivalent circuit, voltage regulation, efficiency, losses.'
@@ -653,7 +653,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': [],
                 },
                 {
-                    'order': 2, 'name': 'DC Machines',
+                    'order': 2, 'name': 'DC Machines', 'code': '002A',
                     'description': (
                         'DC generator/motor construction, EMF equation, armature reaction, '
                         'separately excited and shunt motors, speed-torque characteristics.'
@@ -661,7 +661,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Transformer Theory'],
                 },
                 {
-                    'order': 3, 'name': 'AC Induction Motors',
+                    'order': 3, 'name': 'AC Induction Motors', 'code': '003A',
                     'description': (
                         'Rotating magnetic field, slip, equivalent circuit, torque-speed curve, '
                         'starting methods, losses, efficiency, nameplate data interpretation.'
@@ -669,7 +669,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Transformer Theory'],
                 },
                 {
-                    'order': 4, 'name': 'Synchronous Machines',
+                    'order': 4, 'name': 'Synchronous Machines', 'code': '004A',
                     'description': (
                         'Synchronous generator construction, EMF phasor diagram, salient pole vs round rotor, '
                         'synchronous motor operation, V-curves, power angle characteristic.'
@@ -677,7 +677,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['AC Induction Motors'],
                 },
                 {
-                    'order': 5, 'name': 'Motor Starting & Protection',
+                    'order': 5, 'name': 'Motor Starting & Protection', 'code': '005A',
                     'description': (
                         'Direct-on-line starting, star-delta starter, soft starter, overload protection, '
                         'thermal protection, contactors and motor control centres (MCC).'
@@ -685,7 +685,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['AC Induction Motors', 'DC Machines'],
                 },
                 {
-                    'order': 6, 'name': 'Variable Speed Drives',
+                    'order': 6, 'name': 'Variable Speed Drives', 'code': '006A',
                     'description': (
                         'V/Hz control, vector control (FOC), inverter basics, PWM switching, '
                         'drive parameters and commissioning, regenerative braking.'
@@ -711,7 +711,7 @@ def seed_courses(apps, schema_editor):
             ),
             'topics': [
                 {
-                    'order': 1, 'name': 'Power System Structure',
+                    'order': 1, 'name': 'Power System Structure', 'code': '001A',
                     'description': (
                         'Generation, transmission, and distribution overview, '
                         'voltage levels, single-line diagrams, NEM basics (Australian grid).'
@@ -719,7 +719,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': [],
                 },
                 {
-                    'order': 2, 'name': 'Per-Unit Analysis',
+                    'order': 2, 'name': 'Per-Unit Analysis', 'code': '002A',
                     'description': (
                         'Per-unit system definition, base quantities, converting between bases, '
                         'per-unit equivalent circuits, advantages of per-unit analysis.'
@@ -727,7 +727,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Power System Structure'],
                 },
                 {
-                    'order': 3, 'name': 'Load Flow Analysis',
+                    'order': 3, 'name': 'Load Flow Analysis', 'code': '003A',
                     'description': (
                         'Bus types (slack, PV, PQ), Newton-Raphson load flow, Gauss-Seidel method, '
                         'Jacobian matrix, convergence, power flow results interpretation.'
@@ -735,7 +735,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Per-Unit Analysis'],
                 },
                 {
-                    'order': 4, 'name': 'Fault Analysis',
+                    'order': 4, 'name': 'Fault Analysis', 'code': '004A',
                     'description': (
                         'Symmetrical three-phase faults, subtransient/transient/steady-state fault currents, '
                         'sequence networks (positive/negative/zero), unsymmetrical fault analysis.'
@@ -743,7 +743,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Per-Unit Analysis'],
                 },
                 {
-                    'order': 5, 'name': 'Power System Protection',
+                    'order': 5, 'name': 'Power System Protection', 'code': '005A',
                     'description': (
                         'Relay types (overcurrent, distance, differential), CT and VT ratios, '
                         'relay co-ordination, protection zones, circuit breakers, SCADA monitoring.'
@@ -751,7 +751,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Fault Analysis'],
                 },
                 {
-                    'order': 6, 'name': 'Power Electronics in Power Systems',
+                    'order': 6, 'name': 'Power Electronics in Power Systems', 'code': '006A',
                     'description': (
                         'FACTS devices (SVC, STATCOM), HVDC basics, thyristor rectifiers, '
                         'grid-connected inverters, active filters, harmonic analysis.'
@@ -769,7 +769,7 @@ def seed_courses(apps, schema_editor):
             ),
             'topics': [
                 {
-                    'order': 1, 'name': 'Linux Basics & CLI',
+                    'order': 1, 'name': 'Linux Basics & CLI', 'code': '001A',
                     'description': (
                         'Linux distributions, kernel and shell overview, terminal navigation, '
                         'essential commands (ls, cd, pwd, cp, mv, rm, mkdir), man pages, tab completion.'
@@ -777,7 +777,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': [],
                 },
                 {
-                    'order': 2, 'name': 'File System & Permissions',
+                    'order': 2, 'name': 'File System & Permissions', 'code': '002A',
                     'description': (
                         'Linux FHS (Filesystem Hierarchy Standard), absolute and relative paths, '
                         'file permissions (rwx), chmod, chown, chgrp, SUID/SGID/sticky bit, ACLs.'
@@ -785,7 +785,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Linux Basics & CLI'],
                 },
                 {
-                    'order': 3, 'name': 'Process Management',
+                    'order': 3, 'name': 'Process Management', 'code': '003A',
                     'description': (
                         'Process lifecycle, PID, foreground/background, ps, top, htop, kill signals, '
                         'nice and renice, systemd services, journalctl, cron jobs.'
@@ -793,7 +793,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Linux Basics & CLI'],
                 },
                 {
-                    'order': 4, 'name': 'Networking in Linux',
+                    'order': 4, 'name': 'Networking in Linux', 'code': '004A',
                     'description': (
                         'ip addr/route, ping, traceroute, ss/netstat, /etc/hosts, DNS resolution, '
                         'SSH basics, scp/rsync, firewall with iptables/nftables/ufw.'
@@ -801,7 +801,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Linux Basics & CLI'],
                 },
                 {
-                    'order': 5, 'name': 'Shell Scripting',
+                    'order': 5, 'name': 'Shell Scripting', 'code': '005A',
                     'description': (
                         'Bash scripting basics, variables, conditionals (if/case), loops (for/while), '
                         'functions, positional parameters, exit codes, pipes and redirection.'
@@ -809,7 +809,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['File System & Permissions'],
                 },
                 {
-                    'order': 6, 'name': 'Package Management',
+                    'order': 6, 'name': 'Package Management', 'code': '006A',
                     'description': (
                         'APT (Debian/Ubuntu): apt install/remove/update/upgrade, dpkg, '
                         'RPM/YUM/DNF (RHEL/CentOS/Fedora), snap and flatpak, compiling from source.'
@@ -817,7 +817,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Linux Basics & CLI'],
                 },
                 {
-                    'order': 7, 'name': 'System Security',
+                    'order': 7, 'name': 'System Security', 'code': '007A',
                     'description': (
                         'User and group management, sudo configuration, PAM, SSH key-based authentication, '
                         'SELinux/AppArmor basics, auditd, fail2ban, common hardening steps.'
@@ -825,7 +825,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['File System & Permissions', 'Networking in Linux'],
                 },
                 {
-                    'order': 8, 'name': 'LFCA Exam Preparation',
+                    'order': 8, 'name': 'LFCA Exam Preparation', 'code': '008A',
                     'description': (
                         'LFCA exam domains and weightings, practice questions, common pitfalls, '
                         'lab exercises covering all exam objectives.'
@@ -846,7 +846,7 @@ def seed_courses(apps, schema_editor):
             ),
             'topics': [
                 {
-                    'order': 1, 'name': 'OSI Model & TCP/IP',
+                    'order': 1, 'name': 'OSI Model & TCP/IP', 'code': '001A',
                     'description': (
                         '7-layer OSI model functions and PDU names, TCP/IP 4-layer model, '
                         'encapsulation and de-encapsulation, comparison of OSI and TCP/IP.'
@@ -854,7 +854,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': [],
                 },
                 {
-                    'order': 2, 'name': 'IP Addressing & Subnetting',
+                    'order': 2, 'name': 'IP Addressing & Subnetting', 'code': '002A',
                     'description': (
                         'IPv4 address classes, private ranges, subnet masks, CIDR notation, '
                         'subnetting calculations (VLSM), IPv6 addressing basics.'
@@ -862,7 +862,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['OSI Model & TCP/IP'],
                 },
                 {
-                    'order': 3, 'name': 'Routing Protocols',
+                    'order': 3, 'name': 'Routing Protocols', 'code': '003A',
                     'description': (
                         'Static routing, dynamic routing (RIP, OSPF, BGP), routing tables, '
                         'administrative distance, OSPF cost calculation, default gateway.'
@@ -870,7 +870,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['IP Addressing & Subnetting'],
                 },
                 {
-                    'order': 4, 'name': 'Switching & VLANs',
+                    'order': 4, 'name': 'Switching & VLANs', 'code': '004A',
                     'description': (
                         'Ethernet frames and MAC addresses, switches vs hubs, STP, '
                         'VLAN configuration, 802.1Q tagging, inter-VLAN routing, port security.'
@@ -878,7 +878,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['OSI Model & TCP/IP'],
                 },
                 {
-                    'order': 5, 'name': 'Wireless Networking',
+                    'order': 5, 'name': 'Wireless Networking', 'code': '005A',
                     'description': (
                         '802.11 standards (a/b/g/n/ac/ax), SSID and BSS, WPA2/WPA3 security, '
                         'AP placement, CSMA/CA, 2.4 GHz vs 5 GHz, channel planning.'
@@ -886,7 +886,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['OSI Model & TCP/IP'],
                 },
                 {
-                    'order': 6, 'name': 'Network Security',
+                    'order': 6, 'name': 'Network Security', 'code': '006A',
                     'description': (
                         'Firewalls (stateful/stateless), ACLs, NAT/PAT, VPN (IPsec, SSL/TLS), '
                         'common attacks (ARP spoofing, MITM, DoS), IDS/IPS basics.'
@@ -894,7 +894,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Routing Protocols', 'Switching & VLANs'],
                 },
                 {
-                    'order': 7, 'name': 'Network Troubleshooting',
+                    'order': 7, 'name': 'Network Troubleshooting', 'code': '007A',
                     'description': (
                         'OSI-layer troubleshooting methodology, ping, traceroute, nslookup/dig, '
                         'Wireshark basics, cable testing, common connectivity issues and fixes.'
@@ -902,7 +902,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Routing Protocols', 'Switching & VLANs'],
                 },
                 {
-                    'order': 8, 'name': 'Industrial Networking',
+                    'order': 8, 'name': 'Industrial Networking', 'code': '008A',
                     'description': (
                         'Modbus TCP/RTU, EtherNet/IP, PROFINET, OPC-UA, MQTT for IIoT, '
                         'network segmentation in industrial environments, demilitarised zones (DMZ).'
@@ -920,7 +920,7 @@ def seed_courses(apps, schema_editor):
             ),
             'topics': [
                 {
-                    'order': 1, 'name': 'PLC Fundamentals',
+                    'order': 1, 'name': 'PLC Fundamentals', 'code': '001A',
                     'description': (
                         'PLC architecture (CPU, I/O modules, power supply, comms), scan cycle, '
                         'PLC vs microcontroller, Siemens S7/Allen-Bradley ControlLogix overview.'
@@ -928,7 +928,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': [],
                 },
                 {
-                    'order': 2, 'name': 'Ladder Logic',
+                    'order': 2, 'name': 'Ladder Logic', 'code': '002A',
                     'description': (
                         'Contacts (NO/NC), coils, latching, timers (TON/TOF/TP), counters (CTU/CTD), '
                         'comparison instructions, math instructions, program flow (JSR/RET).'
@@ -936,7 +936,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['PLC Fundamentals'],
                 },
                 {
-                    'order': 3, 'name': 'Structured Text (IEC 61131-3)',
+                    'order': 3, 'name': 'Structured Text (IEC 61131-3)', 'code': '003A',
                     'description': (
                         'IEC 61131-3 language overview (LD/FBD/ST/IL/SFC), Structured Text syntax, '
                         'variables and data types, IF/CASE/FOR/WHILE, function blocks, '
@@ -945,7 +945,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Ladder Logic'],
                 },
                 {
-                    'order': 4, 'name': 'SCADA & HMI',
+                    'order': 4, 'name': 'SCADA & HMI', 'code': '004A',
                     'description': (
                         'SCADA architecture (field devices → RTU/PLC → SCADA server → HMI), '
                         'historian, alarm management, HMI design principles, Ignition/WinCC basics.'
@@ -953,7 +953,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['PLC Fundamentals'],
                 },
                 {
-                    'order': 5, 'name': 'Industrial Protocols',
+                    'order': 5, 'name': 'Industrial Protocols', 'code': '005A',
                     'description': (
                         'Modbus (RTU/TCP) registers and function codes, EtherNet/IP CIP objects, '
                         'PROFIBUS/PROFINET, OPC-UA server/client model, DH+ and DeviceNet legacy.'
@@ -961,7 +961,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['SCADA & HMI'],
                 },
                 {
-                    'order': 6, 'name': 'Motion Control',
+                    'order': 6, 'name': 'Motion Control', 'code': '006A',
                     'description': (
                         'Servo drives and motion axes, position/velocity/torque loops, '
                         'cam profiles, electronic gearing, trapezoidal motion profiles, '
@@ -970,7 +970,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Structured Text (IEC 61131-3)'],
                 },
                 {
-                    'order': 7, 'name': 'Robot Kinematics',
+                    'order': 7, 'name': 'Robot Kinematics', 'code': '007A',
                     'description': (
                         'DOF and joint types, DH parameters, forward kinematics, '
                         'inverse kinematics (analytical and numerical), workspace analysis, Jacobian.'
@@ -978,7 +978,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Motion Control'],
                 },
                 {
-                    'order': 8, 'name': 'ROS Basics',
+                    'order': 8, 'name': 'ROS Basics', 'code': '008A',
                     'description': (
                         'ROS 2 architecture (nodes, topics, services, actions), colcon build system, '
                         'rqt_graph, tf2 transforms, writing publisher/subscriber in Python/C++.'
@@ -986,7 +986,7 @@ def seed_courses(apps, schema_editor):
                     'prerequisites': ['Robot Kinematics'],
                 },
                 {
-                    'order': 9, 'name': 'Functional Safety (IEC 61508)',
+                    'order': 9, 'name': 'Functional Safety (IEC 61508)', 'code': '009A',
                     'description': (
                         'Safety lifecycle, Safety Integrity Levels (SIL 1-4), FMEA/HAZOP, '
                         'safe state design, SIL verification (PFD/PFH), safety PLC concepts, '
@@ -1013,6 +1013,10 @@ def seed_courses(apps, schema_editor):
 
         topics_by_name = {}
         for topic_data in course_data['topics']:
+            # Note: topic_data includes a 'code' key for reference (added in 0026/0027).
+            # It is intentionally excluded from defaults here because the code column
+            # does not yet exist when this migration runs (it is added in 0026).
+            # Migration 0027 sets all codes on both existing and fresh installs.
             topic, _ = Topic.objects.get_or_create(
                 course=course,
                 name=topic_data['name'],

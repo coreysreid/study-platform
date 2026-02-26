@@ -13,7 +13,7 @@
     <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 2rem; border-radius: 10px; color: white; margin-bottom: 2rem;">
         <div style="display: flex; justify-content: space-between; align-items: start;">
             <div>
-                <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">{{ topic.name }}</h1>
+                <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">{% if topic.code %}<span class="topic-code">{{ topic.code }}</span> · {% endif %}{{ topic.name }}</h1>
                 <p style="opacity: 0.9;">{{ topic.course.name }}</p>
                 {% if topic.description %}
                     <p style="opacity: 0.9; margin-top: 1rem;">{{ topic.description }}</p>

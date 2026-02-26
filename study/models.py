@@ -42,6 +42,10 @@ class Topic(models.Model):
     name = models.CharField(max_length=200)
     description = models.TextField(blank=True)
     order = models.IntegerField(default=0, help_text="Order of topic in course")
+    code = models.CharField(
+        max_length=5, blank=True, default='',
+        help_text="Topic ordering code e.g. '001A'. Blank for user-created topics."
+    )
     prerequisites = models.ManyToManyField(
         'self',
         symmetrical=False,
@@ -51,12 +55,14 @@ class Topic(models.Model):
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+
     class Meta:
-        ordering = ['course', 'order', 'name']
-    
+        ordering = ['course', 'code', 'name']
+
     def __str__(self):
-        return f"{self.course.name} - {self.name}"
+        if self.code:
+            return f"{self.course.name} — {self.code} {self.name}"
+        return f"{self.course.name} — {self.name}"
 
 
 class Skill(models.Model):
