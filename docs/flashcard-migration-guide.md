@@ -1,6 +1,6 @@
 # Flashcard Migration Authoring Guide
 
-Lessons learned creating migrations 0013–0024. Follow this to avoid repeating mistakes.
+Lessons learned creating migrations 0013–0025. Follow this to avoid repeating mistakes.
 
 ---
 
@@ -123,7 +123,34 @@ Check `0013_seed_course_structures.py` for exact strings. Current course names:
 - `'Networking Fundamentals'`
 - `'Industrial Automation & Robotics'`
 
-### 4. Use `get_or_create` for Skills in tests
+### 4. `uses_latex: True` requires `$...$` delimiters in the content
+Setting `uses_latex: True` does NOT automatically render anything — it tells the
+template to expect LaTeX, but the text itself must contain `$...$` (inline) or
+`$$...$$` (display) delimiters for MathJax to process it.
+
+Plain Unicode characters (`½`, `φ`, `√`) will render as-is and look like plain text
+even when `uses_latex: True` is set.
+
+```python
+# WRONG — uses_latex=True but no delimiters; renders as plain text
+{'answer': 'P = ½VmIm cos φ', 'uses_latex': True}
+
+# CORRECT — MathJax renders this as a proper formula
+{'answer': '$P = \\frac{1}{2}V_m I_m \\cos\\phi$', 'uses_latex': True}
+```
+
+**Backslash escaping:** Python strings require `\\` for a single `\`, so LaTeX
+commands like `\frac` become `\\frac` in migration source:
+
+```python
+'$I = \\frac{V}{R}$'          # renders as  I = V/R
+'$x = -3 \\pm \\sqrt{7}$'     # renders as  x = -3 ± √7
+'$2\\,\\text{A}$'             # renders as  2 A  (thin space + upright units)
+```
+
+**step_by_step `detail` fields** can also use `$...$` and will be rendered by MathJax.
+
+### 5. Use `get_or_create` for Skills in tests
 Migration 0013 seeds ~60 skill names. Tests that call `Skill.objects.create(name='basic_arithmetic')`
 will hit a UNIQUE constraint. Always use:
 ```python
@@ -170,6 +197,28 @@ for c in Course.objects.filter(created_by=system).order_by('name'):
 **`step_by_step` cards:** each `move` is a short imperative label ("Identify losses",
 "Apply Kirchhoff's voltage law"); each `detail` is the concrete calculation or rule for
 that step. Keep steps 4–7 items.
+
+**Show the formula before applying it.** If a step uses a named rule or formula,
+state it explicitly before substituting numbers. Example for completing the square:
+
+```python
+# WRONG — jumps straight to result, student doesn't see the method
+{'move': 'Complete square', 'detail': '(x+3)² − 9 = −2'}
+
+# CORRECT — names the rule, shows why 9 comes from b=6
+{'move': 'Apply $(b/2)^2$ rule', 'detail': '$b = 6$, so $(b/2)^2 = 9$. Add to both sides: $x^2 + 6x + 9 = 7$'}
+```
+
+**Use precise, unambiguous question wording.** Avoid using a technical term in a
+question unless the circuit/system context that gives it meaning is also provided.
+
+```python
+# WRONG — "short-circuit current" implies a Thevenin context not given
+{'question': 'What is the short-circuit current if V=10V is applied to R=5Ω?'}
+
+# CORRECT — describes the actual circuit, no implicit context required
+{'question': 'Find the current through a 5Ω resistor in series with a 10V source.'}
+```
 
 ---
 
