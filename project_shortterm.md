@@ -32,6 +32,14 @@ None — all branches merged to main.
 - **`CardFeedback` model deleted** (earlier): import and dead test class removed from
   `test_security_and_modes` in PR #42. All 77 tests now pass.
 
+- **Circuit diagram pipeline established** (2026-02-26): Schemdraw generates SVGs offline;
+  inline into flashcard `question` field as plain text. First diagram: `bjt_common_emitter.svg`.
+  ~42 diagrams planned — see `docs/circuit_diagram_plan.md` for full list and build order.
+
+- **Agent permissions configured** (2026-02-26): `.claude/settings.json` pre-approves
+  venv/python, git, gh CLI, and filesystem commands. Force-push, hard-reset, and rm -rf
+  still require explicit approval. `docs/workflow.md` documents session patterns.
+
 ---
 
 ## Immediate Priorities
@@ -39,7 +47,9 @@ None — all branches merged to main.
 1. Add `topic-code` CSS styling (`span.topic-code`) to the base stylesheet
    so the code renders visually distinct from the topic name.
 2. Add flashcard content for the 30 new topics in SMA101, SMA102, SMA209, SMA212.
-3. Decide on next feature area — candidates:
+3. Work through circuit diagrams — start with Circuit Analysis Fundamentals
+   (~8 passive-component diagrams; see `docs/circuit_diagram_plan.md` build order).
+4. Decide on next feature area — candidates:
    - SM-2 spaced repetition algorithm (currently only tracking confidence level)
    - Learning feedback loop (suggest prerequisite review on wrong answers)
    - Progress dashboard
