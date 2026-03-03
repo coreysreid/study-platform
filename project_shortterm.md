@@ -40,6 +40,16 @@ None — all branches merged to main.
   venv/python, git, gh CLI, and filesystem commands. Force-push, hard-reset, and rm -rf
   still require explicit approval. `docs/workflow.md` documents session patterns.
 
+- **Issues #44, #46, #47, #48 resolved** (2026-03-03):
+  - #46 (Bug): Added explicit `.order_by('code', 'name')` to `course_detail` topics queryset
+    so annotations (COUNT) don't discard `Meta.ordering`.
+  - #47: Missed cards are now re-queued 3 positions ahead in the JS deck so users revisit
+    them in the same session; step-by-step cards carry their context when re-queued.
+  - #48: Added "Reveal Answer" button (result buttons hidden until revealed); fixed visual-mode
+    CSS so the flashcard container expands to 400px and buttons are no longer obstructed.
+  - #44: Migration 0030 splits the non-atomic "What are the exact values of sin, cos, tan
+    for 30°, 45°, 60°?" flashcard into 9 individual atomic LaTeX-enabled cards.
+
 ---
 
 ## Immediate Priorities

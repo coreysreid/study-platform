@@ -765,3 +765,76 @@ class TopicScoreTest(TestCase):
         ts = TopicScore.objects.filter(user=self.user, topic=self.topic).first()
         self.assertIsNotNone(ts)
         self.assertGreater(ts.attempt_count, 0)
+
+
+class CourseDetailOrderingTest(TestCase):
+    """Issue #46 — Topics must be displayed in code order on the course detail page."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='orderuser', password='pass')
+        self.course = Course.objects.create(name='Test Course', created_by=self.user)
+        from .models import CourseEnrollment
+        CourseEnrollment.objects.create(user=self.user, course=self.course)
+        # Create topics with codes out of insertion order to confirm sort is applied
+        Topic.objects.create(course=self.course, name='Third', code='003A')
+        Topic.objects.create(course=self.course, name='First', code='001A')
+        Topic.objects.create(course=self.course, name='Second', code='002A')
+        self.client.login(username='orderuser', password='pass')
+
+    def test_topics_ordered_by_code_on_course_detail(self):
+        response = self.client.get(f'/course/{self.course.id}/')
+        self.assertEqual(response.status_code, 200)
+        topics = list(response.context['topics'])
+        codes = [t.code for t in topics]
+        self.assertEqual(codes, ['001A', '002A', '003A'])
+
+    def test_topics_code_order_survives_annotation(self):
+        """Annotation with Count must not discard the explicit order_by."""
+        from django.db.models import Count
+        topics = self.course.topics.all().annotate(
+            flashcard_count=Count('flashcards')
+        ).order_by('code', 'name')
+        codes = [t.code for t in topics]
+        self.assertEqual(codes, ['001A', '002A', '003A'])
+
+
+class TrigExactValuesMigrationTest(TestCase):
+    """Issue #44 — Non-atomic sin/cos/tan combined card replaced by 9 atomic cards."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='triguser', password='pass')
+        self.course = Course.objects.create(name='Maths', created_by=self.user)
+        self.topic = Topic.objects.create(course=self.course, name='Trigonometry Fundamentals')
+
+    def test_atomic_trig_cards_can_be_created(self):
+        """Nine individual sin/cos/tan cards can be stored and retrieved correctly."""
+        atomic_data = [
+            ('What is sin(30°)?', '$\\sin 30° = \\dfrac{1}{2}$'),
+            ('What is cos(30°)?', '$\\cos 30° = \\dfrac{\\sqrt{3}}{2}$'),
+            ('What is tan(30°)?', '$\\tan 30° = \\dfrac{1}{\\sqrt{3}} = \\dfrac{\\sqrt{3}}{3}$'),
+            ('What is sin(45°)?', '$\\sin 45° = \\dfrac{1}{\\sqrt{2}} = \\dfrac{\\sqrt{2}}{2}$'),
+            ('What is cos(45°)?', '$\\cos 45° = \\dfrac{1}{\\sqrt{2}} = \\dfrac{\\sqrt{2}}{2}$'),
+            ('What is tan(45°)?', '$\\tan 45° = 1$'),
+            ('What is sin(60°)?', '$\\sin 60° = \\dfrac{\\sqrt{3}}{2}$'),
+            ('What is cos(60°)?', '$\\cos 60° = \\dfrac{1}{2}$'),
+            ('What is tan(60°)?', '$\\tan 60° = \\sqrt{3}$'),
+        ]
+        for question, answer in atomic_data:
+            Flashcard.objects.create(
+                topic=self.topic, question=question, answer=answer,
+                difficulty='easy', question_type='standard', uses_latex=True,
+            )
+        self.assertEqual(Flashcard.objects.filter(topic=self.topic).count(), 9)
+        questions = set(Flashcard.objects.filter(topic=self.topic).values_list('question', flat=True))
+        self.assertIn('What is sin(30°)?', questions)
+        self.assertIn('What is tan(60°)?', questions)
+
+    def test_combined_trig_card_is_removed_after_migration(self):
+        """The combined sin/cos/tan card does not exist after migration 0030 runs."""
+        # Migration 0030 deletes this card; verify it is absent in the current DB state
+        self.assertFalse(
+            Flashcard.objects.filter(
+                question='What are the exact values of sin, cos, tan for 30°, 45°, 60°?'
+            ).exists()
+        )
