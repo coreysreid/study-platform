@@ -800,41 +800,89 @@ class CourseDetailOrderingTest(TestCase):
 
 
 class TrigExactValuesMigrationTest(TestCase):
-    """Issue #44 — Non-atomic sin/cos/tan combined card replaced by 9 atomic cards."""
+    """Issue #44 — Non-atomic sin/cos/tan combined card replaced by 9 atomic cards.
+
+    Tests exercise split_trig_exact_values() from study.migration_helpers, which
+    is the same function called by migration 0030, ensuring the migration logic is
+    tested without coupling test code to the migration module itself.
+    """
 
     def setUp(self):
+        from study.migration_helpers import split_trig_exact_values, TRIG_EXACT_VALUES_QUESTION
+        self._do_split = split_trig_exact_values
+        self._combined_q = TRIG_EXACT_VALUES_QUESTION
         self.user = User.objects.create_user(username='triguser', password='pass')
         self.course = Course.objects.create(name='Maths', created_by=self.user)
         self.topic = Topic.objects.create(course=self.course, name='Trigonometry Fundamentals')
 
-    def test_atomic_trig_cards_can_be_created(self):
-        """Nine individual sin/cos/tan cards can be stored and retrieved correctly."""
-        atomic_data = [
-            ('What is sin(30°)?', '$\\sin 30° = \\dfrac{1}{2}$'),
-            ('What is cos(30°)?', '$\\cos 30° = \\dfrac{\\sqrt{3}}{2}$'),
-            ('What is tan(30°)?', '$\\tan 30° = \\dfrac{1}{\\sqrt{3}} = \\dfrac{\\sqrt{3}}{3}$'),
-            ('What is sin(45°)?', '$\\sin 45° = \\dfrac{1}{\\sqrt{2}} = \\dfrac{\\sqrt{2}}{2}$'),
-            ('What is cos(45°)?', '$\\cos 45° = \\dfrac{1}{\\sqrt{2}} = \\dfrac{\\sqrt{2}}{2}$'),
-            ('What is tan(45°)?', '$\\tan 45° = 1$'),
-            ('What is sin(60°)?', '$\\sin 60° = \\dfrac{\\sqrt{3}}{2}$'),
-            ('What is cos(60°)?', '$\\cos 60° = \\dfrac{1}{2}$'),
-            ('What is tan(60°)?', '$\\tan 60° = \\sqrt{3}$'),
-        ]
-        for question, answer in atomic_data:
-            Flashcard.objects.create(
-                topic=self.topic, question=question, answer=answer,
-                difficulty='easy', question_type='standard', uses_latex=True,
-            )
-        self.assertEqual(Flashcard.objects.filter(topic=self.topic).count(), 9)
-        questions = set(Flashcard.objects.filter(topic=self.topic).values_list('question', flat=True))
-        self.assertIn('What is sin(30°)?', questions)
-        self.assertIn('What is tan(60°)?', questions)
-
-    def test_combined_trig_card_is_removed_after_migration(self):
-        """The combined sin/cos/tan card does not exist after migration 0030 runs."""
-        # Migration 0030 deletes this card; verify it is absent in the current DB state
-        self.assertFalse(
-            Flashcard.objects.filter(
-                question='What are the exact values of sin, cos, tan for 30°, 45°, 60°?'
-            ).exists()
+    def _make_combined(self, topic=None):
+        return Flashcard.objects.create(
+            topic=topic or self.topic,
+            question=self._combined_q,
+            answer='30°: sin=1/2, cos=√3/2, tan=1/√3. 45°: sin=cos=1/√2, tan=1. 60°: sin=√3/2, cos=1/2, tan=√3.',
+            difficulty='medium',
+            question_type='standard',
+            uses_latex=True,
         )
+
+    def test_split_removes_combined_and_creates_nine_atomic(self):
+        """Migration logic deletes the combined card and creates 9 atomic cards."""
+        self._make_combined()
+        self.assertEqual(Flashcard.objects.filter(topic=self.topic).count(), 1)
+
+        self._do_split(Flashcard)
+
+        self.assertFalse(
+            Flashcard.objects.filter(question=self._combined_q).exists(),
+            'Combined card should be deleted',
+        )
+        atomic = Flashcard.objects.filter(topic=self.topic)
+        self.assertEqual(atomic.count(), 9)
+        questions = set(atomic.values_list('question', flat=True))
+        self.assertIn('What is sin(30°)?', questions)
+        self.assertIn('What is cos(30°)?', questions)
+        self.assertIn('What is tan(30°)?', questions)
+        self.assertIn('What is tan(60°)?', questions)
+        for card in atomic:
+            self.assertTrue(card.uses_latex, f'{card.question} should have uses_latex=True')
+
+    def test_split_is_idempotent_when_no_combined_card_exists(self):
+        """Running the migration logic when no combined card exists is a safe no-op."""
+        self._do_split(Flashcard)
+        self.assertEqual(Flashcard.objects.filter(topic=self.topic).count(), 0)
+
+    def test_split_handles_duplicate_combined_cards_across_topics(self):
+        """All copies of the combined card (e.g. across two topics) are replaced."""
+        topic2 = Topic.objects.create(course=self.course, name='Trig Extra')
+        self._make_combined(self.topic)
+        self._make_combined(topic2)
+
+        self._do_split(Flashcard)
+
+        self.assertFalse(
+            Flashcard.objects.filter(question=self._combined_q).exists(),
+            'Both combined cards should be deleted',
+        )
+        # Each topic should have 9 atomic cards
+        self.assertEqual(Flashcard.objects.filter(topic=self.topic).count(), 9)
+        self.assertEqual(Flashcard.objects.filter(topic=topic2).count(), 9)
+
+    def test_split_does_not_duplicate_atomic_cards_if_already_present(self):
+        """If some atomic cards already exist for the topic, they are not duplicated."""
+        self._make_combined()
+        # Pre-create two of the atomic cards for the same topic
+        Flashcard.objects.create(
+            topic=self.topic, question='What is sin(30°)?',
+            answer='$\\sin 30° = \\dfrac{1}{2}$', difficulty='easy',
+            question_type='standard', uses_latex=True,
+        )
+        Flashcard.objects.create(
+            topic=self.topic, question='What is cos(30°)?',
+            answer='$\\cos 30° = \\dfrac{\\sqrt{3}}{2}$', difficulty='easy',
+            question_type='standard', uses_latex=True,
+        )
+
+        self._do_split(Flashcard)
+
+        # Should still be exactly 9 — no duplicates
+        self.assertEqual(Flashcard.objects.filter(topic=self.topic).count(), 9)

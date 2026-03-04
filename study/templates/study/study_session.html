@@ -346,14 +346,10 @@
         document.getElementById('feedbackBtn').dataset.cardId = card.id;
         document.getElementById('feedbackBtn').dataset.cardQuestion = card.question;
 
-        // Show reveal button, hide result buttons (for flip cards)
-        if (!isStepCard) {
-            document.getElementById('revealBtnRow').style.display = 'flex';
-            document.getElementById('resultBtnRow').style.display = 'none';
-        } else {
-            document.getElementById('revealBtnRow').style.display = 'none';
-            document.getElementById('resultBtnRow').style.display = 'flex';
-        }
+        // Show reveal button, hide result buttons for all card types.
+        // revealCard() is responsible for swapping these when the answer is revealed.
+        document.getElementById('revealBtnRow').style.display = 'flex';
+        document.getElementById('resultBtnRow').style.display = 'none';
 
         if (card.teacher_explanation) {
             document.getElementById('teacherText').textContent = card.teacher_explanation;
@@ -451,6 +447,8 @@
             document.getElementById('stepDetail').textContent = card.answer_detail || '';
             document.getElementById('stepReveal').style.display = '';
             document.getElementById('nextStepPrompt').style.display = 'none';
+            document.getElementById('revealBtnRow').style.display = 'none';
+            document.getElementById('resultBtnRow').style.display = 'flex';
             if (card.teacher_explanation) {
                 document.getElementById('teacherBtn').style.display = 'inline-block';
             }
