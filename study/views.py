@@ -4,6 +4,7 @@ from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
 from django.contrib.auth.forms import AuthenticationForm
 from django.contrib import messages
+from django.db import transaction
 from django.utils import timezone
 from django.db.models import Count, Avg, Sum, Q, F, Subquery, OuterRef, IntegerField
 from django.core.exceptions import PermissionDenied
@@ -27,6 +28,7 @@ import json
 
 # Constants
 VALID_ENROLLMENT_STATUSES = {'studying', 'mastered', 'shelved'}
+VOTE_FLAG_THRESHOLD = -5  # Cards with net score at or below this are flagged for review
 
 # Utility functions for public content
 def get_system_user():
@@ -271,13 +273,12 @@ def _annotate_with_votes(queryset, user):
         ).values('vote')[:1],
         output_field=IntegerField(),
     )
+    # Two annotate() calls so the second can reference the first via F().
     return queryset.annotate(
         upvotes=Count('votes', filter=Q(votes__vote=FlashcardVote.UPVOTE)),
         downvotes=Count('votes', filter=Q(votes__vote=FlashcardVote.DOWNVOTE)),
-        net_votes=(
-            Count('votes', filter=Q(votes__vote=FlashcardVote.UPVOTE)) -
-            Count('votes', filter=Q(votes__vote=FlashcardVote.DOWNVOTE))
-        ),
+    ).annotate(
+        net_votes=F('upvotes') - F('downvotes'),
         user_vote=user_vote_subquery,
     )
 
@@ -307,7 +308,7 @@ def topic_detail(request, topic_id):
         'topic': topic,
         'flashcards': flashcards,
         'is_enrolled': enrollment is not None,
-        'flag_threshold': -5,
+        'flag_threshold': VOTE_FLAG_THRESHOLD,
     })
 
 
@@ -523,16 +524,22 @@ def vote_flashcard(request, flashcard_id):
 
     POST body: vote=1 (upvote) or vote=-1 (downvote).
     Submitting the same vote again removes it (toggle).
-    Users cannot vote on their own cards.
+    Users cannot vote on their own cards or on cards in courses they are not enrolled in.
     """
     flashcard = get_object_or_404(
         Flashcard.objects.select_related('topic__course__created_by'),
         id=flashcard_id,
     )
 
+    course = flashcard.topic.course
+
     # Prevent self-voting
-    if flashcard.topic.course.created_by == request.user:
+    if course.created_by == request.user:
         return JsonResponse({'error': 'You cannot vote on your own cards.'}, status=403)
+
+    # Require enrollment in the course to vote
+    if not CourseEnrollment.objects.filter(user=request.user, course=course).exists():
+        return JsonResponse({'error': 'You must be enrolled in this course to vote.'}, status=403)
 
     try:
         vote_value = int(request.POST.get('vote', 0))
@@ -542,21 +549,23 @@ def vote_flashcard(request, flashcard_id):
     if vote_value not in (FlashcardVote.UPVOTE, FlashcardVote.DOWNVOTE):
         return JsonResponse({'error': 'Vote must be 1 or -1.'}, status=400)
 
-    existing = FlashcardVote.objects.filter(user=request.user, flashcard=flashcard).first()
-
-    if existing:
-        if existing.vote == vote_value:
-            # Toggle: remove vote
-            existing.delete()
+    with transaction.atomic():
+        vote_obj, created = FlashcardVote.objects.get_or_create(
+            user=request.user,
+            flashcard=flashcard,
+            defaults={'vote': vote_value},
+        )
+        if created:
+            user_vote = vote_value
+        elif vote_obj.vote == vote_value:
+            # Same vote submitted again — toggle off
+            vote_obj.delete()
             user_vote = 0
         else:
             # Change vote direction
-            existing.vote = vote_value
-            existing.save(update_fields=['vote'])
+            vote_obj.vote = vote_value
+            vote_obj.save(update_fields=['vote'])
             user_vote = vote_value
-    else:
-        FlashcardVote.objects.create(user=request.user, flashcard=flashcard, vote=vote_value)
-        user_vote = vote_value
 
     # Recalculate totals
     totals = FlashcardVote.objects.filter(flashcard=flashcard).aggregate(
@@ -570,7 +579,7 @@ def vote_flashcard(request, flashcard_id):
         'downvotes': totals['downvotes'],
         'net_votes': net,
         'user_vote': user_vote,
-        'flagged': net <= -5,
+        'flagged': net <= VOTE_FLAG_THRESHOLD,
     })
 
 
@@ -579,7 +588,7 @@ def vote_flashcard(request, flashcard_id):
 def comment_flashcard(request, flashcard_id):
     """Add a comment or suggested improvement to a flashcard."""
     flashcard = get_object_or_404(
-        Flashcard.objects.select_related('topic__course'),
+        Flashcard.objects.select_related('topic__course__created_by'),
         id=flashcard_id,
     )
 

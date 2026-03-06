@@ -1,5 +1,5 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, MaxLengthValidator
 from django.contrib.auth.models import User
 import secrets
 import string
@@ -465,7 +465,10 @@ class FlashcardComment(models.Model):
     """A user comment on a flashcard, used to suggest improvements"""
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcard_comments')
     flashcard = models.ForeignKey(Flashcard, on_delete=models.CASCADE, related_name='comments')
-    body = models.TextField(help_text='Comment or suggested improvement')
+    body = models.TextField(
+        help_text='Comment or suggested improvement',
+        validators=[MaxLengthValidator(1000)],
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

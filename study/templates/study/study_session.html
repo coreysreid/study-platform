@@ -306,9 +306,9 @@
     <!-- Vote bar (shown after answer is revealed) -->
     <div id="voteBar" style="display:none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 0.75rem;">
         <span style="font-size: 0.9rem; color: #666;">Rate this card:</span>
-        <button id="voteUpBtn" onclick="sessionVote(1)" class="vote-btn" title="Upvote">👍</button>
+        <button id="voteUpBtn" onclick="sessionVote(1)" class="vote-btn" title="Upvote" aria-label="Upvote this card" aria-pressed="false">👍</button>
         <span id="voteScore" class="net-score" style="font-weight:600; min-width:2rem; text-align:center;"></span>
-        <button id="voteDownBtn" onclick="sessionVote(-1)" class="vote-btn" title="Downvote">👎</button>
+        <button id="voteDownBtn" onclick="sessionVote(-1)" class="vote-btn" title="Downvote" aria-label="Downvote this card" aria-pressed="false">👎</button>
     </div>
     
     <form id="endSessionForm" method="post" action="{% url 'end_study_session' session.id %}" style="display: none;">
@@ -565,7 +565,9 @@
         const downBtn = document.getElementById('voteDownBtn');
         scoreEl.textContent = card.net_votes !== null ? card.net_votes : 0;
         upBtn.classList.toggle('active-up',   card.user_vote === 1);
+        upBtn.setAttribute('aria-pressed', card.user_vote === 1 ? 'true' : 'false');
         downBtn.classList.toggle('active-down', card.user_vote === -1);
+        downBtn.setAttribute('aria-pressed', card.user_vote === -1 ? 'true' : 'false');
         voteBar.style.display = 'flex';
     }
 
@@ -587,8 +589,12 @@
             card.downvotes  = data.downvotes;
             card.user_vote  = data.user_vote;
             document.getElementById('voteScore').textContent = data.net_votes;
-            document.getElementById('voteUpBtn').classList.toggle('active-up',     data.user_vote === 1);
-            document.getElementById('voteDownBtn').classList.toggle('active-down', data.user_vote === -1);
+            const upBtn   = document.getElementById('voteUpBtn');
+            const downBtn = document.getElementById('voteDownBtn');
+            upBtn.classList.toggle('active-up',     data.user_vote === 1);
+            upBtn.setAttribute('aria-pressed', data.user_vote === 1 ? 'true' : 'false');
+            downBtn.classList.toggle('active-down', data.user_vote === -1);
+            downBtn.setAttribute('aria-pressed', data.user_vote === -1 ? 'true' : 'false');
         })
         .catch(function() {});
     }

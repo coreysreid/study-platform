@@ -165,6 +165,8 @@
                                         id="up-{{ flashcard.id }}"
                                         onclick="castVote({{ flashcard.id }}, 1)"
                                         title="Upvote"
+                                        aria-label="Upvote this card"
+                                        aria-pressed="{% if flashcard.user_vote == 1 %}true{% else %}false{% endif %}"
                                     >👍</button>
                                 {% endif %}
                                 <span
@@ -178,6 +180,8 @@
                                         id="down-{{ flashcard.id }}"
                                         onclick="castVote({{ flashcard.id }}, -1)"
                                         title="Downvote"
+                                        aria-label="Downvote this card"
+                                        aria-pressed="{% if flashcard.user_vote == -1 %}true{% else %}false{% endif %}"
                                     >👎</button>
                                 {% endif %}
                             </div>
@@ -219,8 +223,6 @@
 
 {% block extra_js %}
 <script>
-const FLAG_THRESHOLD = {{ flag_threshold }};
-
 function castVote(cardId, voteValue) {
     const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     fetch(`/flashcard/${cardId}/vote/`, {
@@ -244,11 +246,17 @@ function castVote(cardId, voteValue) {
             scoreEl.title = `${data.upvotes} upvote${data.upvotes !== 1 ? 's' : ''} / ${data.downvotes} downvote${data.downvotes !== 1 ? 's' : ''}`;
         }
 
-        // Update button active states
+        // Update button active states and aria-pressed
         const upBtn   = document.getElementById('up-'   + cardId);
         const downBtn = document.getElementById('down-' + cardId);
-        if (upBtn)   upBtn.classList.toggle('active-up',   data.user_vote === 1);
-        if (downBtn) downBtn.classList.toggle('active-down', data.user_vote === -1);
+        if (upBtn) {
+            upBtn.classList.toggle('active-up', data.user_vote === 1);
+            upBtn.setAttribute('aria-pressed', data.user_vote === 1 ? 'true' : 'false');
+        }
+        if (downBtn) {
+            downBtn.classList.toggle('active-down', data.user_vote === -1);
+            downBtn.setAttribute('aria-pressed', data.user_vote === -1 ? 'true' : 'false');
+        }
 
         // Show/hide flagged badge
         const card = document.getElementById('card-' + cardId);

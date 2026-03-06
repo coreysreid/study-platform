@@ -1083,6 +1083,12 @@ class VoteFlashcardViewTest(TestCase):
         response = self.client.post(self.vote_url, {'vote': '1'})
         self.assertEqual(response.status_code, 403)
 
+    def test_non_enrolled_user_cannot_vote(self):
+        nonenrolled = User.objects.create_user(username='nonenrolled', password='pass')
+        self.client.login(username='nonenrolled', password='pass')
+        response = self.client.post(self.vote_url, {'vote': '1'})
+        self.assertEqual(response.status_code, 403)
+
     def test_unauthenticated_user_redirected(self):
         response = self.client.post(self.vote_url, {'vote': '1'})
         self.assertEqual(response.status_code, 302)
@@ -1100,7 +1106,7 @@ class VoteFlashcardViewTest(TestCase):
         for i in range(5):
             u = User.objects.create_user(username=f'dv{i}', password='pass')
             FlashcardVote.objects.create(user=u, flashcard=self.card, vote=-1)
-        # Add one more downvote (will hit -5)
+        # Add one more downvote to push net score to -6, past the -5 threshold
         response = self.client.post(self.vote_url, {'vote': '-1'})
         data = json.loads(response.content)
         self.assertTrue(data['flagged'])
