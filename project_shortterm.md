@@ -7,18 +7,26 @@ Update this file whenever work is completed or priorities shift.
 
 ## Open Pull Requests
 
-| PR | Description | Status |
-|----|-------------|--------|
-| open | DSP atomic flashcards (DSP First Ch 1 & 2, Kamen Ch 1); migration 0030 | 🔄 In review |
+None — all recent work is uncommitted on `main`.
+
+Migrations 0032 and 0033 and the base.html redesign should be committed and pushed.
 
 | PR | Description | Merged |
 |----|-------------|--------|
+| #50 | Review content structure cards | ✅ 2026-03-06 |
+| #49 | Resolve issues and set up review agents | ✅ 2026-03-06 |
 | #42 | Topic `code` field (001A/001B/002A scheme); migrations 0026–0028; template display | ✅ 2026-02-26 |
 | #43 | Split Engineering Mathematics into 5 CDU-aligned courses; migration 0029 | ✅ 2026-02-26 |
 
 ---
 
 ## Recent Decisions
+
+- **Design system overhaul** (2026-03-06): Created `study/static/study/css/theme.css` — full token-based design system with CSS custom properties, light/dark mode (`[data-theme="dark"]` on `<html>`), Inter + JetBrains Mono fonts, and Steward's Path branding (torch flame orange `#F97316`/`#FB923C`). Rewrote `base.html` to remove all inline styles, load the design system via `{% static %}`, add an anti-FOUC theme script, a sticky nav with the old-style pathfinder flame torch SVG logo, `+ Create` and account dropdowns, a light/dark toggle button, and a clean `.site-footer`. Feedback FAB and modal ported to the new component classes.
+
+- **Analog Electronics content audit** (2026-03-06): Migration 0032 standardises all 87 existing Analog Electronics flashcards from Unicode math to proper `$...$` LaTeX delimiters and sets `uses_latex=True`. Migration 0033 adds three missing Sedra & Smith chapters as new topics: `002B` Semiconductors (12 cards), `006B` Differential Amplifiers (10 cards), `008B` Output Stages & Power Amplifiers (10 cards). Analog Electronics now has 13 topics and ~120 cards.
+
+- **Reference materials folder** (2026-03-06): `reference/` added to `.gitignore` for local PDF study materials. Sedra & Smith "Microelectronic Circuits" 8th ed. OCR text loaded as `reference/MICROE_1.txt` and used to identify content gaps.
 
 - **DSP atomic card expansion** (2026-03-06): Migration 0030 adds 19-card topic `001B`
   "Signal Fundamentals & Operations" (Kamen Ch 1), plus 8 gap-fill cards to `001A`
@@ -60,13 +68,12 @@ Update this file whenever work is completed or priorities shift.
 
 ## Immediate Priorities
 
-1. Add `topic-code` CSS styling (`span.topic-code`) to the base stylesheet
-   so the code renders visually distinct from the topic name.
-2. Add flashcard content for the 30 new topics in SMA101, SMA102, SMA209, SMA212.
-3. Work through circuit diagrams — start with Circuit Analysis Fundamentals
-   (~8 passive-component diagrams; see `docs/circuit_diagram_plan.md` build order).
-4. Decide on next feature area — candidates:
-   - SM-2 spaced repetition algorithm (currently only tracking confidence level)
+1. **Commit & push** migrations 0032, 0033 and the `base.html` redesign (currently uncommitted on `main`).
+2. **Math flashcard content**: 43 topics across SMA101, SMA102, SMA209, SMA212, FOUND101 have zero cards. Need reference material added to `reference/` before writing cards.
+3. **DSP content gaps**: Z-Transform (`005A`), DFT/FFT (`006A`), IIR Filters (`007A`) topics exist but have few or no cards.
+4. **Circuit diagrams**: Start with Circuit Analysis Fundamentals (~8 passive-component diagrams). See `docs/circuit_diagram_plan.md` for build order.
+5. **Next feature area** — candidates:
+   - SM-2 spaced repetition algorithm (currently only tracking confidence level 0–5)
    - Learning feedback loop (suggest prerequisite review on wrong answers)
    - Progress dashboard
 
@@ -76,3 +83,5 @@ Update this file whenever work is completed or priorities shift.
 
 - `FEATURE_STATUS.md` is significantly out of date (last updated 2026-02-13, pre-curriculum).
 - `Topic.order` field still exists alongside `Topic.code` — could be removed once code is stable.
+- Prism.js theme does not switch for dark mode (uses the default light theme). Minor visual polish item.
+- Mermaid theme is set at page load and does not react to mid-session theme toggles (page reload required).
