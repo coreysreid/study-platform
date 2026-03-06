@@ -1186,3 +1186,134 @@ class TopicDetailVoteOrderingTest(TestCase):
         flashcards = {fc.id: fc for fc in response.context['flashcards']}
         self.assertEqual(flashcards[self.card_high.id].net_votes, 2)
         self.assertEqual(flashcards[self.card_low.id].net_votes, -1)
+
+
+class AqfLevelAndStarDifficultyTestCase(TestCase):
+    """Tests for the two-tier difficulty system: AQF level + star rating"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='difftestuser', password='pass')
+        self.course = Course.objects.create(
+            name='Circuit Analysis',
+            code='ENG301',
+            aqf_level=19,
+            created_by=self.user,
+        )
+        self.topic = Topic.objects.create(
+            course=self.course,
+            name="Ohm's Law",
+            order=1,
+            star_difficulty=1,
+        )
+
+    # ------------------------------------------------------------------ #
+    # Course AQF level
+    # ------------------------------------------------------------------ #
+
+    def test_course_stores_aqf_level(self):
+        course = Course.objects.get(pk=self.course.pk)
+        self.assertEqual(course.aqf_level, 19)
+
+    def test_course_aqf_level_nullable(self):
+        course = Course.objects.create(
+            name='No Level Course',
+            created_by=self.user,
+        )
+        self.assertIsNone(course.aqf_level)
+
+    def test_course_aqf_level_choices(self):
+        valid_levels = list(range(1, 21))
+        for level in [1, 10, 19, 20]:
+            self.assertIn(level, valid_levels)
+
+    # ------------------------------------------------------------------ #
+    # Topic AQF level (own + inherited)
+    # ------------------------------------------------------------------ #
+
+    def test_topic_inherits_aqf_level_from_course(self):
+        """effective_aqf_level returns course level when topic level is null"""
+        self.assertIsNone(self.topic.aqf_level)
+        self.assertEqual(self.topic.effective_aqf_level, 19)
+
+    def test_topic_own_aqf_level_overrides_course(self):
+        """effective_aqf_level returns topic's own level when set"""
+        self.topic.aqf_level = 18
+        self.topic.save()
+        self.assertEqual(self.topic.effective_aqf_level, 18)
+
+    def test_topic_effective_aqf_none_when_both_unset(self):
+        """effective_aqf_level returns None when neither topic nor course has a level"""
+        course = Course.objects.create(name='No Level', created_by=self.user)
+        topic = Topic.objects.create(course=course, name='Some Topic', order=1)
+        self.assertIsNone(topic.effective_aqf_level)
+
+    # ------------------------------------------------------------------ #
+    # Topic star difficulty
+    # ------------------------------------------------------------------ #
+
+    def test_topic_stores_star_difficulty(self):
+        topic = Topic.objects.get(pk=self.topic.pk)
+        self.assertEqual(topic.star_difficulty, 1)
+
+    def test_topic_star_difficulty_nullable(self):
+        topic = Topic.objects.create(
+            course=self.course,
+            name='No Stars Topic',
+            order=2,
+        )
+        self.assertIsNone(topic.star_difficulty)
+
+    def test_topic_star_difficulty_range(self):
+        for stars in range(1, 7):
+            self.topic.star_difficulty = stars
+            self.topic.save()
+            self.assertEqual(Topic.objects.get(pk=self.topic.pk).star_difficulty, stars)
+
+    # ------------------------------------------------------------------ #
+    # Flashcard star difficulty (own + inherited)
+    # ------------------------------------------------------------------ #
+
+    def test_flashcard_inherits_star_difficulty_from_topic(self):
+        """effective_star_difficulty returns topic's star_difficulty when card's is null"""
+        card = Flashcard.objects.create(
+            topic=self.topic,
+            question='V=?',
+            answer='IR',
+        )
+        self.assertIsNone(card.star_difficulty)
+        self.assertEqual(card.effective_star_difficulty, 1)
+
+    def test_flashcard_own_star_difficulty_overrides_topic(self):
+        """effective_star_difficulty returns card's own value when set"""
+        card = Flashcard.objects.create(
+            topic=self.topic,
+            question='V=?',
+            answer='IR',
+            star_difficulty=3,
+        )
+        self.assertEqual(card.effective_star_difficulty, 3)
+
+    def test_flashcard_effective_star_none_when_both_unset(self):
+        """effective_star_difficulty returns None when neither card nor topic has stars"""
+        topic = Topic.objects.create(
+            course=self.course,
+            name='No Stars',
+            order=3,
+        )
+        card = Flashcard.objects.create(
+            topic=topic,
+            question='Q',
+            answer='A',
+        )
+        self.assertIsNone(card.effective_star_difficulty)
+
+    def test_flashcard_star_difficulty_range(self):
+        card = Flashcard.objects.create(
+            topic=self.topic,
+            question='Q',
+            answer='A',
+        )
+        for stars in range(1, 7):
+            card.star_difficulty = stars
+            card.save()
+            self.assertEqual(Flashcard.objects.get(pk=card.pk).star_difficulty, stars)

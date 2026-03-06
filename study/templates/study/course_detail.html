@@ -36,6 +36,11 @@
                 {% if course.code %}
                     <p style="opacity: 0.9; font-size: 1.1rem; margin-bottom: 1rem;">{{ course.code }}</p>
                 {% endif %}
+                {% if course.aqf_level %}
+                    <p style="opacity: 0.9; font-size: 0.9rem; margin-bottom: 0.5rem;">
+                        Level {{ course.aqf_level }} — {{ course.get_aqf_level_display }}
+                    </p>
+                {% endif %}
                 {% if course.description %}
                     <p style="opacity: 0.9;">{{ course.description }}</p>
                 {% endif %}
@@ -65,7 +70,7 @@
                             {{ topic.description|truncatewords:20 }}
                         </p>
                         <small style="color: #999;">
-                            {{ topic.flashcard_count }} flashcard{{ topic.flashcard_count|pluralize }}
+                            {{ topic.flashcard_count }} flashcard{{ topic.flashcard_count|pluralize }}{% if topic.star_difficulty %} · {% for i in "123456" %}{% if forloop.counter <= topic.star_difficulty %}★{% else %}☆{% endif %}{% endfor %}{% endif %}
                         </small>
                     </div>
                     <div style="display: flex; gap: 0.5rem;">

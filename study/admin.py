@@ -9,15 +9,15 @@ from .models import (
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ['name', 'code', 'created_by', 'created_at']
-    list_filter = ['created_by', 'created_at']
+    list_display = ['name', 'code', 'aqf_level', 'created_by', 'created_at']
+    list_filter = ['aqf_level', 'created_by', 'created_at']
     search_fields = ['name', 'code', 'description']
 
 
 @admin.register(Topic)
 class TopicAdmin(admin.ModelAdmin):
-    list_display = ['name', 'course', 'order', 'created_at']
-    list_filter = ['course', 'created_at']
+    list_display = ['name', 'course', 'order', 'aqf_level', 'star_difficulty', 'created_at']
+    list_filter = ['course', 'aqf_level', 'star_difficulty', 'created_at']
     search_fields = ['name', 'description']
     ordering = ['course', 'order']
     filter_horizontal = ['prerequisites']
@@ -25,13 +25,13 @@ class TopicAdmin(admin.ModelAdmin):
 
 @admin.register(Flashcard)
 class FlashcardAdmin(admin.ModelAdmin):
-    list_display = ['question_preview', 'topic', 'difficulty', 'question_type', 'uses_latex', 'created_at']
-    list_filter = ['difficulty', 'question_type', 'uses_latex', 'graph_type', 'diagram_type', 'topic__course', 'created_at']
+    list_display = ['question_preview', 'topic', 'difficulty', 'star_difficulty', 'question_type', 'uses_latex', 'created_at']
+    list_filter = ['difficulty', 'star_difficulty', 'question_type', 'uses_latex', 'graph_type', 'diagram_type', 'topic__course', 'created_at']
     search_fields = ['question', 'answer', 'question_template', 'answer_template']
     filter_horizontal = ['skills']
     fieldsets = (
         ('Basic Information', {
-            'fields': ('topic', 'difficulty', 'question_type', 'skills', 'template')
+            'fields': ('topic', 'difficulty', 'star_difficulty', 'question_type', 'skills', 'template')
         }),
         ('Standard Card', {
             'fields': ('question', 'question_image', 'answer', 'answer_image', 'hint'),

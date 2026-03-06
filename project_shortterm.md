@@ -21,6 +21,13 @@ Update this file whenever work is completed or priorities shift.
 
 ## Recent Decisions
 
+- **Two-tier difficulty system** (2026-03-06): Migration 0037 adds `Course.aqf_level` (1–20,
+  K–12 + AQF scale), `Topic.aqf_level` (nullable, inherits from course), `Topic.star_difficulty`
+  (1–6), and `Flashcard.star_difficulty` (nullable, inherits from topic). Helper properties
+  `Topic.effective_aqf_level` and `Flashcard.effective_star_difficulty` handle inheritance.
+  Star ratings display as ★/☆ glyphs in course_detail and topic_detail templates. Forms
+  updated to allow setting these fields. Admin updated to filter/display by them.
+
 - **Mathematics flashcard expansion** (2026-03-06): Migrations 0032–0035 add 247 new
   flashcards across the 30 empty topics created by migration 0029. Coverage:
   SMA101 (76 new cards incl. 17 for Complex Numbers), SMA102 (56 new cards incl. 10 for

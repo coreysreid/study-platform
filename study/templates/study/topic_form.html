@@ -50,6 +50,28 @@
             {% endif %}
             <small style="color: #666; font-size: 0.9rem;">Hold Ctrl/Cmd to select multiple topics</small>
         </div>
+
+        <div class="form-group">
+            <label for="{{ form.aqf_level.id_for_label }}">AQF Level</label>
+            <small style="color: #666; display: block; margin-bottom: 0.4rem;">
+                Override the course's AQF level for this topic. Leave blank to inherit from the course.
+            </small>
+            {{ form.aqf_level }}
+            {% if form.aqf_level.errors %}
+                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.aqf_level.errors }}</div>
+            {% endif %}
+        </div>
+
+        <div class="form-group">
+            <label for="{{ form.star_difficulty.id_for_label }}">Star Difficulty</label>
+            <small style="color: #666; display: block; margin-bottom: 0.4rem;">
+                How hard is this topic relative to others in the same subject? Stars are not globally comparable.
+            </small>
+            {{ form.star_difficulty }}
+            {% if form.star_difficulty.errors %}
+                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.star_difficulty.errors }}</div>
+            {% endif %}
+        </div>
         
         <div style="display: flex; gap: 1rem; margin-top: 2rem;">
             <button type="submit" class="btn">Save Topic</button>
