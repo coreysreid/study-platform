@@ -198,7 +198,7 @@ def course_detail(request, course_id):
         # Show catalog course (must be public)
         course = get_object_or_404(Course, id=course_id, created_by=system_user)
     
-    topics = course.topics.all().annotate(flashcard_count=Count('flashcards'))
+    topics = course.topics.all().annotate(flashcard_count=Count('flashcards')).order_by('code', 'name')
     
     return render(request, 'study/course_detail.html', {
         'course': course,
