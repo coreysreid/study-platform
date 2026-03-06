@@ -1,5 +1,5 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, MaxLengthValidator
 from django.contrib.auth.models import User
 import secrets
 import string
@@ -439,3 +439,40 @@ class TopicScore(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name}: {self.score:.2f}"
+
+
+class FlashcardVote(models.Model):
+    """Records a user's upvote or downvote on a public flashcard"""
+    UPVOTE = 1
+    DOWNVOTE = -1
+    VOTE_CHOICES = [(UPVOTE, 'Upvote'), (DOWNVOTE, 'Downvote')]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcard_votes')
+    flashcard = models.ForeignKey(Flashcard, on_delete=models.CASCADE, related_name='votes')
+    vote = models.SmallIntegerField(choices=VOTE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'flashcard']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        label = 'upvote' if self.vote == self.UPVOTE else 'downvote'
+        return f"{self.user.username} {label} on flashcard {self.flashcard_id}"
+
+
+class FlashcardComment(models.Model):
+    """A user comment on a flashcard, used to suggest improvements"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcard_comments')
+    flashcard = models.ForeignKey(Flashcard, on_delete=models.CASCADE, related_name='comments')
+    body = models.TextField(
+        help_text='Comment or suggested improvement',
+        validators=[MaxLengthValidator(1000)],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.user.username} on flashcard {self.flashcard_id}: {self.body[:50]}..."
