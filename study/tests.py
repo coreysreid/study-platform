@@ -1,6 +1,7 @@
 import json
-from django.test import TestCase, Client
+from django.test import TestCase, TransactionTestCase, Client
 from django.contrib.auth.models import User
+from django.db import connection
 from django.db.models import Q
 from .models import Course, Topic, Flashcard, Skill, FlashcardProgress, TopicScore
 from .utils import ParameterGenerator, TemplateRenderer, generate_parameterized_card
@@ -886,3 +887,81 @@ class TrigExactValuesMigrationTest(TestCase):
 
         # Should still be exactly 9 — no duplicates
         self.assertEqual(Flashcard.objects.filter(topic=self.topic).count(), 9)
+
+
+class TrigMigrationExecutorTest(TransactionTestCase):
+    """End-to-end test for migration 0030 using Django's MigrationExecutor.
+
+    This verifies the migration as it actually runs in production: using the
+    migration executor with historical model classes, rolling back to 0029,
+    seeding the combined card, then applying 0030 and asserting the split.
+
+    Uses TransactionTestCase (not TestCase) so that MigrationExecutor can
+    manage its own transactions; this test is necessarily slower than the
+    unit tests in TrigExactValuesMigrationTest.
+    """
+
+    COMBINED_Q = 'What are the exact values of sin, cos, tan for 30°, 45°, 60°?'
+    TARGET_0029 = [('study', '0029_restructure_mathematics')]
+    TARGET_0030 = [('study', '0030_split_trig_exact_values_flashcard')]
+
+    def test_migration_0030_splits_combined_card(self):
+        from django.db.migrations.executor import MigrationExecutor
+
+        executor = MigrationExecutor(connection)
+
+        # Roll back to 0029 (0030's reverse_fn is a no-op, so only the
+        # migration record changes — the schema is unaffected).
+        executor.migrate(self.TARGET_0029)
+        executor.loader.build_graph()
+
+        # Obtain historical model classes at the 0029 state.
+        state_0029 = executor.loader.project_state(self.TARGET_0029)
+        HistFlashcard = state_0029.apps.get_model('study', 'Flashcard')
+        HistCourse = state_0029.apps.get_model('study', 'Course')
+        HistTopic = state_0029.apps.get_model('study', 'Topic')
+        HistUser = state_0029.apps.get_model('auth', 'User')
+
+        # Seed: one user, course, topic, and the combined card.
+        user = HistUser.objects.create_user(username='migexec_test', password='pass')
+        course = HistCourse.objects.create(name='Trig Course', created_by=user)
+        topic = HistTopic.objects.create(course=course, name='Trigonometry')
+        HistFlashcard.objects.create(
+            topic=topic,
+            question=self.COMBINED_Q,
+            answer='30°: sin=1/2, cos=√3/2. 45°: sin=cos=1/√2. 60°: sin=√3/2, cos=1/2.',
+            difficulty='medium',
+            question_type='standard',
+            uses_latex=True,
+        )
+        self.assertEqual(HistFlashcard.objects.filter(topic=topic).count(), 1)
+
+        # Apply migration 0030.
+        executor.migrate(self.TARGET_0030)
+        executor.loader.build_graph()
+
+        # Check via post-migration model state.
+        state_0030 = executor.loader.project_state(self.TARGET_0030)
+        NewFlashcard = state_0030.apps.get_model('study', 'Flashcard')
+
+        self.assertFalse(
+            NewFlashcard.objects.filter(question=self.COMBINED_Q).exists(),
+            'Combined card must be deleted by migration 0030',
+        )
+        # Use topic_id to avoid cross-state model-type mismatch.
+        atomic = NewFlashcard.objects.filter(topic_id=topic.pk)
+        self.assertEqual(atomic.count(), 9, 'Exactly 9 atomic cards must be created')
+        for card in atomic:
+            self.assertTrue(
+                card.uses_latex,
+                f'Card "{card.question}" must have uses_latex=True',
+            )
+
+    def tearDown(self):
+        # Roll forward to the latest migration so subsequent tests start in
+        # the fully-applied state.
+        from django.db.migrations.executor import MigrationExecutor
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        targets = executor.loader.graph.leaf_nodes()
+        executor.migrate(targets)
