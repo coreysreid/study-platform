@@ -262,6 +262,26 @@ def update_enrollment_status(request, course_id):
     return redirect('course_list')
 
 
+def _annotate_with_votes(queryset, user):
+    """Annotate a Flashcard queryset with upvotes, downvotes, net_votes, and user_vote."""
+    user_vote_subquery = Subquery(
+        FlashcardVote.objects.filter(
+            user=user,
+            flashcard=OuterRef('pk'),
+        ).values('vote')[:1],
+        output_field=IntegerField(),
+    )
+    return queryset.annotate(
+        upvotes=Count('votes', filter=Q(votes__vote=FlashcardVote.UPVOTE)),
+        downvotes=Count('votes', filter=Q(votes__vote=FlashcardVote.DOWNVOTE)),
+        net_votes=(
+            Count('votes', filter=Q(votes__vote=FlashcardVote.UPVOTE)) -
+            Count('votes', filter=Q(votes__vote=FlashcardVote.DOWNVOTE))
+        ),
+        user_vote=user_vote_subquery,
+    )
+
+
 @login_required
 def topic_detail(request, topic_id):
     """View details of a specific topic - user must be enrolled in the course"""
@@ -276,24 +296,9 @@ def topic_detail(request, topic_id):
         messages.error(request, 'You must be enrolled in this course to view topics.')
         return redirect('course_catalog')
     
-    # Annotate flashcards with net vote score, upvotes, downvotes, and the
-    # current user's vote (+1, -1, or None), then sort best-first.
-    user_vote_subquery = Subquery(
-        FlashcardVote.objects.filter(
-            user=request.user,
-            flashcard=OuterRef('pk'),
-        ).values('vote')[:1],
-        output_field=IntegerField(),
-    )
+    # Annotate flashcards with vote counts and user's own vote, then sort best-first.
     flashcards = (
-        topic.flashcards
-        .annotate(
-            upvotes=Count('votes', filter=Q(votes__vote=FlashcardVote.UPVOTE)),
-            downvotes=Count('votes', filter=Q(votes__vote=FlashcardVote.DOWNVOTE)),
-            net_votes=Count('votes', filter=Q(votes__vote=FlashcardVote.UPVOTE)) -
-                      Count('votes', filter=Q(votes__vote=FlashcardVote.DOWNVOTE)),
-            user_vote=user_vote_subquery,
-        )
+        _annotate_with_votes(topic.flashcards, request.user)
         .order_by('-net_votes', '-created_at')
         .prefetch_related('comments__user')
     )
@@ -329,19 +334,12 @@ def study_session(request, topic_id):
     else:
         study_mode = preference.study_mode
     
-    flashcards = list(topic.flashcards.prefetch_related('skills').annotate(
-        upvotes=Count('votes', filter=Q(votes__vote=FlashcardVote.UPVOTE)),
-        downvotes=Count('votes', filter=Q(votes__vote=FlashcardVote.DOWNVOTE)),
-        net_votes=Count('votes', filter=Q(votes__vote=FlashcardVote.UPVOTE)) -
-                  Count('votes', filter=Q(votes__vote=FlashcardVote.DOWNVOTE)),
-        user_vote=Subquery(
-            FlashcardVote.objects.filter(
-                user=request.user,
-                flashcard=OuterRef('pk'),
-            ).values('vote')[:1],
-            output_field=IntegerField(),
-        ),
-    ))
+    flashcards = list(
+        _annotate_with_votes(
+            topic.flashcards.prefetch_related('skills'),
+            request.user,
+        )
+    )
     
     if not flashcards:
         messages.warning(request, 'No flashcards available for this topic.')
@@ -562,8 +560,8 @@ def vote_flashcard(request, flashcard_id):
 
     # Recalculate totals
     totals = FlashcardVote.objects.filter(flashcard=flashcard).aggregate(
-        upvotes=Count('id', filter=Q(vote=FlashcardVote.UPVOTE)),
-        downvotes=Count('id', filter=Q(vote=FlashcardVote.DOWNVOTE)),
+        upvotes=Count('pk', filter=Q(vote=FlashcardVote.UPVOTE)),
+        downvotes=Count('pk', filter=Q(vote=FlashcardVote.DOWNVOTE)),
     )
     net = totals['upvotes'] - totals['downvotes']
 
