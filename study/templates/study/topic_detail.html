@@ -108,26 +108,78 @@
             {% endif %}
         </div>
     </div>
+
+    {# Enrol + study prompt for non-enrolled users who are not the owner #}
+    {% if not is_enrolled and topic.course.created_by != request.user %}
+    <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; text-align: center;">
+        <h3 style="color: #856404; margin-bottom: 0.5rem;">🎓 Enrol to start studying</h3>
+        <p style="color: #856404; margin-bottom: 1rem;">Enrol in this course to track progress, rate cards, and suggest improvements.</p>
+        <a href="{% url 'course_catalog' %}" class="btn" style="background: #f59e0b; border: none;">Browse Course Catalogue</a>
+    </div>
+    {% endif %}
     
     <div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem;">
             <h2 style="color: #667eea;">Flashcards ({{ flashcards.count }})</h2>
-            <div style="display: flex; gap: 0.5rem;">
-                {% if topic.course.created_by == request.user %}
-                    <a href="{% url 'flashcard_create_for_topic' topic.id %}" class="btn btn-secondary">+ Add Flashcard</a>
-                {% endif %}
+            <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                 {% if flashcards and is_enrolled %}
-                    <a href="{% url 'study_session' topic.id %}" class="btn">Start Studying</a>
-                {% elif flashcards and not is_enrolled %}
-                    <a href="{% url 'course_catalog' %}" class="btn" style="background: #10b981;">Enroll to Study</a>
+                    <a href="{% url 'study_session' topic.id %}" class="btn">▶ Start Studying</a>
+                {% elif flashcards and not is_enrolled and topic.course.created_by != request.user %}
+                    <a href="{% url 'course_catalog' %}" class="btn" style="background: #10b981;">Enrol to Study</a>
+                {% endif %}
+                {% if topic.course.created_by == request.user %}
+                    <a href="{% url 'flashcard_create_for_topic' topic.id %}" class="btn btn-secondary" style="font-size: 0.9rem;">+ Add Flashcard</a>
                 {% endif %}
             </div>
         </div>
+
+        {# "Suggest a card" panel — shown to enrolled non-owners #}
+        {% if is_enrolled and topic.course.created_by != request.user %}
+        <div style="background: #f0f9ff; border: 1px solid #bfdbfe; border-radius: 10px; padding: 1.25rem; margin-bottom: 1.5rem;">
+            <details>
+                <summary style="cursor: pointer; color: #1d4ed8; font-weight: 600; font-size: 0.95rem;">
+                    💡 Can't find a card you need? Suggest one for review
+                </summary>
+                <div style="margin-top: 1rem;">
+                    <p style="color: #374151; font-size: 0.9rem; margin-bottom: 1rem;">
+                        Suggestions are reviewed before being added — helping keep content accurate and on-topic.
+                    </p>
+                    <form method="post" action="{% url 'suggest_card' topic.id %}">
+                        {% csrf_token %}
+                        <div style="margin-bottom: 0.75rem;">
+                            <label style="display: block; font-weight: 500; margin-bottom: 0.25rem; font-size: 0.9rem;">Question <span style="color: #dc2626;">*</span></label>
+                            <textarea name="question" required maxlength="2000" rows="2"
+                                style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.9rem; resize: vertical; box-sizing: border-box;"
+                                placeholder="What concept should this card test?"></textarea>
+                        </div>
+                        <div style="margin-bottom: 0.75rem;">
+                            <label style="display: block; font-weight: 500; margin-bottom: 0.25rem; font-size: 0.9rem;">Answer <span style="color: #dc2626;">*</span></label>
+                            <textarea name="answer" required maxlength="2000" rows="3"
+                                style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.9rem; resize: vertical; box-sizing: border-box;"
+                                placeholder="The correct answer or explanation"></textarea>
+                        </div>
+                        <div style="margin-bottom: 1rem;">
+                            <label style="display: block; font-weight: 500; margin-bottom: 0.25rem; font-size: 0.9rem;">Hint <span style="color: #6b7280; font-weight: 400;">(optional)</span></label>
+                            <textarea name="hint" maxlength="500" rows="1"
+                                style="width: 100%; border: 1px solid #cbd5e1; border-radius: 6px; padding: 0.4rem 0.6rem; font-size: 0.9rem; resize: vertical; box-sizing: border-box;"
+                                placeholder="Optional nudge without giving away the answer"></textarea>
+                        </div>
+                        <button type="submit" class="btn" style="background: #1d4ed8; font-size: 0.9rem; padding: 0.5rem 1.25rem;">Submit for Review</button>
+                    </form>
+                </div>
+            </details>
+        </div>
+        {% endif %}
         
         {% if flashcards %}
             <div style="display: grid; gap: 1rem;">
                 {% for flashcard in flashcards %}
-                    <div id="card-{{ flashcard.id }}" style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px;">
+                    <div id="card-{{ flashcard.id }}" style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px;{% if not is_system_course %} border-left: 3px solid #a78bfa;{% endif %}">
+                        {% if not is_system_course %}
+                        <div style="margin-bottom: 0.75rem;">
+                            <span style="background: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; border-radius: 12px; padding: 0.2rem 0.6rem; font-size: 0.78rem; font-weight: 600;">👤 User-created content</span>
+                        </div>
+                        {% endif %}
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                             <div style="flex: 1;">
                                 <strong style="color: #667eea;">Question:</strong>
@@ -225,7 +277,11 @@
         {% else %}
             <div style="text-align: center; padding: 2rem; background: #f8f9fa; border-radius: 10px;">
                 <p style="color: #666; margin-bottom: 1rem;">No flashcards yet.</p>
-                <a href="{% url 'flashcard_create_for_topic' topic.id %}" class="btn">Add First Flashcard</a>
+                {% if topic.course.created_by == request.user %}
+                    <a href="{% url 'flashcard_create_for_topic' topic.id %}" class="btn">Add First Flashcard</a>
+                {% elif is_enrolled %}
+                    <p style="color: #666; font-size: 0.9rem;">Check back soon, or use the suggestion form above to contribute.</p>
+                {% endif %}
             </div>
         {% endif %}
     </div>

@@ -3,7 +3,7 @@ from django.test import TestCase, TransactionTestCase, Client
 from django.contrib.auth.models import User
 from django.db import connection
 from django.db.models import Q
-from .models import Course, Topic, Flashcard, Skill, FlashcardProgress, TopicScore
+from .models import Course, Topic, Flashcard, Skill, FlashcardProgress, TopicScore, CourseEnrollment
 from .utils import ParameterGenerator, TemplateRenderer, generate_parameterized_card
 
 
@@ -1317,3 +1317,131 @@ class AqfLevelAndStarDifficultyTestCase(TestCase):
             card.star_difficulty = stars
             card.save()
             self.assertEqual(Flashcard.objects.get(pk=card.pk).star_difficulty, stars)
+
+
+class RegistrationRedirectTest(TestCase):
+    """Test that newly registered users are redirected to the course catalogue."""
+
+    def test_register_redirects_to_catalog(self):
+        response = self.client.post('/register/', {
+            'username': 'newuser',
+            'password1': 'Testpass123!',
+            'password2': 'Testpass123!',
+        })
+        self.assertRedirects(response, '/catalog/', fetch_redirect_response=False)
+
+
+class CardSuggestionModelTest(TestCase):
+    """Tests for the CardSuggestion model."""
+
+    def setUp(self):
+        self.system_user, _ = User.objects.get_or_create(
+            username='system', defaults={'email': 'system@system.local'}
+        )
+        self.user = User.objects.create_user(username='student_sug', password='pass')
+        self.course = Course.objects.create(
+            name='Suggestion Test Course', created_by=self.system_user
+        )
+        self.topic = Topic.objects.create(
+            course=self.course, name='Suggestion Test Topic', order=1
+        )
+        CourseEnrollment.objects.create(user=self.user, course=self.course)
+
+    def test_create_card_suggestion(self):
+        from .models import CardSuggestion
+        suggestion = CardSuggestion.objects.create(
+            topic=self.topic,
+            submitted_by=self.user,
+            question='What is Ohm\'s Law?',
+            answer='V = IR',
+        )
+        self.assertEqual(suggestion.status, CardSuggestion.STATUS_PENDING)
+        self.assertIn('student_sug', str(suggestion))
+
+    def test_suggestion_status_choices(self):
+        from .models import CardSuggestion
+        self.assertEqual(CardSuggestion.STATUS_PENDING, 'pending')
+        self.assertEqual(CardSuggestion.STATUS_APPROVED, 'approved')
+        self.assertEqual(CardSuggestion.STATUS_REJECTED, 'rejected')
+
+
+class SuggestCardViewTest(TestCase):
+    """Tests for the suggest_card view."""
+
+    def setUp(self):
+        self.system_user, _ = User.objects.get_or_create(
+            username='system', defaults={'email': 'system@system.local'}
+        )
+        self.enrolled_user = User.objects.create_user(username='sv_enrolled', password='pass')
+        self.unenrolled_user = User.objects.create_user(username='sv_unenrolled', password='pass')
+        self.course = Course.objects.create(
+            name='SuggestView Test Course', created_by=self.system_user
+        )
+        self.topic = Topic.objects.create(
+            course=self.course, name='SuggestView Test Topic', order=1
+        )
+        CourseEnrollment.objects.create(user=self.enrolled_user, course=self.course)
+
+    def _url(self):
+        return f'/topic/{self.topic.id}/suggest-card/'
+
+    def test_enrolled_user_can_submit_suggestion(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        response = self.client.post(self._url(), {
+            'question': 'What is V=IR called?',
+            'answer': "Ohm's Law",
+        })
+        self.assertRedirects(
+            response,
+            f'/topic/{self.topic.id}/',
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(CardSuggestion.objects.count(), 1)
+        suggestion = CardSuggestion.objects.first()
+        self.assertEqual(suggestion.status, CardSuggestion.STATUS_PENDING)
+        self.assertEqual(suggestion.submitted_by, self.enrolled_user)
+
+    def test_unenrolled_user_cannot_suggest(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_unenrolled', password='pass')
+        response = self.client.post(self._url(), {
+            'question': 'What is V=IR called?',
+            'answer': "Ohm's Law",
+        })
+        self.assertRedirects(
+            response,
+            f'/topic/{self.topic.id}/',
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(CardSuggestion.objects.count(), 0)
+
+    def test_anonymous_user_redirected_to_login(self):
+        response = self.client.post(self._url(), {
+            'question': 'Q',
+            'answer': 'A',
+        })
+        self.assertIn('/login/', response.url)
+
+    def test_empty_question_rejected(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        self.client.post(self._url(), {'question': '', 'answer': 'A'})
+        self.assertEqual(CardSuggestion.objects.count(), 0)
+
+    def test_empty_answer_rejected(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        self.client.post(self._url(), {'question': 'Q', 'answer': ''})
+        self.assertEqual(CardSuggestion.objects.count(), 0)
+
+    def test_hint_is_optional(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        self.client.post(self._url(), {
+            'question': 'Q',
+            'answer': 'A',
+            'hint': 'A helpful nudge',
+        })
+        self.assertEqual(CardSuggestion.objects.count(), 1)
+        self.assertEqual(CardSuggestion.objects.first().hint, 'A helpful nudge')

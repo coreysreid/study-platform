@@ -30,6 +30,7 @@ urlpatterns = [
     path('flashcard/<int:flashcard_id>/edit/', views.flashcard_edit, name='flashcard_edit'),
     path('flashcard/<int:flashcard_id>/vote/', views.vote_flashcard, name='vote_flashcard'),
     path('flashcard/<int:flashcard_id>/comment/', views.comment_flashcard, name='comment_flashcard'),
+    path('topic/<int:topic_id>/suggest-card/', views.suggest_card, name='suggest_card'),
     
     # Study Session URLs
     path('study/<int:topic_id>/', views.study_session, name='study_session'),
