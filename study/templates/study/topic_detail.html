@@ -109,11 +109,11 @@
         </div>
     </div>
 
-    {# Enrol + study prompt for non-enrolled users who are not the owner #}
+    {# Enroll + study prompt for non-enrolled users who are not the owner #}
     {% if not is_enrolled and topic.course.created_by != request.user %}
     <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 10px; padding: 1.5rem; margin-bottom: 2rem; text-align: center;">
-        <h3 style="color: #856404; margin-bottom: 0.5rem;">🎓 Enrol to start studying</h3>
-        <p style="color: #856404; margin-bottom: 1rem;">Enrol in this course to track progress, rate cards, and suggest improvements.</p>
+        <h3 style="color: #856404; margin-bottom: 0.5rem;">🎓 Enroll to start studying</h3>
+        <p style="color: #856404; margin-bottom: 1rem;">Enroll in this course to track progress, rate cards, and suggest improvements.</p>
         <a href="{% url 'course_catalog' %}" class="btn" style="background: #f59e0b; border: none;">Browse Course Catalogue</a>
     </div>
     {% endif %}
@@ -125,7 +125,7 @@
                 {% if flashcards and is_enrolled %}
                     <a href="{% url 'study_session' topic.id %}" class="btn">▶ Start Studying</a>
                 {% elif flashcards and not is_enrolled and topic.course.created_by != request.user %}
-                    <a href="{% url 'course_catalog' %}" class="btn" style="background: #10b981;">Enrol to Study</a>
+                    <a href="{% url 'course_catalog' %}" class="btn" style="background: #10b981;">Enroll to Study</a>
                 {% endif %}
                 {% if topic.course.created_by == request.user %}
                     <a href="{% url 'flashcard_create_for_topic' topic.id %}" class="btn btn-secondary" style="font-size: 0.9rem;">+ Add Flashcard</a>

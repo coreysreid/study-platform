@@ -21,6 +21,16 @@ Update this file whenever work is completed or priorities shift.
 
 ## Recent Decisions
 
+- **Content-first UX enforced** (2026-03-06): Issue #clarify-content-first-ux resolved.
+  - Registration now redirects to course catalogue instead of home.
+  - "New Flashcard" removed from primary nav; Create dropdown renamed to "My Content".
+  - Home page features "Browse Courses" as primary CTA with pre-loaded content messaging.
+  - Topic detail: "Start Studying" is primary action; enroll-to-study banner for non-enrolled;
+    "Add Flashcard" only shown to course owners.
+  - User-created course cards get a purple left border + "👤 User-created content" badge.
+  - New `CardSuggestion` model (migration 0038): enrolled non-owners can submit card suggestions
+    via a collapsible form; suggestions go to Django admin for review (pending/approved/rejected).
+
 - **Two-tier difficulty system** (2026-03-06): Migration 0037 adds `Course.aqf_level` (1–20,
   K–12 + AQF scale), `Topic.aqf_level` (nullable, inherits from course), `Topic.star_difficulty`
   (1–6), and `Flashcard.star_difficulty` (nullable, inherits from topic). Helper properties
@@ -91,7 +101,6 @@ Update this file whenever work is completed or priorities shift.
    - SM-2 spaced repetition algorithm (currently only tracking confidence level)
    - Learning feedback loop (suggest prerequisite review on wrong answers)
    - Progress dashboard
-
 ---
 
 ## Known Issues / Tech Debt
