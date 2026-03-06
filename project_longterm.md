@@ -21,9 +21,11 @@ Target user: an engineering student working through a ~1,100-hour self-directed 
 |-------|--------|
 | Backend | Python / Django |
 | Database | SQLite (dev), PostgreSQL (production via dj-database-url) |
-| Frontend | HTML5, CSS3, Vanilla JavaScript — no framework |
-| Math | MathJax 3 for LaTeX rendering |
-| Diagrams | Mermaid.js |
+| Frontend | HTML5, CSS custom properties, Vanilla JavaScript — no framework |
+| Fonts | Inter (UI), JetBrains Mono (code) via Google Fonts |
+| Design system | `study/static/study/css/theme.css` — tokens, components, light/dark mode |
+| Math | MathJax 3 for LaTeX rendering (`$...$` inline, `$$...$$` display) |
+| Diagrams | Mermaid.js (theme adapts to light/dark mode) |
 | Code highlighting | Prism.js |
 | Auth | Django built-in + django-allauth |
 | Deployment | Railway |
@@ -107,7 +109,7 @@ Blank-code topics sort first within a course (user-created topics in practice).
 | Mathematics 2 (SMA209) | 001A Ordinary Differential Equations (ODEs), 001B Second-Order ODEs (Homogeneous), 002A Second-Order ODEs (Non-Homogeneous), 002B Systems of ODEs, 003A Fourier Analysis, 003B Fourier Transforms, 004A Laplace Transforms, 004B Laplace Transforms — Applications, 009A Partial Differential Equations (PDEs) |
 | Data Analytics (SMA212) | 001A–010A (Descriptive Statistics → Python & Pandas for Data Analytics) |
 | Circuit Analysis Fundamentals | 001A–006A (DC Circuit Analysis → AC Power Analysis) |
-| Analog Electronics | 001A–010A (Signals & Amplifiers → Oscillators) |
+| Analog Electronics | 001A–010A + 002B, 006B, 008B — 13 topics, ~120 cards (Signals & Amplifiers → Oscillators, incl. Semiconductors, Differential Amplifiers, Output Stages & Power Amplifiers) |
 | Digital Signal Processing | 001A–010A (Sinusoids & Phasors → MATLAB for DSP) |
 | Embedded Systems | 001A–009A (Microcontroller Architecture → IoT & Connectivity) |
 | Control Systems | 001A–009A (Laplace Transforms & Transfer Functions → MATLAB & Simulink for Control) |
@@ -135,6 +137,62 @@ Full detail is in `study/migrations/0027_set_topic_codes.py` (original EE/CS cou
 - Data migrations must be **idempotent** (use `get_or_create`, `filter().update()` with guards).
 - Schema migration first, data migration second — never combine in one `RunPython`.
 - Reverse functions for data migrations are intentional no-ops (`pass`).
+
+---
+
+## Design System
+
+All visual styling lives in `study/static/study/css/theme.css`. Do not add inline styles to `base.html` or templates unless scoped to a single page's `{% block extra_css %}`.
+
+### Tokens (CSS custom properties)
+
+| Token group | Light | Dark |
+|-------------|-------|------|
+| `--bg` | `#FAFAF9` | `#18181B` |
+| `--surface` | `#FFFFFF` | `#27272A` |
+| `--accent` (torch flame) | `#F97316` | `#FB923C` |
+| `--text-1` | `#1C1917` | `#FAFAFA` |
+| `--font-sans` | Inter, system-ui | same |
+| `--font-mono` | JetBrains Mono | same |
+
+Dark mode is applied via `[data-theme="dark"]` on `<html>`. The attribute is set by a synchronous script in `<head>` (anti-FOUC) reading `localStorage('sp-theme')` or `prefers-color-scheme`. A theme-toggle button in the nav writes back to localStorage.
+
+### Branding
+
+- Name: **Steward's Path**
+- Logo: inline SVG old-style pathfinder flame torch (organic flame in `--accent`, brown cloth-wrapped head, brown handle). Not a flashlight.
+- Accent colour: torch flame orange (#F97316 light / #FB923C dark).
+
+### Key component classes
+
+| Class | Purpose |
+|-------|---------|
+| `.site-nav` / `.site-nav__inner` | Sticky top nav bar |
+| `.site-nav__brand` | Logo + brand name link |
+| `.site-nav__link` | Nav link (`.active` for current page) |
+| `.dropdown` / `.dropdown__trigger` / `.dropdown__menu` | Hover dropdown |
+| `.theme-toggle` | Light/dark toggle button |
+| `.page-container` | Centred content wrapper (max 1240px) |
+| `.content` | White/surface card for page body |
+| `.card` / `.card__header` / `.card__title` | Secondary card component |
+| `.btn` / `.btn-secondary` / `.btn-danger` / `.btn-ghost` | Button variants |
+| `.form-group` / `.form-control` | Form inputs |
+| `.message.success/error/warning/info` | Alert banners |
+| `.badge` / `.badge-accent` / `span.topic-code` | Inline tags |
+| `.fab-container` / `.fab` / `.fab-feedback` / `.fab-bug` | Fixed action buttons |
+| `.modal-overlay` / `.modal` / `.modal__header` | Dialog modal |
+| `.site-footer` | Page footer |
+
+---
+
+## Flashcard LaTeX Convention
+
+All system flashcards must use `$...$` for inline math and `$$...$$` for display math.
+Set `uses_latex=True` on any card containing math so MathJax renders it.
+
+Do **not** use Unicode math characters (₁, ₂, μ, Ω, α, β) in place of LaTeX — they render poorly and cannot be typeset properly. Use `$V_1$`, `$\mu$`, `$\Omega$`, `$\alpha$`, `$\beta$` etc.
+
+When fixing or adding cards with LaTeX, use an idempotent data migration (filter by topic + exact question text, then `.update()` or `.save()`).
 
 ---
 
