@@ -21,6 +21,14 @@ Update this file whenever work is completed or priorities shift.
 
 ## Recent Decisions
 
+- **Mathematics flashcard expansion** (2026-03-06): Migrations 0032–0035 add 247 new
+  flashcards across the 30 empty topics created by migration 0029. Coverage:
+  SMA101 (76 new cards incl. 17 for Complex Numbers), SMA102 (56 new cards incl. 10 for
+  Eigenvalues & Eigenvectors), SMA209 (52 new cards incl. Fourier Transforms and
+  Laplace Applications — both critical for CDU EE units), SMA212 (63 cards for all 10
+  Data Analytics topics). All courses now have zero empty topics.
+
+- **DSP atomic card expansion** (2026-03-06): Migration 0030 adds 19-card topic `001B`
 - **Upvote/downvote + comment system** (2026-03-06): Migration 0032 adds `FlashcardVote`
   (+1/-1, one per user per card, no self-voting) and `FlashcardComment` models. `topic_detail`
   sorts flashcards by net vote score descending; cards with net ≤ -5 are flagged for review.
@@ -69,7 +77,7 @@ Update this file whenever work is completed or priorities shift.
 
 1. Add `topic-code` CSS styling (`span.topic-code`) to the base stylesheet
    so the code renders visually distinct from the topic name.
-2. Add flashcard content for the 30 new topics in SMA101, SMA102, SMA209, SMA212.
+2. ~~Add flashcard content for the 30 new topics in SMA101, SMA102, SMA209, SMA212.~~ ✅ Done — migrations 0032–0035.
 3. Work through circuit diagrams — start with Circuit Analysis Fundamentals
    (~8 passive-component diagrams; see `docs/circuit_diagram_plan.md` build order).
 4. Decide on next feature area — candidates:
