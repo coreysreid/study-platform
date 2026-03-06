@@ -24,14 +24,15 @@ def seed_flashcards(apps, schema_editor):
         return
 
     # ------------------------------------------------------------------ #
-    # Helper: add new topic (idempotent)
+    # Helper: add/update topic — keyed on (course, code) so metadata is
+    # always correct even if a partial run previously created the topic.
     # ------------------------------------------------------------------ #
     def get_or_create_topic(name, code, order, description):
-        topic, _ = Topic.objects.get_or_create(
-            name=name,
+        topic, _ = Topic.objects.update_or_create(
             course=course,
+            code=code,
             defaults={
-                'code': code,
+                'name': name,
                 'order': order,
                 'description': description,
             },
@@ -39,8 +40,9 @@ def seed_flashcards(apps, schema_editor):
         return topic
 
     # ------------------------------------------------------------------ #
-    # Helper: add cards to an existing (populated) topic — idempotent by
-    # question text so it is safe to run multiple times.
+    # Helper: add cards to a topic — idempotent by question text.
+    # Updates the in-memory `existing` set after each insert so that
+    # duplicate questions within the same `cards` list are also skipped.
     # ------------------------------------------------------------------ #
     def add_extra_cards(topic, cards):
         existing = set(
@@ -49,15 +51,14 @@ def seed_flashcards(apps, schema_editor):
         for card in cards:
             if card['question'] not in existing:
                 Flashcard.objects.create(topic=topic, **card)
+                existing.add(card['question'])
 
     # ------------------------------------------------------------------ #
-    # Helper: populate a brand-new topic (skip if it already has cards)
+    # Helper: populate a topic using per-question idempotent logic.
+    # Self-healing: missing cards are backfilled if migration partially ran.
     # ------------------------------------------------------------------ #
     def add_cards_new(topic, cards):
-        if Flashcard.objects.filter(topic=topic).exists():
-            return
-        for card in cards:
-            Flashcard.objects.create(topic=topic, **card)
+        add_extra_cards(topic, cards)
 
     topics = {t.name: t for t in Topic.objects.filter(course=course)}
 
@@ -67,7 +68,7 @@ def seed_flashcards(apps, schema_editor):
     topic_001b = get_or_create_topic(
         name='Signal Fundamentals & Operations',
         code='001B',
-        order=1,
+        order=11,
         description=(
             'Continuous-time and discrete-time signal types, elementary signals '
             '(unit step, ramp, impulse), signal operations (time shifting, scaling, '
@@ -100,8 +101,9 @@ def seed_flashcards(apps, schema_editor):
             'answer': (
                 'Analog: continuous in both time and amplitude. '
                 'Digital: discrete in time (sampled) AND discrete in amplitude (quantized). '
-                'Continuous-time but quantized = PCM; sampled but not quantized = '
-                'discrete-time analog.'
+                'PCM: sampled (discrete-time) and quantized. '
+                'Continuous-time but quantized = quantized analog; '
+                'sampled but not quantized = discrete-time analog.'
             ),
             'difficulty': 'easy', 'question_type': 'standard', 'uses_latex': False,
         },
@@ -188,7 +190,10 @@ def seed_flashcards(apps, schema_editor):
                 'Apply time shift then time scale: find $y(t) = x(2t - 3)$ in terms '
                 'of shifted and scaled versions of $x(t)$.'
             ),
-            'answer': '',
+            'answer': (
+                '$y(t) = x(2t - 3) = x\\!\\left(2\\left(t - \\tfrac{3}{2}\\right)\\right)$: '
+                '$x(t)$ shifted right by $\\tfrac{3}{2}$ s, then time-compressed by a factor of 2.'
+            ),
             'difficulty': 'medium', 'question_type': 'step_by_step', 'uses_latex': True,
             'steps': [
                 {
@@ -328,7 +333,10 @@ def seed_flashcards(apps, schema_editor):
                     'Two phasors $\\mathbf{X}_1 = 3\\angle 30°$ and $\\mathbf{X}_2 = 4\\angle 90°$. '
                     'Find the magnitude and phase of their sum.'
                 ),
-                'answer': '',
+                'answer': (
+                    'The sum has magnitude $|\\mathbf{X}| \\approx 6.09$ and phase '
+                    '$\\angle\\mathbf{X} \\approx 64.7°$.'
+                ),
                 'difficulty': 'medium', 'question_type': 'step_by_step', 'uses_latex': True,
                 'steps': [
                     {
@@ -443,7 +451,11 @@ def seed_flashcards(apps, schema_editor):
                 'question': (
                     'Find the spectral lines of $x(t) = \\sin(2\\pi f_0 t)$.'
                 ),
-                'answer': '',
+                'answer': (
+                    'Two spectral lines: at $+f_0$ with coefficient $c_{+f_0} = -j/2$ '
+                    'and at $-f_0$ with coefficient $c_{-f_0} = +j/2$, so '
+                    '$|c_{\\pm f_0}| = 1/2$ with phases $-90°$ at $+f_0$ and $+90°$ at $-f_0$.'
+                ),
                 'difficulty': 'medium', 'question_type': 'step_by_step', 'uses_latex': True,
                 'steps': [
                     {

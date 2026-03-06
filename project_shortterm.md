@@ -25,11 +25,10 @@ Update this file whenever work is completed or priorities shift.
   (DSP First Ch 1) and 9 gap-fill cards to `002A` (DSP First Ch 2). All new cards
   use proper `$...$` LaTeX delimiters and follow the one-concept-per-card principle.
 
-
-  Replaces the legacy `order` integer. See `project_longterm.md` for full convention.
-
-- **Codes documented in migration 0013** but applied by migration 0027, because 0013 runs
-  before the `code` column is added (0026). This is by design — see comment in 0013.
+- **Topic code scheme chosen** (2026-02-26): `NNNx` format (e.g. `001A`, `001B`, `002A`).
+  `code` is now the primary sort key (`Meta.ordering`); `Topic.order` is legacy and may
+  be removed once `code` is stable. Codes are documented in migration 0013 but applied
+  by migration 0027, because 0013 runs before the `code` column is added (0026).
 
 - **Engineering Mathematics split** (2026-02-26): Single 13-topic course replaced by five
   CDU-aligned courses via migration 0029: Foundation Mathematics (FOUND101), Mathematics 1A
