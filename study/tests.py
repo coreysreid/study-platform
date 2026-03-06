@@ -1,6 +1,7 @@
 import json
-from django.test import TestCase, Client
+from django.test import TestCase, TransactionTestCase, Client
 from django.contrib.auth.models import User
+from django.db import connection
 from django.db.models import Q
 from .models import Course, Topic, Flashcard, Skill, FlashcardProgress, TopicScore
 from .utils import ParameterGenerator, TemplateRenderer, generate_parameterized_card
@@ -765,3 +766,202 @@ class TopicScoreTest(TestCase):
         ts = TopicScore.objects.filter(user=self.user, topic=self.topic).first()
         self.assertIsNotNone(ts)
         self.assertGreater(ts.attempt_count, 0)
+
+
+class CourseDetailOrderingTest(TestCase):
+    """Issue #46 — Topics must be displayed in code order on the course detail page."""
+
+    def setUp(self):
+        self.client = Client()
+        self.user = User.objects.create_user(username='orderuser', password='pass')
+        self.course = Course.objects.create(name='Test Course', created_by=self.user)
+        from .models import CourseEnrollment
+        CourseEnrollment.objects.create(user=self.user, course=self.course)
+        # Create topics with codes out of insertion order to confirm sort is applied
+        Topic.objects.create(course=self.course, name='Third', code='003A')
+        Topic.objects.create(course=self.course, name='First', code='001A')
+        Topic.objects.create(course=self.course, name='Second', code='002A')
+        self.client.login(username='orderuser', password='pass')
+
+    def test_topics_ordered_by_code_on_course_detail(self):
+        response = self.client.get(f'/course/{self.course.id}/')
+        self.assertEqual(response.status_code, 200)
+        topics = list(response.context['topics'])
+        codes = [t.code for t in topics]
+        self.assertEqual(codes, ['001A', '002A', '003A'])
+
+    def test_topics_code_order_survives_annotation(self):
+        """Annotation with Count must not discard the explicit order_by."""
+        from django.db.models import Count
+        topics = self.course.topics.all().annotate(
+            flashcard_count=Count('flashcards')
+        ).order_by('code', 'name')
+        codes = [t.code for t in topics]
+        self.assertEqual(codes, ['001A', '002A', '003A'])
+
+
+class TrigExactValuesMigrationTest(TestCase):
+    """Issue #44 — Non-atomic sin/cos/tan combined card replaced by 9 atomic cards.
+
+    Tests exercise split_trig_exact_values() from study.migration_helpers, which
+    is the same function called by migration 0030, ensuring the migration logic is
+    tested without coupling test code to the migration module itself.
+    """
+
+    def setUp(self):
+        from study.migration_helpers import split_trig_exact_values, TRIG_EXACT_VALUES_QUESTION
+        self._do_split = split_trig_exact_values
+        self._combined_q = TRIG_EXACT_VALUES_QUESTION
+        self.user = User.objects.create_user(username='triguser', password='pass')
+        self.course = Course.objects.create(name='Maths', created_by=self.user)
+        self.topic = Topic.objects.create(course=self.course, name='Trigonometry Fundamentals')
+
+    def _make_combined(self, topic=None):
+        return Flashcard.objects.create(
+            topic=topic or self.topic,
+            question=self._combined_q,
+            answer='30°: sin=1/2, cos=√3/2, tan=1/√3. 45°: sin=cos=1/√2, tan=1. 60°: sin=√3/2, cos=1/2, tan=√3.',
+            difficulty='medium',
+            question_type='standard',
+            uses_latex=True,
+        )
+
+    def test_split_removes_combined_and_creates_nine_atomic(self):
+        """Migration logic deletes the combined card and creates 9 atomic cards."""
+        self._make_combined()
+        self.assertEqual(Flashcard.objects.filter(topic=self.topic).count(), 1)
+
+        self._do_split(Flashcard)
+
+        self.assertFalse(
+            Flashcard.objects.filter(question=self._combined_q).exists(),
+            'Combined card should be deleted',
+        )
+        atomic = Flashcard.objects.filter(topic=self.topic)
+        self.assertEqual(atomic.count(), 9)
+        questions = set(atomic.values_list('question', flat=True))
+        self.assertIn('What is sin(30°)?', questions)
+        self.assertIn('What is cos(30°)?', questions)
+        self.assertIn('What is tan(30°)?', questions)
+        self.assertIn('What is tan(60°)?', questions)
+        for card in atomic:
+            self.assertTrue(card.uses_latex, f'{card.question} should have uses_latex=True')
+
+    def test_split_is_idempotent_when_no_combined_card_exists(self):
+        """Running the migration logic when no combined card exists is a safe no-op."""
+        self._do_split(Flashcard)
+        self.assertEqual(Flashcard.objects.filter(topic=self.topic).count(), 0)
+
+    def test_split_handles_duplicate_combined_cards_across_topics(self):
+        """All copies of the combined card (e.g. across two topics) are replaced."""
+        topic2 = Topic.objects.create(course=self.course, name='Trig Extra')
+        self._make_combined(self.topic)
+        self._make_combined(topic2)
+
+        self._do_split(Flashcard)
+
+        self.assertFalse(
+            Flashcard.objects.filter(question=self._combined_q).exists(),
+            'Both combined cards should be deleted',
+        )
+        # Each topic should have 9 atomic cards
+        self.assertEqual(Flashcard.objects.filter(topic=self.topic).count(), 9)
+        self.assertEqual(Flashcard.objects.filter(topic=topic2).count(), 9)
+
+    def test_split_does_not_duplicate_atomic_cards_if_already_present(self):
+        """If some atomic cards already exist for the topic, they are not duplicated."""
+        self._make_combined()
+        # Pre-create two of the atomic cards for the same topic
+        Flashcard.objects.create(
+            topic=self.topic, question='What is sin(30°)?',
+            answer='$\\sin 30° = \\dfrac{1}{2}$', difficulty='easy',
+            question_type='standard', uses_latex=True,
+        )
+        Flashcard.objects.create(
+            topic=self.topic, question='What is cos(30°)?',
+            answer='$\\cos 30° = \\dfrac{\\sqrt{3}}{2}$', difficulty='easy',
+            question_type='standard', uses_latex=True,
+        )
+
+        self._do_split(Flashcard)
+
+        # Should still be exactly 9 — no duplicates
+        self.assertEqual(Flashcard.objects.filter(topic=self.topic).count(), 9)
+
+
+class TrigMigrationExecutorTest(TransactionTestCase):
+    """End-to-end test for migration 0030 using Django's MigrationExecutor.
+
+    This verifies the migration as it actually runs in production: using the
+    migration executor with historical model classes, rolling back to 0029,
+    seeding the combined card, then applying 0030 and asserting the split.
+
+    Uses TransactionTestCase (not TestCase) so that MigrationExecutor can
+    manage its own transactions; this test is necessarily slower than the
+    unit tests in TrigExactValuesMigrationTest.
+    """
+
+    COMBINED_Q = 'What are the exact values of sin, cos, tan for 30°, 45°, 60°?'
+    TARGET_0029 = [('study', '0029_restructure_mathematics')]
+    TARGET_0030 = [('study', '0030_split_trig_exact_values_flashcard')]
+
+    def test_migration_0030_splits_combined_card(self):
+        from django.db.migrations.executor import MigrationExecutor
+
+        executor = MigrationExecutor(connection)
+
+        # Roll back to 0029 (0030's reverse_fn is a no-op, so only the
+        # migration record changes — the schema is unaffected).
+        executor.migrate(self.TARGET_0029)
+        executor.loader.build_graph()
+
+        # Obtain historical model classes at the 0029 state.
+        state_0029 = executor.loader.project_state(self.TARGET_0029)
+        HistFlashcard = state_0029.apps.get_model('study', 'Flashcard')
+        HistCourse = state_0029.apps.get_model('study', 'Course')
+        HistTopic = state_0029.apps.get_model('study', 'Topic')
+        HistUser = state_0029.apps.get_model('auth', 'User')
+
+        # Seed: one user, course, topic, and the combined card.
+        user = HistUser.objects.create_user(username='migexec_test', password='pass')
+        course = HistCourse.objects.create(name='Trig Course', created_by=user)
+        topic = HistTopic.objects.create(course=course, name='Trigonometry')
+        HistFlashcard.objects.create(
+            topic=topic,
+            question=self.COMBINED_Q,
+            answer='30°: sin=1/2, cos=√3/2. 45°: sin=cos=1/√2. 60°: sin=√3/2, cos=1/2.',
+            difficulty='medium',
+            question_type='standard',
+            uses_latex=True,
+        )
+        self.assertEqual(HistFlashcard.objects.filter(topic=topic).count(), 1)
+
+        # Apply migration 0030.
+        executor.migrate(self.TARGET_0030)
+        executor.loader.build_graph()
+
+        # Check via post-migration model state.
+        state_0030 = executor.loader.project_state(self.TARGET_0030)
+        NewFlashcard = state_0030.apps.get_model('study', 'Flashcard')
+
+        self.assertFalse(
+            NewFlashcard.objects.filter(question=self.COMBINED_Q).exists(),
+            'Combined card must be deleted by migration 0030',
+        )
+        # Use topic_id to avoid cross-state model-type mismatch.
+        atomic = NewFlashcard.objects.filter(topic_id=topic.pk)
+        self.assertEqual(atomic.count(), 9, 'Exactly 9 atomic cards must be created')
+        for card in atomic:
+            self.assertTrue(
+                card.uses_latex,
+                f'Card "{card.question}" must have uses_latex=True',
+            )
+
+    def tearDown(self):
+        # Roll forward to the latest migration so subsequent tests start in
+        # the fully-applied state.
+        from django.db.migrations.executor import MigrationExecutor
+        executor = MigrationExecutor(connection)
+        executor.loader.build_graph()
+        targets = executor.loader.graph.leaf_nodes()
+        executor.migrate(targets)

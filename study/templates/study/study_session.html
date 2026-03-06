@@ -113,6 +113,9 @@
     }
     
     /* Visual mode: larger cards, emphasis on images/diagrams */
+    .mode-visual .flashcard {
+        min-height: 400px;
+    }
     .mode-visual .flashcard-face {
         min-height: 400px;
         font-size: 1.1rem;
@@ -225,8 +228,8 @@
                     <div id="question-diagram" class="diagram-container"></div>
                     <div id="question-code" class="code-container"></div>
                     <div id="question-graph" class="graph-container"></div>
-                    <p style="margin-top: 2rem; opacity: 0.8; font-size: 0.9rem;">
-                        Click to reveal answer
+                    <p style="margin-top: 2rem; opacity: 0.8; font-size: 0.9rem;" id="revealHint">
+                        Click card or use button below to reveal answer
                     </p>
                 </div>
             </div>
@@ -270,7 +273,11 @@
         <strong>Hint:</strong> <span id="hintText"></span>
     </div>
     
-    <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 2rem; flex-wrap: wrap;">
+    <div style="display: flex; justify-content: center; margin-top: 1.5rem;" id="revealBtnRow">
+        <button onclick="revealCard()" class="btn" style="background: #667eea; font-size: 1rem; padding: 0.6rem 2rem;" id="revealBtn">Reveal Answer</button>
+    </div>
+
+    <div style="display: none; gap: 1rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;" id="resultBtnRow">
         <button onclick="markResult(true)" class="btn" style="background: #28a745;" id="gotItBtn">Got it</button>
         <button onclick="markResult(null)" class="btn btn-secondary" id="nearlyBtn">Nearly</button>
         <button onclick="markResult(false)" class="btn btn-danger" id="missedBtn">Missed it</button>
@@ -338,6 +345,11 @@
         document.getElementById('nextStepPrompt').style.display = '';
         document.getElementById('feedbackBtn').dataset.cardId = card.id;
         document.getElementById('feedbackBtn').dataset.cardQuestion = card.question;
+
+        // Show reveal button, hide result buttons for all card types.
+        // revealCard() is responsible for swapping these when the answer is revealed.
+        document.getElementById('revealBtnRow').style.display = 'flex';
+        document.getElementById('resultBtnRow').style.display = 'none';
 
         if (card.teacher_explanation) {
             document.getElementById('teacherText').textContent = card.teacher_explanation;
@@ -435,12 +447,16 @@
             document.getElementById('stepDetail').textContent = card.answer_detail || '';
             document.getElementById('stepReveal').style.display = '';
             document.getElementById('nextStepPrompt').style.display = 'none';
+            document.getElementById('revealBtnRow').style.display = 'none';
+            document.getElementById('resultBtnRow').style.display = 'flex';
             if (card.teacher_explanation) {
                 document.getElementById('teacherBtn').style.display = 'inline-block';
             }
             if (typeof MathJax !== 'undefined') MathJax.typesetPromise();
         } else {
             document.getElementById('flashcard').classList.add('flipped');
+            document.getElementById('revealBtnRow').style.display = 'none';
+            document.getElementById('resultBtnRow').style.display = 'flex';
             const card = cards[currentIndex];
             if (card.teacher_explanation) {
                 document.getElementById('teacherBtn').style.display = 'inline-block';
@@ -477,6 +493,12 @@
         const card = cards[currentIndex];
         postProgress(card.id, card.step_index, correct === true);
         cardsStudied++;
+        if (correct === false) {
+            // Re-queue missed card 3 positions ahead so the user sees it again soon
+            const insertAt = Math.min(currentIndex + 3, cards.length);
+            cards.splice(insertAt, 0, Object.assign({}, card));
+            document.getElementById('cardTotal').textContent = cards.length;
+        }
         moveToNext();
     }
 
