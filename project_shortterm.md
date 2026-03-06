@@ -9,7 +9,8 @@ Update this file whenever work is completed or priorities shift.
 
 | PR | Description | Status |
 |----|-------------|--------|
-| open | DSP atomic flashcards (DSP First Ch 1 & 2, Kamen Ch 1); migration 0030 | 🔄 In review |
+| open | DSP atomic flashcards (DSP First Ch 1 & 2, Kamen Ch 1); migration 0031 | 🔄 In review |
+| open | Upvote/downvote + comment system for public flashcards; migration 0032 | 🔄 In review |
 
 | PR | Description | Merged |
 |----|-------------|--------|
@@ -28,6 +29,13 @@ Update this file whenever work is completed or priorities shift.
   Data Analytics topics). All courses now have zero empty topics.
 
 - **DSP atomic card expansion** (2026-03-06): Migration 0030 adds 19-card topic `001B`
+- **Upvote/downvote + comment system** (2026-03-06): Migration 0032 adds `FlashcardVote`
+  (+1/-1, one per user per card, no self-voting) and `FlashcardComment` models. `topic_detail`
+  sorts flashcards by net vote score descending; cards with net ≤ -5 are flagged for review.
+  Vote buttons appear on topic detail page (AJAX) and in study sessions (after revealing answer).
+  Comment form on topic detail lets enrolled users suggest improvements.
+
+- **DSP atomic card expansion** (2026-03-06): Migration 0031 adds 19-card topic `001B`
   "Signal Fundamentals & Operations" (Kamen Ch 1), plus 8 gap-fill cards to `001A`
   (DSP First Ch 1) and 9 gap-fill cards to `002A` (DSP First Ch 2). All new cards
   use proper `$...$` LaTeX delimiters and follow the one-concept-per-card principle.
