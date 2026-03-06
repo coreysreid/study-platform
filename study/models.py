@@ -572,9 +572,19 @@ class CardSuggestion(models.Model):
         on_delete=models.CASCADE,
         related_name='card_suggestions',
     )
-    question = models.TextField(help_text='Question or front of the suggested card')
-    answer = models.TextField(help_text='Answer or back of the suggested card')
-    hint = models.TextField(blank=True, help_text='Optional hint')
+    question = models.TextField(
+        help_text='Question or front of the suggested card',
+        validators=[MaxLengthValidator(2000)],
+    )
+    answer = models.TextField(
+        help_text='Answer or back of the suggested card',
+        validators=[MaxLengthValidator(2000)],
+    )
+    hint = models.TextField(
+        blank=True,
+        help_text='Optional hint',
+        validators=[MaxLengthValidator(500)],
+    )
     status = models.CharField(
         max_length=20,
         choices=STATUS_CHOICES,

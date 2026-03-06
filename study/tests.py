@@ -1445,3 +1445,70 @@ class SuggestCardViewTest(TestCase):
         })
         self.assertEqual(CardSuggestion.objects.count(), 1)
         self.assertEqual(CardSuggestion.objects.first().hint, 'A helpful nudge')
+
+    def test_oversized_hint_rejected(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        self.client.post(self._url(), {
+            'question': 'Q',
+            'answer': 'A',
+            'hint': 'x' * 501,
+        })
+        self.assertEqual(CardSuggestion.objects.count(), 0)
+
+    def test_hint_at_max_length_accepted(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        self.client.post(self._url(), {
+            'question': 'Q',
+            'answer': 'A',
+            'hint': 'x' * 500,
+        })
+        self.assertEqual(CardSuggestion.objects.count(), 1)
+
+
+class TopicDetailAccessTest(TestCase):
+    """Non-enrolled users can view public (system) topic pages but not private ones."""
+
+    def setUp(self):
+        self.system_user, _ = User.objects.get_or_create(
+            username='system', defaults={'email': 'system@system.local'}
+        )
+        self.user = User.objects.create_user(username='td_access_user', password='pass')
+        self.other_user = User.objects.create_user(username='td_private_owner', password='pass')
+
+        # A public system course topic
+        self.system_course = Course.objects.create(
+            name='TD Access System Course', created_by=self.system_user
+        )
+        self.system_topic = Topic.objects.create(
+            course=self.system_course, name='System Topic', order=1
+        )
+
+        # A private user course topic
+        self.private_course = Course.objects.create(
+            name='TD Access Private Course', created_by=self.other_user
+        )
+        self.private_topic = Topic.objects.create(
+            course=self.private_course, name='Private Topic', order=1
+        )
+
+    def test_unenrolled_user_can_view_system_topic(self):
+        """Non-enrolled users can browse public (system) course topics."""
+        self.client.login(username='td_access_user', password='pass')
+        response = self.client.get(f'/topic/{self.system_topic.id}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['is_enrolled'])
+
+    def test_unenrolled_user_sees_enroll_banner_on_system_topic(self):
+        """The enroll-to-study banner is rendered for non-enrolled users on system topics."""
+        self.client.login(username='td_access_user', password='pass')
+        response = self.client.get(f'/topic/{self.system_topic.id}/')
+        self.assertContains(response, 'Enroll to start studying')
+
+    def test_unenrolled_user_blocked_from_private_topic(self):
+        """Non-enrolled users cannot access privately-owned course topics."""
+        self.client.login(username='td_access_user', password='pass')
+        response = self.client.get(f'/topic/{self.private_topic.id}/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/catalog/', response.url)
