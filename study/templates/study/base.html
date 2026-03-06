@@ -42,58 +42,45 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body>
-
-  <!-- ── Navigation ──────────────────────────────────────────────────────── -->
-  <nav class="site-nav">
-    <div class="site-nav__inner">
-
-      <!-- Brand -->
-      <a href="{% url 'home' %}" class="site-nav__brand">
-        <!-- Old-style pathfinder flame torch -->
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 30" width="16" height="30" fill="none" aria-hidden="true">
-          <!-- Outer flame -->
-          <path d="M8 0 C6.5 3 4 5 5.5 9 C6.2 11 7.2 10.5 8 12 C8.8 10.5 9.8 11 10.5 9 C12 5 9.5 3 8 0 Z" fill="var(--accent)"/>
-          <!-- Inner flame (warm highlight) -->
-          <path d="M8 4 C7.2 6 6.5 7.5 7.2 9.5 C7.5 10.3 8 10 8 11 C8 10 8.5 10.3 8.8 9.5 C9.5 7.5 8.8 6 8 4 Z" fill="#FED7AA" opacity="0.75"/>
-          <!-- Torch head (bound cloth) -->
-          <rect x="4.5" y="11" width="7" height="6" rx="1" fill="#92400E"/>
-          <!-- Wrap bands -->
-          <rect x="4.5" y="13" width="7" height="0.75" fill="#78350F"/>
-          <rect x="4.5" y="15" width="7" height="0.75" fill="#78350F"/>
-          <!-- Handle -->
-          <rect x="6.75" y="17" width="2.5" height="13" rx="1.25" fill="#A16207"/>
-        </svg>
-        <span class="site-nav__brand-name">Steward's Path</span>
-      </a>
-
-      <!-- Nav links -->
-      <div class="site-nav__links">
-        {% if user.is_authenticated %}
-          <a href="{% url 'course_catalog' %}" class="site-nav__link">Courses</a>
-          <a href="{% url 'course_list' %}" class="site-nav__link">My Courses</a>
-          <a href="{% url 'statistics' %}" class="site-nav__link">Stats</a>
-          <a href="{% url 'accountability_settings' %}" class="site-nav__link">Accountability</a>
-        {% else %}
-          <a href="{% url 'login' %}" class="site-nav__link">Login</a>
-          <a href="{% url 'register' %}" class="site-nav__link">Register</a>
-        {% endif %}
-      </div>
-
-      <!-- Actions -->
-      <div class="site-nav__actions">
-        {% if user.is_authenticated %}
-
-          <!-- Create dropdown -->
-          <div class="dropdown">
-            <button class="dropdown__trigger">
-              <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-              Create
-              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
-            </button>
-            <div class="dropdown__menu">
-              <div class="dropdown__item"><a href="{% url 'course_create' %}">New Course</a></div>
-              <div class="dropdown__item"><a href="{% url 'topic_create' %}">New Topic</a></div>
-              <div class="dropdown__item"><a href="{% url 'flashcard_create' %}">New Flashcard</a></div>
+    <header>
+        <nav>
+            <h1>📚 Study Platform</h1>
+            <ul>
+                <li><a href="{% url 'home' %}">Home</a></li>
+                {% if user.is_authenticated %}
+                    <li><a href="{% url 'course_catalog' %}">Course Catalog</a></li>
+                    <li><a href="{% url 'course_list' %}">My Courses</a></li>
+                    <li class="dropdown">
+                        <a href="#" class="dropbtn">My Content ▼</a>
+                        <div class="dropdown-content">
+                            <a href="{% url 'course_create' %}">New Course</a>
+                            <a href="{% url 'topic_create' %}">New Topic</a>
+                        </div>
+                    </li>
+                    <li><a href="{% url 'statistics' %}">Statistics</a></li>
+                    <li><a href="{% url 'accountability_settings' %}">Accountability</a></li>
+                    <li>
+                        <form method="post" action="{% url 'logout' %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" style="background: none; border: none; color: #333; font-weight: 500; cursor: pointer; font-size: inherit; font-family: inherit; padding: 0;">Logout ({{ user.username }})</button>
+                        </form>
+                    </li>
+                {% else %}
+                    <li><a href="{% url 'login' %}">Login</a></li>
+                    <li><a href="{% url 'register' %}">Register</a></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </header>
+    
+    <div class="container">
+        {% if messages %}
+            <div class="messages">
+                {% for message in messages %}
+                    <div class="message {{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
             </div>
           </div>
 

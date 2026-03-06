@@ -10,6 +10,10 @@ Update this file whenever work is completed or priorities shift.
 None — all recent work is uncommitted on `main`.
 
 Migrations 0032 and 0033 and the base.html redesign should be committed and pushed.
+| PR | Description | Status |
+|----|-------------|--------|
+| open | DSP atomic flashcards (DSP First Ch 1 & 2, Kamen Ch 1); migration 0031 | 🔄 In review |
+| open | Upvote/downvote + comment system for public flashcards; migration 0032 | 🔄 In review |
 
 | PR | Description | Merged |
 |----|-------------|--------|
@@ -27,8 +31,38 @@ Migrations 0032 and 0033 and the base.html redesign should be committed and push
 - **Analog Electronics content audit** (2026-03-06): Migration 0032 standardises all 87 existing Analog Electronics flashcards from Unicode math to proper `$...$` LaTeX delimiters and sets `uses_latex=True`. Migration 0033 adds three missing Sedra & Smith chapters as new topics: `002B` Semiconductors (12 cards), `006B` Differential Amplifiers (10 cards), `008B` Output Stages & Power Amplifiers (10 cards). Analog Electronics now has 13 topics and ~120 cards.
 
 - **Reference materials folder** (2026-03-06): `reference/` added to `.gitignore` for local PDF study materials. Sedra & Smith "Microelectronic Circuits" 8th ed. OCR text loaded as `reference/MICROE_1.txt` and used to identify content gaps.
+- **Content-first UX enforced** (2026-03-06): Issue #clarify-content-first-ux resolved.
+  - Registration now redirects to course catalogue instead of home.
+  - "New Flashcard" removed from primary nav; Create dropdown renamed to "My Content".
+  - Home page features "Browse Courses" as primary CTA with pre-loaded content messaging.
+  - Topic detail: "Start Studying" is primary action; enroll-to-study banner for non-enrolled;
+    "Add Flashcard" only shown to course owners.
+  - User-created course cards get a purple left border + "👤 User-created content" badge.
+  - New `CardSuggestion` model (migration 0038): enrolled non-owners can submit card suggestions
+    via a collapsible form; suggestions go to Django admin for review (pending/approved/rejected).
+
+- **Two-tier difficulty system** (2026-03-06): Migration 0037 adds `Course.aqf_level` (1–20,
+  K–12 + AQF scale), `Topic.aqf_level` (nullable, inherits from course), `Topic.star_difficulty`
+  (1–6), and `Flashcard.star_difficulty` (nullable, inherits from topic). Helper properties
+  `Topic.effective_aqf_level` and `Flashcard.effective_star_difficulty` handle inheritance.
+  Star ratings display as ★/☆ glyphs in course_detail and topic_detail templates. Forms
+  updated to allow setting these fields. Admin updated to filter/display by them.
+
+- **Mathematics flashcard expansion** (2026-03-06): Migrations 0032–0035 add 247 new
+  flashcards across the 30 empty topics created by migration 0029. Coverage:
+  SMA101 (76 new cards incl. 17 for Complex Numbers), SMA102 (56 new cards incl. 10 for
+  Eigenvalues & Eigenvectors), SMA209 (52 new cards incl. Fourier Transforms and
+  Laplace Applications — both critical for CDU EE units), SMA212 (63 cards for all 10
+  Data Analytics topics). All courses now have zero empty topics.
 
 - **DSP atomic card expansion** (2026-03-06): Migration 0030 adds 19-card topic `001B`
+- **Upvote/downvote + comment system** (2026-03-06): Migration 0032 adds `FlashcardVote`
+  (+1/-1, one per user per card, no self-voting) and `FlashcardComment` models. `topic_detail`
+  sorts flashcards by net vote score descending; cards with net ≤ -5 are flagged for review.
+  Vote buttons appear on topic detail page (AJAX) and in study sessions (after revealing answer).
+  Comment form on topic detail lets enrolled users suggest improvements.
+
+- **DSP atomic card expansion** (2026-03-06): Migration 0031 adds 19-card topic `001B`
   "Signal Fundamentals & Operations" (Kamen Ch 1), plus 8 gap-fill cards to `001A`
   (DSP First Ch 1) and 9 gap-fill cards to `002A` (DSP First Ch 2). All new cards
   use proper `$...$` LaTeX delimiters and follow the one-concept-per-card principle.
@@ -74,9 +108,15 @@ Migrations 0032 and 0033 and the base.html redesign should be committed and push
 4. **Circuit diagrams**: Start with Circuit Analysis Fundamentals (~8 passive-component diagrams). See `docs/circuit_diagram_plan.md` for build order.
 5. **Next feature area** — candidates:
    - SM-2 spaced repetition algorithm (currently only tracking confidence level 0–5)
+1. Add `topic-code` CSS styling (`span.topic-code`) to the base stylesheet
+   so the code renders visually distinct from the topic name.
+2. ~~Add flashcard content for the 30 new topics in SMA101, SMA102, SMA209, SMA212.~~ ✅ Done — migrations 0032–0035.
+3. Work through circuit diagrams — start with Circuit Analysis Fundamentals
+   (~8 passive-component diagrams; see `docs/circuit_diagram_plan.md` build order).
+4. Decide on next feature area — candidates:
+   - SM-2 spaced repetition algorithm (currently only tracking confidence level)
    - Learning feedback loop (suggest prerequisite review on wrong answers)
    - Progress dashboard
-
 ---
 
 ## Known Issues / Tech Debt

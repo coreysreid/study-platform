@@ -2,22 +2,22 @@ from django.contrib import admin
 from .models import (
     Course, Topic, Flashcard, StudySession, FlashcardProgress,
     Skill, MultipleChoiceOption, CardTemplate, CourseEnrollment,
-    StudyPreference, TopicScore
+    StudyPreference, TopicScore, CardSuggestion
 )
 
 # Register your models here.
 
 @admin.register(Course)
 class CourseAdmin(admin.ModelAdmin):
-    list_display = ['name', 'code', 'created_by', 'created_at']
-    list_filter = ['created_by', 'created_at']
+    list_display = ['name', 'code', 'aqf_level', 'created_by', 'created_at']
+    list_filter = ['aqf_level', 'created_by', 'created_at']
     search_fields = ['name', 'code', 'description']
 
 
 @admin.register(Topic)
 class TopicAdmin(admin.ModelAdmin):
-    list_display = ['name', 'course', 'order', 'created_at']
-    list_filter = ['course', 'created_at']
+    list_display = ['name', 'course', 'order', 'aqf_level', 'star_difficulty', 'created_at']
+    list_filter = ['course', 'aqf_level', 'star_difficulty', 'created_at']
     search_fields = ['name', 'description']
     ordering = ['course', 'order']
     filter_horizontal = ['prerequisites']
@@ -25,13 +25,13 @@ class TopicAdmin(admin.ModelAdmin):
 
 @admin.register(Flashcard)
 class FlashcardAdmin(admin.ModelAdmin):
-    list_display = ['question_preview', 'topic', 'difficulty', 'question_type', 'uses_latex', 'created_at']
-    list_filter = ['difficulty', 'question_type', 'uses_latex', 'graph_type', 'diagram_type', 'topic__course', 'created_at']
+    list_display = ['question_preview', 'topic', 'difficulty', 'star_difficulty', 'question_type', 'uses_latex', 'created_at']
+    list_filter = ['difficulty', 'star_difficulty', 'question_type', 'uses_latex', 'graph_type', 'diagram_type', 'topic__course', 'created_at']
     search_fields = ['question', 'answer', 'question_template', 'answer_template']
     filter_horizontal = ['skills']
     fieldsets = (
         ('Basic Information', {
-            'fields': ('topic', 'difficulty', 'question_type', 'skills', 'template')
+            'fields': ('topic', 'difficulty', 'star_difficulty', 'question_type', 'skills', 'template')
         }),
         ('Standard Card', {
             'fields': ('question', 'question_image', 'answer', 'answer_image', 'hint'),
@@ -146,3 +146,17 @@ class TopicScoreAdmin(admin.ModelAdmin):
     list_filter = ['topic__course', 'updated_at']
     search_fields = ['user__username', 'topic__name']
     ordering = ['-updated_at']
+
+
+@admin.register(CardSuggestion)
+class CardSuggestionAdmin(admin.ModelAdmin):
+    list_display = ['submitted_by', 'topic', 'status', 'question_preview', 'created_at']
+    list_filter = ['status', 'topic__course', 'created_at']
+    search_fields = ['question', 'answer', 'submitted_by__username', 'topic__name']
+    ordering = ['-created_at']
+    readonly_fields = ['submitted_by', 'topic', 'question', 'answer', 'hint', 'created_at', 'updated_at']
+    fields = ['submitted_by', 'topic', 'question', 'answer', 'hint', 'status', 'admin_notes', 'created_at', 'updated_at']
+
+    def question_preview(self, obj):
+        return obj.question[:60] + '…' if len(obj.question) > 60 else obj.question
+    question_preview.short_description = 'Question'

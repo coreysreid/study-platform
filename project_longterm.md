@@ -43,12 +43,16 @@ Course  →  Topic  →  Flashcard
 - **Course**: a subject area (~100 hours of study, ~10 weeks at 10 hrs/week).
   Has a `code` (e.g. `ENGMATH`, `ENG301`) and a `created_by` user.
   System-owned courses have `created_by.username == 'system'`.
+  Has `aqf_level` (1–20, optional): 1–6 primary school, 7–12 secondary, 13–20 AQF levels 1–8+.
 
 - **Topic**: one week's block of work within a course (~10 hours: pre-reading, lecture, tutorial, homework).
   Has `code` (ordering code, see convention below), `order` (legacy integer), and `prerequisites` (M2M self-ref).
+  Has `aqf_level` (nullable, inherits from course via `effective_aqf_level` property) and
+  `star_difficulty` (1–6, optional): relative difficulty within the subject.
 
 - **Flashcard**: an atomic study unit — one definition, one formula, or one worked calculation.
   Has `question_type` (standard, multiple_choice, step_by_step, parameterized).
+  Has `star_difficulty` (nullable, inherits from topic via `effective_star_difficulty` property).
 
 ### Other key models
 

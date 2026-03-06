@@ -1,5 +1,5 @@
 from django.db import models
-from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import MinValueValidator, MaxValueValidator, MaxLengthValidator
 from django.contrib.auth.models import User
 import secrets
 import string
@@ -20,11 +20,51 @@ def generate_accountability_code():
 
 # Create your models here.
 
+AQF_LEVEL_CHOICES = [
+    (1,  'Level 1 — Primary (Year 1)'),
+    (2,  'Level 2 — Primary (Year 2)'),
+    (3,  'Level 3 — Primary (Year 3)'),
+    (4,  'Level 4 — Primary (Year 4)'),
+    (5,  'Level 5 — Primary (Year 5)'),
+    (6,  'Level 6 — Primary (Year 6)'),
+    (7,  'Level 7 — Junior Secondary (Year 7)'),
+    (8,  'Level 8 — Junior Secondary (Year 8)'),
+    (9,  'Level 9 — Junior Secondary (Year 9)'),
+    (10, 'Level 10 — Junior Secondary (Year 10)'),
+    (11, 'Level 11 — Senior Secondary (Year 11)'),
+    (12, 'Level 12 — Senior Secondary (Year 12)'),
+    (13, 'Level 13 — AQF 1 (Certificate I)'),
+    (14, 'Level 14 — AQF 2 (Certificate II)'),
+    (15, 'Level 15 — AQF 3 (Certificate III)'),
+    (16, 'Level 16 — AQF 4 (Certificate IV)'),
+    (17, 'Level 17 — AQF 5 (Diploma)'),
+    (18, 'Level 18 — AQF 6 (Associate Degree / Advanced Diploma)'),
+    (19, 'Level 19 — AQF 7 (Bachelor)'),
+    (20, 'Level 20 — AQF 8–10 (Honours / Masters / Doctorate)'),
+]
+
+STAR_DIFFICULTY_CHOICES = [
+    (1, '★☆☆☆☆☆ — Entry-level concept'),
+    (2, '★★☆☆☆☆ — Foundational'),
+    (3, '★★★☆☆☆ — Moderate'),
+    (4, '★★★★☆☆ — Challenging'),
+    (5, '★★★★★☆ — Advanced'),
+    (6, '★★★★★★ — Most advanced'),
+]
+
+
 class Course(models.Model):
     """Represents a course or subject (e.g., Electrical Engineering, Circuit Analysis)"""
     name = models.CharField(max_length=200)
     code = models.CharField(max_length=50, blank=True, help_text="Course code (e.g., ENG301)")
     description = models.TextField(blank=True)
+    aqf_level = models.IntegerField(
+        null=True,
+        blank=True,
+        choices=AQF_LEVEL_CHOICES,
+        validators=[MinValueValidator(1), MaxValueValidator(20)],
+        help_text="AQF-aligned difficulty level (1 = Year 1 primary, 20 = Honours/Masters/Doctorate)"
+    )
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -53,6 +93,20 @@ class Topic(models.Model):
         related_name='required_for',
         help_text="Topics that should be mastered before this one"
     )
+    aqf_level = models.IntegerField(
+        null=True,
+        blank=True,
+        choices=AQF_LEVEL_CHOICES,
+        validators=[MinValueValidator(1), MaxValueValidator(20)],
+        help_text="AQF-aligned difficulty level. If blank, inherits from the course."
+    )
+    star_difficulty = models.IntegerField(
+        null=True,
+        blank=True,
+        choices=STAR_DIFFICULTY_CHOICES,
+        validators=[MinValueValidator(1), MaxValueValidator(6)],
+        help_text="Relative difficulty within the subject (1 = easiest, 6 = hardest)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -63,6 +117,11 @@ class Topic(models.Model):
         if self.code:
             return f"{self.course.name} — {self.code} {self.name}"
         return f"{self.course.name} — {self.name}"
+
+    @property
+    def effective_aqf_level(self):
+        """Return own aqf_level if set, otherwise inherit from the course."""
+        return self.aqf_level if self.aqf_level is not None else self.course.aqf_level
 
 
 class Skill(models.Model):
@@ -119,6 +178,13 @@ class Flashcard(models.Model):
             ('hard', 'Hard'),
         ],
         default='medium'
+    )
+    star_difficulty = models.IntegerField(
+        null=True,
+        blank=True,
+        choices=STAR_DIFFICULTY_CHOICES,
+        validators=[MinValueValidator(1), MaxValueValidator(6)],
+        help_text="Relative difficulty within the subject (1 = easiest, 6 = hardest). If blank, inherits from the topic."
     )
     question_type = models.CharField(
         max_length=20,
@@ -242,6 +308,11 @@ class Flashcard(models.Model):
     
     def __str__(self):
         return f"{self.topic.name} - {self.question[:50]}..."
+
+    @property
+    def effective_star_difficulty(self):
+        """Return own star_difficulty if set, otherwise inherit from the topic."""
+        return self.star_difficulty if self.star_difficulty is not None else self.topic.star_difficulty
 
 
 class CardTemplate(models.Model):
@@ -439,3 +510,96 @@ class TopicScore(models.Model):
 
     def __str__(self):
         return f"{self.user.username} - {self.topic.name}: {self.score:.2f}"
+
+
+class FlashcardVote(models.Model):
+    """Records a user's upvote or downvote on a public flashcard"""
+    UPVOTE = 1
+    DOWNVOTE = -1
+    VOTE_CHOICES = [(UPVOTE, 'Upvote'), (DOWNVOTE, 'Downvote')]
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcard_votes')
+    flashcard = models.ForeignKey(Flashcard, on_delete=models.CASCADE, related_name='votes')
+    vote = models.SmallIntegerField(choices=VOTE_CHOICES)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ['user', 'flashcard']
+        ordering = ['-created_at']
+
+    def __str__(self):
+        label = 'upvote' if self.vote == self.UPVOTE else 'downvote'
+        return f"{self.user.username} {label} on flashcard {self.flashcard_id}"
+
+
+class FlashcardComment(models.Model):
+    """A user comment on a flashcard, used to suggest improvements"""
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='flashcard_comments')
+    flashcard = models.ForeignKey(Flashcard, on_delete=models.CASCADE, related_name='comments')
+    body = models.TextField(
+        help_text='Comment or suggested improvement',
+        validators=[MaxLengthValidator(1000)],
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.user.username} on flashcard {self.flashcard_id}: {self.body[:50]}..."
+
+
+class CardSuggestion(models.Model):
+    """A user-submitted card suggestion for a system topic, pending admin review."""
+
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_REJECTED = 'rejected'
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING,  'Pending review'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_REJECTED, 'Rejected'),
+    ]
+
+    topic = models.ForeignKey(
+        Topic,
+        on_delete=models.CASCADE,
+        related_name='card_suggestions',
+    )
+    submitted_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='card_suggestions',
+    )
+    question = models.TextField(
+        help_text='Question or front of the suggested card',
+        validators=[MaxLengthValidator(2000)],
+    )
+    answer = models.TextField(
+        help_text='Answer or back of the suggested card',
+        validators=[MaxLengthValidator(2000)],
+    )
+    hint = models.TextField(
+        blank=True,
+        help_text='Optional hint',
+        validators=[MaxLengthValidator(500)],
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+        db_index=True,
+    )
+    admin_notes = models.TextField(
+        blank=True,
+        help_text='Internal notes from the reviewer (not shown to the submitter)',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Suggestion by {self.submitted_by.username} for '{self.topic}': {self.question[:50]}"

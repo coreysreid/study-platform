@@ -3,7 +3,7 @@ from django.test import TestCase, TransactionTestCase, Client
 from django.contrib.auth.models import User
 from django.db import connection
 from django.db.models import Q
-from .models import Course, Topic, Flashcard, Skill, FlashcardProgress, TopicScore
+from .models import Course, Topic, Flashcard, Skill, FlashcardProgress, TopicScore, CourseEnrollment
 from .utils import ParameterGenerator, TemplateRenderer, generate_parameterized_card
 
 
@@ -965,3 +965,550 @@ class TrigMigrationExecutorTest(TransactionTestCase):
         executor.loader.build_graph()
         targets = executor.loader.graph.leaf_nodes()
         executor.migrate(targets)
+
+
+class FlashcardVoteModelTest(TestCase):
+    """Unit tests for FlashcardVote model"""
+
+    def setUp(self):
+        from .models import FlashcardVote
+        self.FlashcardVote = FlashcardVote
+        self.owner = User.objects.create_user(username='owner', password='pass')
+        self.voter = User.objects.create_user(username='voter', password='pass')
+        course = Course.objects.create(name='Course', created_by=self.owner)
+        topic = Topic.objects.create(course=course, name='Topic')
+        self.card = Flashcard.objects.create(topic=topic, question='Q', answer='A')
+
+    def test_upvote_created(self):
+        v = self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=1)
+        self.assertEqual(v.vote, self.FlashcardVote.UPVOTE)
+
+    def test_downvote_created(self):
+        v = self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=-1)
+        self.assertEqual(v.vote, self.FlashcardVote.DOWNVOTE)
+
+    def test_unique_together_prevents_duplicate_vote(self):
+        from django.db import IntegrityError
+        self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=1)
+        with self.assertRaises(IntegrityError):
+            self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=1)
+
+    def test_str_contains_upvote(self):
+        v = self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=1)
+        self.assertIn('upvote', str(v))
+
+    def test_str_contains_downvote(self):
+        v = self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=-1)
+        self.assertIn('downvote', str(v))
+
+
+class FlashcardCommentModelTest(TestCase):
+    """Unit tests for FlashcardComment model"""
+
+    def setUp(self):
+        from .models import FlashcardComment
+        self.FlashcardComment = FlashcardComment
+        self.user = User.objects.create_user(username='commenter', password='pass')
+        course = Course.objects.create(name='Course', created_by=self.user)
+        topic = Topic.objects.create(course=course, name='Topic')
+        self.card = Flashcard.objects.create(topic=topic, question='Q', answer='A')
+
+    def test_comment_created(self):
+        c = self.FlashcardComment.objects.create(
+            user=self.user, flashcard=self.card, body='Great card!'
+        )
+        self.assertEqual(c.body, 'Great card!')
+
+    def test_str_contains_flashcard_id(self):
+        c = self.FlashcardComment.objects.create(
+            user=self.user, flashcard=self.card, body='Needs work'
+        )
+        self.assertIn(str(self.card.id), str(c))
+
+
+class VoteFlashcardViewTest(TestCase):
+    """Tests for the vote_flashcard view"""
+
+    def setUp(self):
+        from .models import FlashcardVote, CourseEnrollment
+        self.FlashcardVote = FlashcardVote
+        self.client = Client()
+        self.owner = User.objects.create_user(username='cardowner', password='pass')
+        self.voter = User.objects.create_user(username='cardvoter', password='pass')
+        self.course = Course.objects.create(name='Course', created_by=self.owner)
+        topic = Topic.objects.create(course=self.course, name='Topic')
+        self.card = Flashcard.objects.create(topic=topic, question='Q', answer='A')
+        CourseEnrollment.objects.create(user=self.voter, course=self.course)
+        self.vote_url = f'/flashcard/{self.card.id}/vote/'
+
+    def test_upvote_returns_json(self):
+        self.client.login(username='cardvoter', password='pass')
+        response = self.client.post(self.vote_url, {'vote': '1'})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['upvotes'], 1)
+        self.assertEqual(data['downvotes'], 0)
+        self.assertEqual(data['net_votes'], 1)
+        self.assertEqual(data['user_vote'], 1)
+
+    def test_downvote_returns_json(self):
+        self.client.login(username='cardvoter', password='pass')
+        response = self.client.post(self.vote_url, {'vote': '-1'})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['upvotes'], 0)
+        self.assertEqual(data['downvotes'], 1)
+        self.assertEqual(data['net_votes'], -1)
+        self.assertEqual(data['user_vote'], -1)
+
+    def test_same_vote_again_removes_it(self):
+        self.client.login(username='cardvoter', password='pass')
+        self.client.post(self.vote_url, {'vote': '1'})
+        response = self.client.post(self.vote_url, {'vote': '1'})
+        data = json.loads(response.content)
+        self.assertEqual(data['user_vote'], 0)
+        self.assertEqual(data['upvotes'], 0)
+
+    def test_change_vote_direction(self):
+        self.client.login(username='cardvoter', password='pass')
+        self.client.post(self.vote_url, {'vote': '1'})
+        response = self.client.post(self.vote_url, {'vote': '-1'})
+        data = json.loads(response.content)
+        self.assertEqual(data['user_vote'], -1)
+        self.assertEqual(data['upvotes'], 0)
+        self.assertEqual(data['downvotes'], 1)
+
+    def test_owner_cannot_vote_on_own_card(self):
+        self.client.login(username='cardowner', password='pass')
+        response = self.client.post(self.vote_url, {'vote': '1'})
+        self.assertEqual(response.status_code, 403)
+
+    def test_non_enrolled_user_cannot_vote(self):
+        nonenrolled = User.objects.create_user(username='nonenrolled', password='pass')
+        self.client.login(username='nonenrolled', password='pass')
+        response = self.client.post(self.vote_url, {'vote': '1'})
+        self.assertEqual(response.status_code, 403)
+
+    def test_unauthenticated_user_redirected(self):
+        response = self.client.post(self.vote_url, {'vote': '1'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+
+    def test_invalid_vote_value_returns_400(self):
+        self.client.login(username='cardvoter', password='pass')
+        response = self.client.post(self.vote_url, {'vote': '0'})
+        self.assertEqual(response.status_code, 400)
+
+    def test_flagged_true_when_net_score_reaches_threshold(self):
+        from .models import FlashcardVote
+        self.client.login(username='cardvoter', password='pass')
+        # Create 5 downvotes from different users
+        for i in range(5):
+            u = User.objects.create_user(username=f'dv{i}', password='pass')
+            FlashcardVote.objects.create(user=u, flashcard=self.card, vote=-1)
+        # Add one more downvote to push net score to -6, past the -5 threshold
+        response = self.client.post(self.vote_url, {'vote': '-1'})
+        data = json.loads(response.content)
+        self.assertTrue(data['flagged'])
+
+    def test_vote_requires_post(self):
+        self.client.login(username='cardvoter', password='pass')
+        response = self.client.get(self.vote_url)
+        self.assertEqual(response.status_code, 405)
+
+
+class CommentFlashcardViewTest(TestCase):
+    """Tests for the comment_flashcard view"""
+
+    def setUp(self):
+        from .models import FlashcardComment, CourseEnrollment
+        self.FlashcardComment = FlashcardComment
+        self.client = Client()
+        self.user = User.objects.create_user(username='commentuser', password='pass')
+        course = Course.objects.create(name='Course', created_by=self.user)
+        topic = Topic.objects.create(course=course, name='Topic')
+        self.card = Flashcard.objects.create(topic=topic, question='Q', answer='A')
+        CourseEnrollment.objects.create(user=self.user, course=course)
+        self.comment_url = f'/flashcard/{self.card.id}/comment/'
+
+    def test_add_comment_creates_record(self):
+        self.client.login(username='commentuser', password='pass')
+        response = self.client.post(self.comment_url, {'body': 'Great card!'}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.FlashcardComment.objects.filter(flashcard=self.card).count(), 1)
+
+    def test_empty_body_rejected(self):
+        self.client.login(username='commentuser', password='pass')
+        self.client.post(self.comment_url, {'body': '   '}, follow=True)
+        self.assertEqual(self.FlashcardComment.objects.count(), 0)
+
+    def test_unauthenticated_user_redirected(self):
+        response = self.client.post(self.comment_url, {'body': 'Hi'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+
+
+class TopicDetailVoteOrderingTest(TestCase):
+    """Flashcards in topic_detail are ranked by net vote score."""
+
+    def setUp(self):
+        from .models import FlashcardVote, CourseEnrollment
+        self.client = Client()
+        self.owner = User.objects.create_user(username='tdowner', password='pass')
+        self.voter = User.objects.create_user(username='tdvoter', password='pass')
+        self.course = Course.objects.create(name='Course', created_by=self.owner)
+        self.topic = Topic.objects.create(course=self.course, name='Topic')
+        CourseEnrollment.objects.create(user=self.voter, course=self.course)
+
+        self.card_low = Flashcard.objects.create(
+            topic=self.topic, question='Low', answer='A'
+        )
+        self.card_high = Flashcard.objects.create(
+            topic=self.topic, question='High', answer='A'
+        )
+        # Give card_high 2 upvotes, card_low 1 downvote
+        u1 = User.objects.create_user(username='u1', password='pass')
+        u2 = User.objects.create_user(username='u2', password='pass')
+        FlashcardVote.objects.create(user=u1, flashcard=self.card_high, vote=1)
+        FlashcardVote.objects.create(user=u2, flashcard=self.card_high, vote=1)
+        FlashcardVote.objects.create(user=u1, flashcard=self.card_low, vote=-1)
+        self.client.login(username='tdvoter', password='pass')
+
+    def test_flashcards_ordered_by_net_votes_descending(self):
+        response = self.client.get(f'/topic/{self.topic.id}/')
+        self.assertEqual(response.status_code, 200)
+        flashcards = list(response.context['flashcards'])
+        self.assertEqual(flashcards[0].id, self.card_high.id)
+        self.assertEqual(flashcards[1].id, self.card_low.id)
+
+    def test_net_votes_annotated_on_flashcards(self):
+        response = self.client.get(f'/topic/{self.topic.id}/')
+        flashcards = {fc.id: fc for fc in response.context['flashcards']}
+        self.assertEqual(flashcards[self.card_high.id].net_votes, 2)
+        self.assertEqual(flashcards[self.card_low.id].net_votes, -1)
+
+
+class AqfLevelAndStarDifficultyTestCase(TestCase):
+    """Tests for the two-tier difficulty system: AQF level + star rating"""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='difftestuser', password='pass')
+        self.course = Course.objects.create(
+            name='Circuit Analysis',
+            code='ENG301',
+            aqf_level=19,
+            created_by=self.user,
+        )
+        self.topic = Topic.objects.create(
+            course=self.course,
+            name="Ohm's Law",
+            order=1,
+            star_difficulty=1,
+        )
+
+    # ------------------------------------------------------------------ #
+    # Course AQF level
+    # ------------------------------------------------------------------ #
+
+    def test_course_stores_aqf_level(self):
+        course = Course.objects.get(pk=self.course.pk)
+        self.assertEqual(course.aqf_level, 19)
+
+    def test_course_aqf_level_nullable(self):
+        course = Course.objects.create(
+            name='No Level Course',
+            created_by=self.user,
+        )
+        self.assertIsNone(course.aqf_level)
+
+    def test_course_aqf_level_choices(self):
+        valid_levels = list(range(1, 21))
+        for level in [1, 10, 19, 20]:
+            self.assertIn(level, valid_levels)
+
+    # ------------------------------------------------------------------ #
+    # Topic AQF level (own + inherited)
+    # ------------------------------------------------------------------ #
+
+    def test_topic_inherits_aqf_level_from_course(self):
+        """effective_aqf_level returns course level when topic level is null"""
+        self.assertIsNone(self.topic.aqf_level)
+        self.assertEqual(self.topic.effective_aqf_level, 19)
+
+    def test_topic_own_aqf_level_overrides_course(self):
+        """effective_aqf_level returns topic's own level when set"""
+        self.topic.aqf_level = 18
+        self.topic.save()
+        self.assertEqual(self.topic.effective_aqf_level, 18)
+
+    def test_topic_effective_aqf_none_when_both_unset(self):
+        """effective_aqf_level returns None when neither topic nor course has a level"""
+        course = Course.objects.create(name='No Level', created_by=self.user)
+        topic = Topic.objects.create(course=course, name='Some Topic', order=1)
+        self.assertIsNone(topic.effective_aqf_level)
+
+    # ------------------------------------------------------------------ #
+    # Topic star difficulty
+    # ------------------------------------------------------------------ #
+
+    def test_topic_stores_star_difficulty(self):
+        topic = Topic.objects.get(pk=self.topic.pk)
+        self.assertEqual(topic.star_difficulty, 1)
+
+    def test_topic_star_difficulty_nullable(self):
+        topic = Topic.objects.create(
+            course=self.course,
+            name='No Stars Topic',
+            order=2,
+        )
+        self.assertIsNone(topic.star_difficulty)
+
+    def test_topic_star_difficulty_range(self):
+        for stars in range(1, 7):
+            self.topic.star_difficulty = stars
+            self.topic.save()
+            self.assertEqual(Topic.objects.get(pk=self.topic.pk).star_difficulty, stars)
+
+    # ------------------------------------------------------------------ #
+    # Flashcard star difficulty (own + inherited)
+    # ------------------------------------------------------------------ #
+
+    def test_flashcard_inherits_star_difficulty_from_topic(self):
+        """effective_star_difficulty returns topic's star_difficulty when card's is null"""
+        card = Flashcard.objects.create(
+            topic=self.topic,
+            question='V=?',
+            answer='IR',
+        )
+        self.assertIsNone(card.star_difficulty)
+        self.assertEqual(card.effective_star_difficulty, 1)
+
+    def test_flashcard_own_star_difficulty_overrides_topic(self):
+        """effective_star_difficulty returns card's own value when set"""
+        card = Flashcard.objects.create(
+            topic=self.topic,
+            question='V=?',
+            answer='IR',
+            star_difficulty=3,
+        )
+        self.assertEqual(card.effective_star_difficulty, 3)
+
+    def test_flashcard_effective_star_none_when_both_unset(self):
+        """effective_star_difficulty returns None when neither card nor topic has stars"""
+        topic = Topic.objects.create(
+            course=self.course,
+            name='No Stars',
+            order=3,
+        )
+        card = Flashcard.objects.create(
+            topic=topic,
+            question='Q',
+            answer='A',
+        )
+        self.assertIsNone(card.effective_star_difficulty)
+
+    def test_flashcard_star_difficulty_range(self):
+        card = Flashcard.objects.create(
+            topic=self.topic,
+            question='Q',
+            answer='A',
+        )
+        for stars in range(1, 7):
+            card.star_difficulty = stars
+            card.save()
+            self.assertEqual(Flashcard.objects.get(pk=card.pk).star_difficulty, stars)
+
+
+class RegistrationRedirectTest(TestCase):
+    """Test that newly registered users are redirected to the course catalogue."""
+
+    def test_register_redirects_to_catalog(self):
+        response = self.client.post('/register/', {
+            'username': 'newuser',
+            'password1': 'Testpass123!',
+            'password2': 'Testpass123!',
+        })
+        self.assertRedirects(response, '/catalog/', fetch_redirect_response=False)
+
+
+class CardSuggestionModelTest(TestCase):
+    """Tests for the CardSuggestion model."""
+
+    def setUp(self):
+        self.system_user, _ = User.objects.get_or_create(
+            username='system', defaults={'email': 'system@system.local'}
+        )
+        self.user = User.objects.create_user(username='student_sug', password='pass')
+        self.course = Course.objects.create(
+            name='Suggestion Test Course', created_by=self.system_user
+        )
+        self.topic = Topic.objects.create(
+            course=self.course, name='Suggestion Test Topic', order=1
+        )
+        CourseEnrollment.objects.create(user=self.user, course=self.course)
+
+    def test_create_card_suggestion(self):
+        from .models import CardSuggestion
+        suggestion = CardSuggestion.objects.create(
+            topic=self.topic,
+            submitted_by=self.user,
+            question='What is Ohm\'s Law?',
+            answer='V = IR',
+        )
+        self.assertEqual(suggestion.status, CardSuggestion.STATUS_PENDING)
+        self.assertIn('student_sug', str(suggestion))
+
+    def test_suggestion_status_choices(self):
+        from .models import CardSuggestion
+        self.assertEqual(CardSuggestion.STATUS_PENDING, 'pending')
+        self.assertEqual(CardSuggestion.STATUS_APPROVED, 'approved')
+        self.assertEqual(CardSuggestion.STATUS_REJECTED, 'rejected')
+
+
+class SuggestCardViewTest(TestCase):
+    """Tests for the suggest_card view."""
+
+    def setUp(self):
+        self.system_user, _ = User.objects.get_or_create(
+            username='system', defaults={'email': 'system@system.local'}
+        )
+        self.enrolled_user = User.objects.create_user(username='sv_enrolled', password='pass')
+        self.unenrolled_user = User.objects.create_user(username='sv_unenrolled', password='pass')
+        self.course = Course.objects.create(
+            name='SuggestView Test Course', created_by=self.system_user
+        )
+        self.topic = Topic.objects.create(
+            course=self.course, name='SuggestView Test Topic', order=1
+        )
+        CourseEnrollment.objects.create(user=self.enrolled_user, course=self.course)
+
+    def _url(self):
+        return f'/topic/{self.topic.id}/suggest-card/'
+
+    def test_enrolled_user_can_submit_suggestion(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        response = self.client.post(self._url(), {
+            'question': 'What is V=IR called?',
+            'answer': "Ohm's Law",
+        })
+        self.assertRedirects(
+            response,
+            f'/topic/{self.topic.id}/',
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(CardSuggestion.objects.count(), 1)
+        suggestion = CardSuggestion.objects.first()
+        self.assertEqual(suggestion.status, CardSuggestion.STATUS_PENDING)
+        self.assertEqual(suggestion.submitted_by, self.enrolled_user)
+
+    def test_unenrolled_user_cannot_suggest(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_unenrolled', password='pass')
+        response = self.client.post(self._url(), {
+            'question': 'What is V=IR called?',
+            'answer': "Ohm's Law",
+        })
+        self.assertRedirects(
+            response,
+            f'/topic/{self.topic.id}/',
+            fetch_redirect_response=False,
+        )
+        self.assertEqual(CardSuggestion.objects.count(), 0)
+
+    def test_anonymous_user_redirected_to_login(self):
+        response = self.client.post(self._url(), {
+            'question': 'Q',
+            'answer': 'A',
+        })
+        self.assertIn('/login/', response.url)
+
+    def test_empty_question_rejected(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        self.client.post(self._url(), {'question': '', 'answer': 'A'})
+        self.assertEqual(CardSuggestion.objects.count(), 0)
+
+    def test_empty_answer_rejected(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        self.client.post(self._url(), {'question': 'Q', 'answer': ''})
+        self.assertEqual(CardSuggestion.objects.count(), 0)
+
+    def test_hint_is_optional(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        self.client.post(self._url(), {
+            'question': 'Q',
+            'answer': 'A',
+            'hint': 'A helpful nudge',
+        })
+        self.assertEqual(CardSuggestion.objects.count(), 1)
+        self.assertEqual(CardSuggestion.objects.first().hint, 'A helpful nudge')
+
+    def test_oversized_hint_rejected(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        self.client.post(self._url(), {
+            'question': 'Q',
+            'answer': 'A',
+            'hint': 'x' * 501,
+        })
+        self.assertEqual(CardSuggestion.objects.count(), 0)
+
+    def test_hint_at_max_length_accepted(self):
+        from .models import CardSuggestion
+        self.client.login(username='sv_enrolled', password='pass')
+        self.client.post(self._url(), {
+            'question': 'Q',
+            'answer': 'A',
+            'hint': 'x' * 500,
+        })
+        self.assertEqual(CardSuggestion.objects.count(), 1)
+
+
+class TopicDetailAccessTest(TestCase):
+    """Non-enrolled users can view public (system) topic pages but not private ones."""
+
+    def setUp(self):
+        self.system_user, _ = User.objects.get_or_create(
+            username='system', defaults={'email': 'system@system.local'}
+        )
+        self.user = User.objects.create_user(username='td_access_user', password='pass')
+        self.other_user = User.objects.create_user(username='td_private_owner', password='pass')
+
+        # A public system course topic
+        self.system_course = Course.objects.create(
+            name='TD Access System Course', created_by=self.system_user
+        )
+        self.system_topic = Topic.objects.create(
+            course=self.system_course, name='System Topic', order=1
+        )
+
+        # A private user course topic
+        self.private_course = Course.objects.create(
+            name='TD Access Private Course', created_by=self.other_user
+        )
+        self.private_topic = Topic.objects.create(
+            course=self.private_course, name='Private Topic', order=1
+        )
+
+    def test_unenrolled_user_can_view_system_topic(self):
+        """Non-enrolled users can browse public (system) course topics."""
+        self.client.login(username='td_access_user', password='pass')
+        response = self.client.get(f'/topic/{self.system_topic.id}/')
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(response.context['is_enrolled'])
+
+    def test_unenrolled_user_sees_enroll_banner_on_system_topic(self):
+        """The enroll-to-study banner is rendered for non-enrolled users on system topics."""
+        self.client.login(username='td_access_user', password='pass')
+        response = self.client.get(f'/topic/{self.system_topic.id}/')
+        self.assertContains(response, 'Enroll to start studying')
+
+    def test_unenrolled_user_blocked_from_private_topic(self):
+        """Non-enrolled users cannot access privately-owned course topics."""
+        self.client.login(username='td_access_user', password='pass')
+        response = self.client.get(f'/topic/{self.private_topic.id}/')
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/catalog/', response.url)

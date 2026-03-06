@@ -32,6 +32,17 @@
                 <div style="color: #dc3545; font-size: 0.9rem;">{{ form.description.errors }}</div>
             {% endif %}
         </div>
+
+        <div class="form-group">
+            <label for="{{ form.aqf_level.id_for_label }}">AQF Level</label>
+            <small style="color: #666; display: block; margin-bottom: 0.4rem;">
+                The subject's difficulty on a K–12 + AQF scale (1 = Year 1 primary, 20 = Honours/Masters/Doctorate). Leave blank if unknown.
+            </small>
+            {{ form.aqf_level }}
+            {% if form.aqf_level.errors %}
+                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.aqf_level.errors }}</div>
+            {% endif %}
+        </div>
         
         <div style="display: flex; gap: 1rem; margin-top: 2rem;">
             <button type="submit" class="btn">Save Course</button>
