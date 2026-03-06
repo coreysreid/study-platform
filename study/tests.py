@@ -965,3 +965,218 @@ class TrigMigrationExecutorTest(TransactionTestCase):
         executor.loader.build_graph()
         targets = executor.loader.graph.leaf_nodes()
         executor.migrate(targets)
+
+
+class FlashcardVoteModelTest(TestCase):
+    """Unit tests for FlashcardVote model"""
+
+    def setUp(self):
+        from .models import FlashcardVote
+        self.FlashcardVote = FlashcardVote
+        self.owner = User.objects.create_user(username='owner', password='pass')
+        self.voter = User.objects.create_user(username='voter', password='pass')
+        course = Course.objects.create(name='Course', created_by=self.owner)
+        topic = Topic.objects.create(course=course, name='Topic')
+        self.card = Flashcard.objects.create(topic=topic, question='Q', answer='A')
+
+    def test_upvote_created(self):
+        v = self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=1)
+        self.assertEqual(v.vote, self.FlashcardVote.UPVOTE)
+
+    def test_downvote_created(self):
+        v = self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=-1)
+        self.assertEqual(v.vote, self.FlashcardVote.DOWNVOTE)
+
+    def test_unique_together_prevents_duplicate_vote(self):
+        from django.db import IntegrityError
+        self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=1)
+        with self.assertRaises(IntegrityError):
+            self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=1)
+
+    def test_str_contains_upvote(self):
+        v = self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=1)
+        self.assertIn('upvote', str(v))
+
+    def test_str_contains_downvote(self):
+        v = self.FlashcardVote.objects.create(user=self.voter, flashcard=self.card, vote=-1)
+        self.assertIn('downvote', str(v))
+
+
+class FlashcardCommentModelTest(TestCase):
+    """Unit tests for FlashcardComment model"""
+
+    def setUp(self):
+        from .models import FlashcardComment
+        self.FlashcardComment = FlashcardComment
+        self.user = User.objects.create_user(username='commenter', password='pass')
+        course = Course.objects.create(name='Course', created_by=self.user)
+        topic = Topic.objects.create(course=course, name='Topic')
+        self.card = Flashcard.objects.create(topic=topic, question='Q', answer='A')
+
+    def test_comment_created(self):
+        c = self.FlashcardComment.objects.create(
+            user=self.user, flashcard=self.card, body='Great card!'
+        )
+        self.assertEqual(c.body, 'Great card!')
+
+    def test_str_contains_flashcard_id(self):
+        c = self.FlashcardComment.objects.create(
+            user=self.user, flashcard=self.card, body='Needs work'
+        )
+        self.assertIn(str(self.card.id), str(c))
+
+
+class VoteFlashcardViewTest(TestCase):
+    """Tests for the vote_flashcard view"""
+
+    def setUp(self):
+        from .models import FlashcardVote, CourseEnrollment
+        self.FlashcardVote = FlashcardVote
+        self.client = Client()
+        self.owner = User.objects.create_user(username='cardowner', password='pass')
+        self.voter = User.objects.create_user(username='cardvoter', password='pass')
+        self.course = Course.objects.create(name='Course', created_by=self.owner)
+        topic = Topic.objects.create(course=self.course, name='Topic')
+        self.card = Flashcard.objects.create(topic=topic, question='Q', answer='A')
+        CourseEnrollment.objects.create(user=self.voter, course=self.course)
+        self.vote_url = f'/flashcard/{self.card.id}/vote/'
+
+    def test_upvote_returns_json(self):
+        self.client.login(username='cardvoter', password='pass')
+        response = self.client.post(self.vote_url, {'vote': '1'})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['upvotes'], 1)
+        self.assertEqual(data['downvotes'], 0)
+        self.assertEqual(data['net_votes'], 1)
+        self.assertEqual(data['user_vote'], 1)
+
+    def test_downvote_returns_json(self):
+        self.client.login(username='cardvoter', password='pass')
+        response = self.client.post(self.vote_url, {'vote': '-1'})
+        self.assertEqual(response.status_code, 200)
+        data = json.loads(response.content)
+        self.assertEqual(data['upvotes'], 0)
+        self.assertEqual(data['downvotes'], 1)
+        self.assertEqual(data['net_votes'], -1)
+        self.assertEqual(data['user_vote'], -1)
+
+    def test_same_vote_again_removes_it(self):
+        self.client.login(username='cardvoter', password='pass')
+        self.client.post(self.vote_url, {'vote': '1'})
+        response = self.client.post(self.vote_url, {'vote': '1'})
+        data = json.loads(response.content)
+        self.assertEqual(data['user_vote'], 0)
+        self.assertEqual(data['upvotes'], 0)
+
+    def test_change_vote_direction(self):
+        self.client.login(username='cardvoter', password='pass')
+        self.client.post(self.vote_url, {'vote': '1'})
+        response = self.client.post(self.vote_url, {'vote': '-1'})
+        data = json.loads(response.content)
+        self.assertEqual(data['user_vote'], -1)
+        self.assertEqual(data['upvotes'], 0)
+        self.assertEqual(data['downvotes'], 1)
+
+    def test_owner_cannot_vote_on_own_card(self):
+        self.client.login(username='cardowner', password='pass')
+        response = self.client.post(self.vote_url, {'vote': '1'})
+        self.assertEqual(response.status_code, 403)
+
+    def test_unauthenticated_user_redirected(self):
+        response = self.client.post(self.vote_url, {'vote': '1'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+
+    def test_invalid_vote_value_returns_400(self):
+        self.client.login(username='cardvoter', password='pass')
+        response = self.client.post(self.vote_url, {'vote': '0'})
+        self.assertEqual(response.status_code, 400)
+
+    def test_flagged_true_when_net_score_reaches_threshold(self):
+        from .models import FlashcardVote
+        self.client.login(username='cardvoter', password='pass')
+        # Create 5 downvotes from different users
+        for i in range(5):
+            u = User.objects.create_user(username=f'dv{i}', password='pass')
+            FlashcardVote.objects.create(user=u, flashcard=self.card, vote=-1)
+        # Add one more downvote (will hit -5)
+        response = self.client.post(self.vote_url, {'vote': '-1'})
+        data = json.loads(response.content)
+        self.assertTrue(data['flagged'])
+
+    def test_vote_requires_post(self):
+        self.client.login(username='cardvoter', password='pass')
+        response = self.client.get(self.vote_url)
+        self.assertEqual(response.status_code, 405)
+
+
+class CommentFlashcardViewTest(TestCase):
+    """Tests for the comment_flashcard view"""
+
+    def setUp(self):
+        from .models import FlashcardComment, CourseEnrollment
+        self.FlashcardComment = FlashcardComment
+        self.client = Client()
+        self.user = User.objects.create_user(username='commentuser', password='pass')
+        course = Course.objects.create(name='Course', created_by=self.user)
+        topic = Topic.objects.create(course=course, name='Topic')
+        self.card = Flashcard.objects.create(topic=topic, question='Q', answer='A')
+        CourseEnrollment.objects.create(user=self.user, course=course)
+        self.comment_url = f'/flashcard/{self.card.id}/comment/'
+
+    def test_add_comment_creates_record(self):
+        self.client.login(username='commentuser', password='pass')
+        response = self.client.post(self.comment_url, {'body': 'Great card!'}, follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.FlashcardComment.objects.filter(flashcard=self.card).count(), 1)
+
+    def test_empty_body_rejected(self):
+        self.client.login(username='commentuser', password='pass')
+        self.client.post(self.comment_url, {'body': '   '}, follow=True)
+        self.assertEqual(self.FlashcardComment.objects.count(), 0)
+
+    def test_unauthenticated_user_redirected(self):
+        response = self.client.post(self.comment_url, {'body': 'Hi'})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('/login/', response.url)
+
+
+class TopicDetailVoteOrderingTest(TestCase):
+    """Flashcards in topic_detail are ranked by net vote score."""
+
+    def setUp(self):
+        from .models import FlashcardVote, CourseEnrollment
+        self.client = Client()
+        self.owner = User.objects.create_user(username='tdowner', password='pass')
+        self.voter = User.objects.create_user(username='tdvoter', password='pass')
+        self.course = Course.objects.create(name='Course', created_by=self.owner)
+        self.topic = Topic.objects.create(course=self.course, name='Topic')
+        CourseEnrollment.objects.create(user=self.voter, course=self.course)
+
+        self.card_low = Flashcard.objects.create(
+            topic=self.topic, question='Low', answer='A'
+        )
+        self.card_high = Flashcard.objects.create(
+            topic=self.topic, question='High', answer='A'
+        )
+        # Give card_high 2 upvotes, card_low 1 downvote
+        u1 = User.objects.create_user(username='u1', password='pass')
+        u2 = User.objects.create_user(username='u2', password='pass')
+        FlashcardVote.objects.create(user=u1, flashcard=self.card_high, vote=1)
+        FlashcardVote.objects.create(user=u2, flashcard=self.card_high, vote=1)
+        FlashcardVote.objects.create(user=u1, flashcard=self.card_low, vote=-1)
+        self.client.login(username='tdvoter', password='pass')
+
+    def test_flashcards_ordered_by_net_votes_descending(self):
+        response = self.client.get(f'/topic/{self.topic.id}/')
+        self.assertEqual(response.status_code, 200)
+        flashcards = list(response.context['flashcards'])
+        self.assertEqual(flashcards[0].id, self.card_high.id)
+        self.assertEqual(flashcards[1].id, self.card_low.id)
+
+    def test_net_votes_annotated_on_flashcards(self):
+        response = self.client.get(f'/topic/{self.topic.id}/')
+        flashcards = {fc.id: fc for fc in response.context['flashcards']}
+        self.assertEqual(flashcards[self.card_high.id].net_votes, 2)
+        self.assertEqual(flashcards[self.card_low.id].net_votes, -1)

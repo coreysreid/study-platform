@@ -80,6 +80,20 @@
         height: auto;
         border-radius: 5px;
     }
+
+    .vote-btn {
+        background: none;
+        border: 1px solid #dee2e6;
+        border-radius: 6px;
+        padding: 0.25rem 0.6rem;
+        cursor: pointer;
+        font-size: 1rem;
+        transition: background 0.15s;
+        line-height: 1.4;
+    }
+    .vote-btn.active-up   { background: #d4edda; border-color: #28a745; }
+    .vote-btn.active-down { background: #f8d7da; border-color: #dc3545; }
+    .net-score { color: #495057; }
     
     /* Study Mode Selector */
     .study-mode-bar {
@@ -288,6 +302,14 @@
         <button onclick="toggleTeacherExplanation()" class="btn btn-secondary" id="teacherBtn" style="display:none;">Full Explanation</button>
         <button onclick="submitFeedback()" class="btn btn-secondary" id="feedbackBtn">Feedback</button>
     </div>
+
+    <!-- Vote bar (shown after answer is revealed) -->
+    <div id="voteBar" style="display:none; justify-content: center; align-items: center; gap: 0.75rem; margin-top: 0.75rem;">
+        <span style="font-size: 0.9rem; color: #666;">Rate this card:</span>
+        <button id="voteUpBtn" onclick="sessionVote(1)" class="vote-btn" title="Upvote">👍</button>
+        <span id="voteScore" class="net-score" style="font-weight:600; min-width:2rem; text-align:center;"></span>
+        <button id="voteDownBtn" onclick="sessionVote(-1)" class="vote-btn" title="Downvote">👎</button>
+    </div>
     
     <form id="endSessionForm" method="post" action="{% url 'end_study_session' session.id %}" style="display: none;">
         {% csrf_token %}
@@ -345,6 +367,7 @@
         document.getElementById('nextStepPrompt').style.display = '';
         document.getElementById('feedbackBtn').dataset.cardId = card.id;
         document.getElementById('feedbackBtn').dataset.cardQuestion = card.question;
+        document.getElementById('voteBar').style.display = 'none';
 
         // Show reveal button, hide result buttons for all card types.
         // revealCard() is responsible for swapping these when the answer is revealed.
@@ -463,6 +486,7 @@
             }
         }
         isFlipped = true;
+        showVoteBar(cards[currentIndex]);
     }
 
     document.getElementById('flashcard').onclick = function() {
@@ -532,6 +556,41 @@
                 'Flashcard ID: ' + cardId + '\n\nPlease describe the issue:\n';
             openFeedbackModal();
         }
+    }
+
+    function showVoteBar(card) {
+        const voteBar = document.getElementById('voteBar');
+        const scoreEl = document.getElementById('voteScore');
+        const upBtn   = document.getElementById('voteUpBtn');
+        const downBtn = document.getElementById('voteDownBtn');
+        scoreEl.textContent = card.net_votes !== null ? card.net_votes : 0;
+        upBtn.classList.toggle('active-up',   card.user_vote === 1);
+        downBtn.classList.toggle('active-down', card.user_vote === -1);
+        voteBar.style.display = 'flex';
+    }
+
+    function sessionVote(voteValue) {
+        const card = cards[currentIndex];
+        fetch('/flashcard/' + card.id + '/vote/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': csrfToken,
+            },
+            body: 'vote=' + voteValue,
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (data.error) return;
+            card.net_votes  = data.net_votes;
+            card.upvotes    = data.upvotes;
+            card.downvotes  = data.downvotes;
+            card.user_vote  = data.user_vote;
+            document.getElementById('voteScore').textContent = data.net_votes;
+            document.getElementById('voteUpBtn').classList.toggle('active-up',     data.user_vote === 1);
+            document.getElementById('voteDownBtn').classList.toggle('active-down', data.user_vote === -1);
+        })
+        .catch(function() {});
     }
 
     function endSession() {

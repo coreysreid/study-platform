@@ -2,6 +2,82 @@
 
 {% block title %}{{ topic.name }} - Study Platform{% endblock %}
 
+{% block extra_css %}
+<style>
+.vote-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.vote-btn {
+    background: none;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    font-size: 1rem;
+    transition: background 0.15s, color 0.15s;
+    line-height: 1.4;
+}
+.vote-btn:disabled { cursor: default; opacity: 0.5; }
+.vote-btn.active-up   { background: #d4edda; border-color: #28a745; color: #155724; }
+.vote-btn.active-down { background: #f8d7da; border-color: #dc3545; color: #721c24; }
+.net-score {
+    font-weight: 600;
+    min-width: 2.5rem;
+    text-align: center;
+    font-size: 1rem;
+}
+.net-score.positive { color: #155724; }
+.net-score.negative { color: #721c24; }
+.flagged-badge {
+    display: inline-block;
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+    border-radius: 12px;
+    padding: 0.2rem 0.6rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+.comment-body {
+    font-size: 0.9rem;
+    color: #333;
+    margin: 0.25rem 0;
+}
+.comment-meta {
+    font-size: 0.78rem;
+    color: #888;
+    margin: 0;
+}
+.comments-section {
+    margin-top: 1rem;
+    border-top: 1px solid #e9ecef;
+    padding-top: 0.75rem;
+}
+.comment-item {
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f0f0f0;
+}
+.comment-item:last-child { border-bottom: none; }
+.add-comment-form {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+    align-items: flex-end;
+}
+.add-comment-form textarea {
+    flex: 1;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    font-size: 0.9rem;
+    resize: vertical;
+    min-height: 2.5rem;
+}
+</style>
+{% endblock %}
+
 {% block content %}
 <div>
     <div style="margin-bottom: 2rem;">
@@ -43,7 +119,7 @@
         {% if flashcards %}
             <div style="display: grid; gap: 1rem;">
                 {% for flashcard in flashcards %}
-                    <div style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px;">
+                    <div id="card-{{ flashcard.id }}" style="background: #f8f9fa; padding: 1.5rem; border-radius: 10px;">
                         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
                             <div style="flex: 1;">
                                 <strong style="color: #667eea;">Question:</strong>
@@ -52,7 +128,7 @@
                                     <img src="{{ flashcard.question_image.url }}" alt="Question image" style="max-width: 300px; margin-top: 0.5rem; border-radius: 5px;">
                                 {% endif %}
                             </div>
-                            <div style="display: flex; gap: 0.5rem;">
+                            <div style="display: flex; gap: 0.5rem; flex-shrink: 0; margin-left: 1rem;">
                                 {% if topic.course.created_by == request.user %}
                                     <a href="{% url 'flashcard_edit' flashcard.id %}" class="btn btn-secondary" style="font-size: 0.9rem; padding: 0.5rem 1rem;">Edit</a>
                                 {% endif %}
@@ -72,7 +148,7 @@
                                 <p style="color: #856404; margin-top: 0.25rem;">{{ flashcard.hint }}</p>
                             </div>
                         {% endif %}
-                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center;">
+                        <div style="margin-top: 1rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
                             <span style="padding: 0.25rem 0.75rem; background: 
                                 {% if flashcard.difficulty == 'easy' %}#d4edda
                                 {% elif flashcard.difficulty == 'medium' %}#fff3cd
@@ -80,6 +156,53 @@
                                 border-radius: 15px; font-size: 0.9rem;">
                                 {{ flashcard.get_difficulty_display }}
                             </span>
+
+                            {# Vote bar — hidden for card owners #}
+                            <div class="vote-bar">
+                                {% if topic.course.created_by != request.user %}
+                                    <button
+                                        class="vote-btn{% if flashcard.user_vote == 1 %} active-up{% endif %}"
+                                        id="up-{{ flashcard.id }}"
+                                        onclick="castVote({{ flashcard.id }}, 1)"
+                                        title="Upvote"
+                                    >👍</button>
+                                {% endif %}
+                                <span
+                                    id="score-{{ flashcard.id }}"
+                                    class="net-score{% if flashcard.net_votes > 0 %} positive{% elif flashcard.net_votes < 0 %} negative{% endif %}"
+                                    title="{{ flashcard.upvotes }} upvote{{ flashcard.upvotes|pluralize }} / {{ flashcard.downvotes }} downvote{{ flashcard.downvotes|pluralize }}"
+                                >{{ flashcard.net_votes }}</span>
+                                {% if topic.course.created_by != request.user %}
+                                    <button
+                                        class="vote-btn{% if flashcard.user_vote == -1 %} active-down{% endif %}"
+                                        id="down-{{ flashcard.id }}"
+                                        onclick="castVote({{ flashcard.id }}, -1)"
+                                        title="Downvote"
+                                    >👎</button>
+                                {% endif %}
+                            </div>
+
+                            {% if flashcard.net_votes <= flag_threshold %}
+                                <span class="flagged-badge" id="flag-{{ flashcard.id }}">⚠ Flagged for review</span>
+                            {% endif %}
+                        </div>
+
+                        {# Comments section #}
+                        <div class="comments-section">
+                            <strong style="font-size: 0.9rem; color: #555;">
+                                💬 Comments ({{ flashcard.comments.count }})
+                            </strong>
+                            {% for comment in flashcard.comments.all %}
+                                <div class="comment-item">
+                                    <p class="comment-body">{{ comment.body }}</p>
+                                    <p class="comment-meta">— {{ comment.user.username }}, {{ comment.created_at|date:"N j, Y" }}</p>
+                                </div>
+                            {% endfor %}
+                            <form class="add-comment-form" method="post" action="{% url 'comment_flashcard' flashcard.id %}">
+                                {% csrf_token %}
+                                <textarea name="body" placeholder="Suggest an improvement…" maxlength="1000" rows="2"></textarea>
+                                <button type="submit" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">Post</button>
+                            </form>
                         </div>
                     </div>
                 {% endfor %}
@@ -96,6 +219,56 @@
 
 {% block extra_js %}
 <script>
+const FLAG_THRESHOLD = {{ flag_threshold }};
+
+function castVote(cardId, voteValue) {
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch(`/flashcard/${cardId}/vote/`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken,
+        },
+        body: `vote=${voteValue}`,
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.error) { alert(data.error); return; }
+
+        // Update score display
+        const scoreEl = document.getElementById('score-' + cardId);
+        if (scoreEl) {
+            scoreEl.textContent = data.net_votes;
+            scoreEl.className = 'net-score' +
+                (data.net_votes > 0 ? ' positive' : data.net_votes < 0 ? ' negative' : '');
+            scoreEl.title = `${data.upvotes} upvote${data.upvotes !== 1 ? 's' : ''} / ${data.downvotes} downvote${data.downvotes !== 1 ? 's' : ''}`;
+        }
+
+        // Update button active states
+        const upBtn   = document.getElementById('up-'   + cardId);
+        const downBtn = document.getElementById('down-' + cardId);
+        if (upBtn)   upBtn.classList.toggle('active-up',   data.user_vote === 1);
+        if (downBtn) downBtn.classList.toggle('active-down', data.user_vote === -1);
+
+        // Show/hide flagged badge
+        const card = document.getElementById('card-' + cardId);
+        let flagBadge = document.getElementById('flag-' + cardId);
+        if (data.flagged) {
+            if (!flagBadge) {
+                flagBadge = document.createElement('span');
+                flagBadge.id = 'flag-' + cardId;
+                flagBadge.className = 'flagged-badge';
+                flagBadge.textContent = '⚠ Flagged for review';
+                const voteBar = card.querySelector('.vote-bar');
+                voteBar.insertAdjacentElement('afterend', flagBadge);
+            }
+        } else if (flagBadge) {
+            flagBadge.remove();
+        }
+    })
+    .catch(() => alert('Vote failed. Please try again.'));
+}
+
 function openCardFeedback(question, cardId) {
     if (typeof openFeedbackModal === 'function') {
         document.getElementById('feedbackTitle').value = 'Flashcard Feedback: ' + question.substring(0, 60);
