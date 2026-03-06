@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Course, Topic, Flashcard, StudySession, FlashcardProgress,
     Skill, MultipleChoiceOption, CardTemplate, CourseEnrollment,
-    StudyPreference, TopicScore
+    StudyPreference, TopicScore, CardSuggestion
 )
 
 # Register your models here.
@@ -146,3 +146,17 @@ class TopicScoreAdmin(admin.ModelAdmin):
     list_filter = ['topic__course', 'updated_at']
     search_fields = ['user__username', 'topic__name']
     ordering = ['-updated_at']
+
+
+@admin.register(CardSuggestion)
+class CardSuggestionAdmin(admin.ModelAdmin):
+    list_display = ['submitted_by', 'topic', 'status', 'question_preview', 'created_at']
+    list_filter = ['status', 'topic__course', 'created_at']
+    search_fields = ['question', 'answer', 'submitted_by__username', 'topic__name']
+    ordering = ['-created_at']
+    readonly_fields = ['submitted_by', 'topic', 'question', 'answer', 'hint', 'created_at', 'updated_at']
+    fields = ['submitted_by', 'topic', 'question', 'answer', 'hint', 'status', 'admin_notes', 'created_at', 'updated_at']
+
+    def question_preview(self, obj):
+        return obj.question[:60] + '…' if len(obj.question) > 60 else obj.question
+    question_preview.short_description = 'Question'

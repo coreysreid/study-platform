@@ -17,7 +17,7 @@ from .models import (Course, Topic, Flashcard, StudySession, FlashcardProgress,
                      CourseEnrollment, StudyPreference, StudyGoal,
                      AccountabilityLink, AccountabilityRelationship,
                      UserBadge, BADGE_DEFINITIONS, TopicScore,
-                     FlashcardVote, FlashcardComment)
+                     FlashcardVote, FlashcardComment, CardSuggestion)
 import datetime
 from .forms import CourseForm, TopicForm, FlashcardForm, CustomRegistrationForm
 from .utils import generate_parameterized_card
@@ -29,6 +29,9 @@ import json
 # Constants
 VALID_ENROLLMENT_STATUSES = {'studying', 'mastered', 'shelved'}
 VOTE_FLAG_THRESHOLD = -5  # Cards with net score at or below this are flagged for review
+SUGGESTION_MAX_QUESTION_LEN = 2000
+SUGGESTION_MAX_ANSWER_LEN = 2000
+SUGGESTION_MAX_HINT_LEN = 500
 
 # Utility functions for public content
 def get_system_user():
@@ -104,8 +107,8 @@ def register(request):
                         user=user, course=course,
                         defaults={'status': 'studying'}
                     )
-            messages.success(request, 'Registration successful!')
-            return redirect('home')
+            messages.success(request, 'Welcome! Browse the course catalogue to get started.')
+            return redirect('course_catalog')
     else:
         form = CustomRegistrationForm()
     
@@ -285,18 +288,20 @@ def _annotate_with_votes(queryset, user):
 
 @login_required
 def topic_detail(request, topic_id):
-    """View details of a specific topic - user must be enrolled in the course"""
-    topic = get_object_or_404(Topic.objects.select_related('course'), id=topic_id)
-    
-    # Check if user is enrolled in this course or is the owner
-    enrollment = CourseEnrollment.objects.filter(user=request.user, course=topic.course).first()
+    """View details of a specific topic."""
+    topic = get_object_or_404(Topic.objects.select_related('course__created_by'), id=topic_id)
+
+    system_user = get_system_user()
     is_owner = topic.course.created_by == request.user
-    
-    # Allow access only if enrolled or owner
-    if not enrollment and not is_owner:
+    enrollment = CourseEnrollment.objects.filter(user=request.user, course=topic.course).first()
+
+    # Only block access to privately-owned courses that the user has no relation to.
+    # System (public) course topics are viewable by any authenticated user; the template
+    # restricts interactive actions (voting, studying, suggesting) to enrolled users.
+    if not enrollment and not is_owner and topic.course.created_by != system_user:
         messages.error(request, 'You must be enrolled in this course to view topics.')
         return redirect('course_catalog')
-    
+
     # Annotate flashcards with vote counts and user's own vote, then sort best-first.
     flashcards = (
         _annotate_with_votes(topic.flashcards, request.user)
@@ -309,6 +314,7 @@ def topic_detail(request, topic_id):
         'flashcards': flashcards,
         'is_enrolled': enrollment is not None,
         'flag_threshold': VOTE_FLAG_THRESHOLD,
+        'is_system_course': topic.course.created_by == system_user,
     })
 
 
@@ -611,6 +617,46 @@ def comment_flashcard(request, flashcard_id):
     FlashcardComment.objects.create(user=request.user, flashcard=flashcard, body=body)
     messages.success(request, 'Comment added.')
     return redirect('topic_detail', topic_id=flashcard.topic_id)
+
+
+@login_required
+@require_POST
+def suggest_card(request, topic_id):
+    """Submit a card suggestion for a topic (pending admin review)."""
+    topic = get_object_or_404(Topic.objects.select_related('course__created_by'), id=topic_id)
+
+    # Must be enrolled in this course (suggestions are for system courses; owners use add-flashcard)
+    if not CourseEnrollment.objects.filter(user=request.user, course=topic.course).exists():
+        messages.error(request, 'You must be enrolled in this course to suggest a card.')
+        return redirect('topic_detail', topic_id=topic_id)
+
+    question = request.POST.get('question', '').strip()
+    answer = request.POST.get('answer', '').strip()
+    hint = request.POST.get('hint', '').strip()
+
+    if not question or not answer:
+        messages.error(request, 'Both question and answer are required.')
+        return redirect('topic_detail', topic_id=topic_id)
+
+    if (len(question) > SUGGESTION_MAX_QUESTION_LEN
+            or len(answer) > SUGGESTION_MAX_ANSWER_LEN
+            or len(hint) > SUGGESTION_MAX_HINT_LEN):
+        messages.error(
+            request,
+            f'Question and answer must each be {SUGGESTION_MAX_QUESTION_LEN} characters or fewer; '
+            f'hint must be {SUGGESTION_MAX_HINT_LEN} characters or fewer.',
+        )
+        return redirect('topic_detail', topic_id=topic_id)
+
+    CardSuggestion.objects.create(
+        topic=topic,
+        submitted_by=request.user,
+        question=question,
+        answer=answer,
+        hint=hint,
+    )
+    messages.success(request, 'Thank you! Your card suggestion has been submitted for review.')
+    return redirect('topic_detail', topic_id=topic_id)
 
 
 @login_required

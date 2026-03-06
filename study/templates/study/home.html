@@ -13,22 +13,22 @@
     
     {% if user.is_authenticated %}
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.5rem; margin-top: 2rem;">
+            <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 2rem; border-radius: 10px; color: white;">
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">📖 Course Catalogue</h3>
+                <p style="margin-bottom: 1rem;">Browse 15+ ready-to-study courses</p>
+                <a href="{% url 'course_catalog' %}" class="btn" style="background: white; color: #059669;">Browse Courses</a>
+            </div>
+
             <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white;">
-                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">📚 Courses</h3>
+                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">📚 My Courses</h3>
                 <p style="font-size: 2rem; font-weight: bold; margin-bottom: 1rem;">{{ courses.count }}</p>
-                <a href="{% url 'course_list' %}" class="btn" style="background: white; color: #667eea;">View Courses</a>
+                <a href="{% url 'course_list' %}" class="btn" style="background: white; color: #667eea;">View My Courses</a>
             </div>
             
             <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 2rem; border-radius: 10px; color: white;">
                 <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">📝 Study Sessions</h3>
                 <p style="font-size: 2rem; font-weight: bold; margin-bottom: 1rem;">{{ recent_sessions.count }}</p>
                 <a href="{% url 'statistics' %}" class="btn" style="background: white; color: #f5576c;">View Stats</a>
-            </div>
-            
-            <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 2rem; border-radius: 10px; color: white;">
-                <h3 style="font-size: 1.5rem; margin-bottom: 1rem;">🎯 Quick Start</h3>
-                <p style="margin-bottom: 1rem;">Jump into studying</p>
-                <a href="{% url 'admin:index' %}" class="btn" style="background: white; color: #4facfe;">Manage Content</a>
             </div>
         </div>
         
@@ -49,19 +49,20 @@
     {% else %}
         <div style="margin-top: 2rem;">
             <p style="font-size: 1.1rem; margin-bottom: 1.5rem;">
-                Get started by creating an account or logging in
+                Access 15+ ready-to-study courses covering Electrical Engineering, Mathematics, and more.
             </p>
-            <a href="{% url 'register' %}" class="btn" style="margin-right: 1rem;">Register</a>
+            <a href="{% url 'register' %}" class="btn" style="margin-right: 1rem;">Get Started Free</a>
             <a href="{% url 'login' %}" class="btn btn-secondary">Login</a>
         </div>
         
         <div style="margin-top: 3rem; text-align: left; background: #f8f9fa; padding: 2rem; border-radius: 10px;">
-            <h2 style="color: #667eea; margin-bottom: 1rem;">Features</h2>
+            <h2 style="color: #667eea; margin-bottom: 1rem;">What's included</h2>
             <ul style="list-style: none; padding: 0;">
-                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Create and organize courses by subject</li>
-                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Build flashcard decks for active recall</li>
-                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Track your study progress and statistics</li>
+                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ 15+ expert-curated courses ready to study from day one</li>
+                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Hundreds of flashcards covering core EE and Mathematics topics</li>
+                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Track your progress and study statistics</li>
                 <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Spaced repetition learning system</li>
+                <li style="padding: 0.5rem 0; font-size: 1.1rem;">✅ Suggest your own cards to fill knowledge gaps</li>
             </ul>
         </div>
     {% endif %}

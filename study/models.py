@@ -547,3 +547,59 @@ class FlashcardComment(models.Model):
 
     def __str__(self):
         return f"{self.user.username} on flashcard {self.flashcard_id}: {self.body[:50]}..."
+
+
+class CardSuggestion(models.Model):
+    """A user-submitted card suggestion for a system topic, pending admin review."""
+
+    STATUS_PENDING = 'pending'
+    STATUS_APPROVED = 'approved'
+    STATUS_REJECTED = 'rejected'
+
+    STATUS_CHOICES = [
+        (STATUS_PENDING,  'Pending review'),
+        (STATUS_APPROVED, 'Approved'),
+        (STATUS_REJECTED, 'Rejected'),
+    ]
+
+    topic = models.ForeignKey(
+        Topic,
+        on_delete=models.CASCADE,
+        related_name='card_suggestions',
+    )
+    submitted_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='card_suggestions',
+    )
+    question = models.TextField(
+        help_text='Question or front of the suggested card',
+        validators=[MaxLengthValidator(2000)],
+    )
+    answer = models.TextField(
+        help_text='Answer or back of the suggested card',
+        validators=[MaxLengthValidator(2000)],
+    )
+    hint = models.TextField(
+        blank=True,
+        help_text='Optional hint',
+        validators=[MaxLengthValidator(500)],
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default=STATUS_PENDING,
+        db_index=True,
+    )
+    admin_notes = models.TextField(
+        blank=True,
+        help_text='Internal notes from the reviewer (not shown to the submitter)',
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"Suggestion by {self.submitted_by.username} for '{self.topic}': {self.question[:50]}"
