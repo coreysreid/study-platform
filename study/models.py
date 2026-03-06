@@ -20,11 +20,51 @@ def generate_accountability_code():
 
 # Create your models here.
 
+AQF_LEVEL_CHOICES = [
+    (1,  'Level 1 — Primary (Year 1)'),
+    (2,  'Level 2 — Primary (Year 2)'),
+    (3,  'Level 3 — Primary (Year 3)'),
+    (4,  'Level 4 — Primary (Year 4)'),
+    (5,  'Level 5 — Primary (Year 5)'),
+    (6,  'Level 6 — Primary (Year 6)'),
+    (7,  'Level 7 — Junior Secondary (Year 7)'),
+    (8,  'Level 8 — Junior Secondary (Year 8)'),
+    (9,  'Level 9 — Junior Secondary (Year 9)'),
+    (10, 'Level 10 — Junior Secondary (Year 10)'),
+    (11, 'Level 11 — Senior Secondary (Year 11)'),
+    (12, 'Level 12 — Senior Secondary (Year 12)'),
+    (13, 'Level 13 — AQF 1 (Certificate I)'),
+    (14, 'Level 14 — AQF 2 (Certificate II)'),
+    (15, 'Level 15 — AQF 3 (Certificate III)'),
+    (16, 'Level 16 — AQF 4 (Certificate IV)'),
+    (17, 'Level 17 — AQF 5 (Diploma)'),
+    (18, 'Level 18 — AQF 6 (Associate Degree / Advanced Diploma)'),
+    (19, 'Level 19 — AQF 7 (Bachelor)'),
+    (20, 'Level 20 — AQF 8–10 (Honours / Masters / Doctorate)'),
+]
+
+STAR_DIFFICULTY_CHOICES = [
+    (1, '★☆☆☆☆☆ — Entry-level concept'),
+    (2, '★★☆☆☆☆ — Foundational'),
+    (3, '★★★☆☆☆ — Moderate'),
+    (4, '★★★★☆☆ — Challenging'),
+    (5, '★★★★★☆ — Advanced'),
+    (6, '★★★★★★ — Most advanced'),
+]
+
+
 class Course(models.Model):
     """Represents a course or subject (e.g., Electrical Engineering, Circuit Analysis)"""
     name = models.CharField(max_length=200)
     code = models.CharField(max_length=50, blank=True, help_text="Course code (e.g., ENG301)")
     description = models.TextField(blank=True)
+    aqf_level = models.IntegerField(
+        null=True,
+        blank=True,
+        choices=AQF_LEVEL_CHOICES,
+        validators=[MinValueValidator(1), MaxValueValidator(20)],
+        help_text="AQF-aligned difficulty level (1 = Year 1 primary, 20 = Honours/Masters/Doctorate)"
+    )
     created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='courses')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -53,6 +93,20 @@ class Topic(models.Model):
         related_name='required_for',
         help_text="Topics that should be mastered before this one"
     )
+    aqf_level = models.IntegerField(
+        null=True,
+        blank=True,
+        choices=AQF_LEVEL_CHOICES,
+        validators=[MinValueValidator(1), MaxValueValidator(20)],
+        help_text="AQF-aligned difficulty level. If blank, inherits from the course."
+    )
+    star_difficulty = models.IntegerField(
+        null=True,
+        blank=True,
+        choices=STAR_DIFFICULTY_CHOICES,
+        validators=[MinValueValidator(1), MaxValueValidator(6)],
+        help_text="Relative difficulty within the subject (1 = easiest, 6 = hardest)"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -63,6 +117,11 @@ class Topic(models.Model):
         if self.code:
             return f"{self.course.name} — {self.code} {self.name}"
         return f"{self.course.name} — {self.name}"
+
+    @property
+    def effective_aqf_level(self):
+        """Return own aqf_level if set, otherwise inherit from the course."""
+        return self.aqf_level if self.aqf_level is not None else self.course.aqf_level
 
 
 class Skill(models.Model):
@@ -119,6 +178,13 @@ class Flashcard(models.Model):
             ('hard', 'Hard'),
         ],
         default='medium'
+    )
+    star_difficulty = models.IntegerField(
+        null=True,
+        blank=True,
+        choices=STAR_DIFFICULTY_CHOICES,
+        validators=[MinValueValidator(1), MaxValueValidator(6)],
+        help_text="Relative difficulty within the subject (1 = easiest, 6 = hardest). If blank, inherits from the topic."
     )
     question_type = models.CharField(
         max_length=20,
@@ -242,6 +308,11 @@ class Flashcard(models.Model):
     
     def __str__(self):
         return f"{self.topic.name} - {self.question[:50]}..."
+
+    @property
+    def effective_star_difficulty(self):
+        """Return own star_difficulty if set, otherwise inherit from the topic."""
+        return self.star_difficulty if self.star_difficulty is not None else self.topic.star_difficulty
 
 
 class CardTemplate(models.Model):

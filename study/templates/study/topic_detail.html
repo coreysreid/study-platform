@@ -91,6 +91,14 @@
             <div>
                 <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">{% if topic.code %}<span class="topic-code">{{ topic.code }}</span> · {% endif %}{{ topic.name }}</h1>
                 <p style="opacity: 0.9;">{{ topic.course.name }}</p>
+                {% with eff_level=topic.effective_aqf_level %}{% if eff_level %}
+                    <p style="opacity: 0.9; font-size: 0.9rem; margin-top: 0.25rem;">Level {{ eff_level }}{% if topic.aqf_level is None %} (course level){% endif %}</p>
+                {% endif %}{% endwith %}
+                {% if topic.star_difficulty %}
+                    <p style="opacity: 0.9; font-size: 1rem; margin-top: 0.25rem; letter-spacing: 0.05em;">
+                        {% for i in "123456" %}{% if forloop.counter <= topic.star_difficulty %}★{% else %}☆{% endif %}{% endfor %}
+                    </p>
+                {% endif %}
                 {% if topic.description %}
                     <p style="opacity: 0.9; margin-top: 1rem;">{{ topic.description }}</p>
                 {% endif %}
@@ -156,8 +164,11 @@
                                 border-radius: 15px; font-size: 0.9rem;">
                                 {{ flashcard.get_difficulty_display }}
                             </span>
-
-                            {# Vote bar — hidden for card owners #}
+                            {% with eff_stars=flashcard.effective_star_difficulty %}{% if eff_stars %}
+                                <span style="padding: 0.25rem 0.75rem; background: #e8e8ff; border-radius: 15px; font-size: 0.9rem; letter-spacing: 0.05em;" title="{{ eff_stars }} star{{ eff_stars|pluralize }} within subject">
+                                    {% for i in "123456" %}{% if forloop.counter <= eff_stars %}★{% else %}☆{% endif %}{% endfor %}
+                                </span>
+                            {% endif %}{% endwith %}
                             <div class="vote-bar">
                                 {% if topic.course.created_by != request.user %}
                                     <button

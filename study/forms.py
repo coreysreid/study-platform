@@ -28,24 +28,27 @@ class CustomRegistrationForm(UserCreationForm):
 class CourseForm(forms.ModelForm):
     class Meta:
         model = Course
-        fields = ['name', 'code', 'description']
+        fields = ['name', 'code', 'description', 'aqf_level']
         widgets = {
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Circuit Analysis'}),
             'code': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., ENG301'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Course description...'}),
+            'aqf_level': forms.Select(attrs={'class': 'form-control'}),
         }
 
 
 class TopicForm(forms.ModelForm):
     class Meta:
         model = Topic
-        fields = ['course', 'name', 'description', 'order', 'prerequisites']
+        fields = ['course', 'name', 'description', 'order', 'prerequisites', 'aqf_level', 'star_difficulty']
         widgets = {
             'course': forms.Select(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Ohm\'s Law'}),
             'description': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Topic description...'}),
             'order': forms.NumberInput(attrs={'class': 'form-control', 'min': 0}),
             'prerequisites': forms.SelectMultiple(attrs={'class': 'form-control', 'size': 5}),
+            'aqf_level': forms.Select(attrs={'class': 'form-control'}),
+            'star_difficulty': forms.Select(attrs={'class': 'form-control'}),
         }
     
     def __init__(self, *args, **kwargs):
@@ -74,7 +77,7 @@ class FlashcardForm(forms.ModelForm):
         model = Flashcard
         fields = [
             'topic', 'question', 'question_image', 'answer', 'answer_image',
-            'hint', 'difficulty', 'question_type', 'skills',
+            'hint', 'difficulty', 'star_difficulty', 'question_type', 'skills',
             'question_template', 'answer_template', 'parameter_spec',
             'teacher_explanation',
         ]
@@ -84,6 +87,7 @@ class FlashcardForm(forms.ModelForm):
             'answer': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Enter the answer...'}),
             'hint': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Optional hint...'}),
             'difficulty': forms.Select(attrs={'class': 'form-control'}),
+            'star_difficulty': forms.Select(attrs={'class': 'form-control'}),
             'question_type': forms.Select(attrs={'class': 'form-control'}),
             'skills': forms.SelectMultiple(attrs={'class': 'form-control', 'size': 5}),
             'question_template': forms.Textarea(attrs={'class': 'form-control', 'rows': 3, 'placeholder': 'Template with {variable} placeholders'}),
