@@ -25,4 +25,3 @@ class Migration(migrations.Migration):
     operations = [
         migrations.RunPython(split_trig_card, reverse_fn),
     ]
-
