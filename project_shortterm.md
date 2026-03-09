@@ -119,6 +119,14 @@ Migrations 0032 and 0033 and the base.html redesign should be committed and push
    - Progress dashboard
 ---
 
+## Recently Resolved (2026-03-09)
+
+- **Railway deployment fix**: Conflicting migrations (0033 analog electronics vs 0039 card suggestion validators) were blocking `migrate`, which prevented `collectstatic` from running, causing the app to crash on startup. Fixed by adding merge migration 0040.
+- **Windows cross-platform fixes**: `signal.SIGALRM` (Unix-only) in `graph_generator.py` replaced with a threading fallback for Windows. Unicode checkmark/arrow characters in management command stdout replaced with ASCII to fix cp1252 encoding errors on Windows.
+- All 133 tests pass.
+
+---
+
 ## Known Issues / Tech Debt
 
 - `FEATURE_STATUS.md` is significantly out of date (last updated 2026-02-13, pre-curriculum).
