@@ -9,6 +9,7 @@ from django.conf import settings
 import signal
 import json
 import logging
+import threading
 from contextlib import contextmanager
 from RestrictedPython import compile_restricted_exec
 from RestrictedPython.Guards import guarded_iter_unpack_sequence, safe_builtins, safer_getattr
@@ -42,18 +43,31 @@ class TimeoutException(Exception):
 @contextmanager
 def timeout(seconds):
     """Context manager for timing out code execution"""
-    def signal_handler(signum, frame):
-        raise TimeoutException("Graph generation timed out")
-    
-    # Set the signal handler and alarm
-    signal.signal(signal.SIGALRM, signal_handler)
-    signal.alarm(seconds)
-    
-    try:
-        yield
-    finally:
-        # Disable the alarm
-        signal.alarm(0)
+    if hasattr(signal, 'SIGALRM'):
+        # Unix/Linux: use signal-based timeout
+        def signal_handler(signum, frame):
+            raise TimeoutException("Graph generation timed out")
+        signal.signal(signal.SIGALRM, signal_handler)
+        signal.alarm(seconds)
+        try:
+            yield
+        finally:
+            signal.alarm(0)
+    else:
+        # Windows: use threading-based timeout
+        timer_fired = threading.Event()
+
+        def _timer():
+            timer_fired.set()
+
+        timer = threading.Timer(seconds, _timer)
+        timer.start()
+        try:
+            yield
+            if timer_fired.is_set():
+                raise TimeoutException("Graph generation timed out")
+        finally:
+            timer.cancel()
 
 
 def safe_execute_graph_code(code, variables=None):

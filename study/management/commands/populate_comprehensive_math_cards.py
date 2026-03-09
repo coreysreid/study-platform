@@ -54,7 +54,7 @@ class Command(BaseCommand):
             
             if created:
                 self.stdout.write(
-                    self.style.SUCCESS(f'✓ Created system user: {username}')
+                    self.style.SUCCESS(f'[OK] Created system user: {username}')
                 )
         else:
             try:
@@ -91,7 +91,7 @@ class Command(BaseCommand):
                 )
                 continue
             
-            self.stdout.write(f'\n📚 Creating flashcards for: {topic.name}')
+            self.stdout.write(f'\nCreating flashcards for: {topic.name}')
             
             # Create flashcards based on topic
             created = 0
@@ -131,11 +131,11 @@ class Command(BaseCommand):
                 )
             
             total_created += created
-            self.stdout.write(self.style.SUCCESS(f'  ✓ Created {created} flashcards'))
+            self.stdout.write(self.style.SUCCESS(f'  [OK] Created {created} flashcards'))
         
         self.stdout.write(
             self.style.SUCCESS(
-                f'\n✓ Successfully created {total_created} total flashcards across all topics!'
+                f'\n[OK] Successfully created {total_created} total flashcards across all topics!'
             )
         )
 

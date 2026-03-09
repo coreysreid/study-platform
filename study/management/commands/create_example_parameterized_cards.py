@@ -35,7 +35,7 @@ class Command(BaseCommand):
         )
 
         if created:
-            self.stdout.write(self.style.SUCCESS(f'✓ Created course: {course.name}'))
+            self.stdout.write(self.style.SUCCESS(f'[OK] Created course: {course.name}'))
         else:
             self.stdout.write(f'  Using existing course: {course.name}')
 
@@ -79,7 +79,7 @@ class Command(BaseCommand):
             difficulty='easy'
         )
         card1.skills.add(basic_arithmetic)
-        self.stdout.write(self.style.SUCCESS('  ✓ Created: Simple Addition (e.g., "What is 23 + 17?")'))
+        self.stdout.write(self.style.SUCCESS('  [OK] Created: Simple Addition (e.g., "What is 23 + 17?")'))
 
         # 2. Simple Subtraction
         card2 = Flashcard.objects.create(
@@ -101,7 +101,7 @@ class Command(BaseCommand):
             difficulty='easy'
         )
         card2.skills.add(basic_arithmetic)
-        self.stdout.write(self.style.SUCCESS('  ✓ Created: Simple Subtraction (e.g., "What is 50 - 13?")'))
+        self.stdout.write(self.style.SUCCESS('  [OK] Created: Simple Subtraction (e.g., "What is 50 - 13?")'))
 
         # 3. Multiplication
         card3 = Flashcard.objects.create(
@@ -122,7 +122,7 @@ class Command(BaseCommand):
             difficulty='easy'
         )
         card3.skills.add(basic_arithmetic)
-        self.stdout.write(self.style.SUCCESS('  ✓ Created: Multiplication (e.g., "What is 7 × 9?")'))
+        self.stdout.write(self.style.SUCCESS('  [OK] Created: Multiplication (e.g., "What is 7 × 9?")'))
 
         # 4. Division (clean results)
         card4 = Flashcard.objects.create(
@@ -144,7 +144,7 @@ class Command(BaseCommand):
             difficulty='medium'
         )
         card4.skills.add(basic_arithmetic)
-        self.stdout.write(self.style.SUCCESS('  ✓ Created: Division (e.g., "What is 72 ÷ 8?")'))
+        self.stdout.write(self.style.SUCCESS('  [OK] Created: Division (e.g., "What is 72 ÷ 8?")'))
 
         # 5. Fraction Addition (same denominator)
         card5 = Flashcard.objects.create(
@@ -167,7 +167,7 @@ class Command(BaseCommand):
             difficulty='medium'
         )
         card5.skills.add(fraction_ops)
-        self.stdout.write(self.style.SUCCESS('  ✓ Created: Fraction Addition (e.g., "What is 2/5 + 1/5?")'))
+        self.stdout.write(self.style.SUCCESS('  [OK] Created: Fraction Addition (e.g., "What is 2/5 + 1/5?")'))
 
         # 6. Pythagorean Theorem (special triangles)
         card6 = Flashcard.objects.create(
@@ -188,7 +188,7 @@ class Command(BaseCommand):
             hint='Use the Pythagorean theorem: c² = a² + b²',
             difficulty='medium'
         )
-        self.stdout.write(self.style.SUCCESS('  ✓ Created: Pythagorean Theorem (e.g., "Triangle with legs 3 and 4")'))
+        self.stdout.write(self.style.SUCCESS('  [OK] Created: Pythagorean Theorem (e.g., "Triangle with legs 3 and 4")'))
 
         # 7. Percentage Calculation
         card7 = Flashcard.objects.create(
@@ -210,10 +210,10 @@ class Command(BaseCommand):
             difficulty='medium'
         )
         card7.skills.add(basic_arithmetic)
-        self.stdout.write(self.style.SUCCESS('  ✓ Created: Percentage Calculation (e.g., "What is 25% of 80?")'))
+        self.stdout.write(self.style.SUCCESS('  [OK] Created: Percentage Calculation (e.g., "What is 25% of 80?")'))
 
         self.stdout.write(self.style.SUCCESS(
-            f'\n✓ Successfully created 7 example parameterized flashcards for topic "{topic.name}"!'
+            f'\n[OK] Successfully created 7 example parameterized flashcards for topic "{topic.name}"!'
         ))
         self.stdout.write('\nThese cards will generate new random values each time they are presented.')
         self.stdout.write('To see them in action, start a study session for the Basic Arithmetic topic.')

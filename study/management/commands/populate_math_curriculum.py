@@ -56,7 +56,7 @@ class Command(BaseCommand):
             
             if created:
                 self.stdout.write(
-                    self.style.SUCCESS(f'✓ Created system user: {username}')
+                    self.style.SUCCESS(f'[OK] Created system user: {username}')
                 )
         else:
             try:
@@ -100,7 +100,7 @@ class Command(BaseCommand):
             ),
             created_by=user
         )
-        self.stdout.write(self.style.SUCCESS(f'✓ Created course: {course.name}'))
+        self.stdout.write(self.style.SUCCESS(f'[OK] Created course: {course.name}'))
 
         # Create all skills first
         self.stdout.write('\nCreating skill tags...')
@@ -151,9 +151,9 @@ class Command(BaseCommand):
             )
             skills[skill_name] = skill
             if created:
-                self.stdout.write(f'  ✓ Created skill: {skill_name}')
+                self.stdout.write(f'  [OK] Created skill: {skill_name}')
             else:
-                self.stdout.write(f'  → Using existing skill: {skill_name}')
+                self.stdout.write(f'  -> Using existing skill: {skill_name}')
 
         # Define topics with their details
         topics_data = [
@@ -294,7 +294,7 @@ class Command(BaseCommand):
                 order=topic_data['order']
             )
             created_topics[topic_data['name']] = topic
-            self.stdout.write(f'  ✓ Created topic {topic_data["order"]}: {topic.name}')
+            self.stdout.write(f'  [OK] Created topic {topic_data["order"]}: {topic.name}')
 
         # Set up prerequisites
         self.stdout.write('\nSetting up prerequisite relationships...')
@@ -304,17 +304,17 @@ class Command(BaseCommand):
                 prereq_topic = created_topics[prereq_name]
                 topic.prerequisites.add(prereq_topic)
                 self.stdout.write(
-                    f'  ✓ {topic.name} requires {prereq_topic.name}'
+                    f'  [OK] {topic.name} requires {prereq_topic.name}'
                 )
 
         self.stdout.write(
             self.style.SUCCESS(
-                f'\n✓ Successfully created Engineering Mathematics curriculum with {len(topics_data)} topics!'
+                f'\n[OK] Successfully created Engineering Mathematics curriculum with {len(topics_data)} topics!'
             )
         )
         self.stdout.write(
             self.style.SUCCESS(
-                f'✓ Created {len(skills_data)} skill tags for prerequisite tracking'
+                f'[OK] Created {len(skills_data)} skill tags for prerequisite tracking'
             )
         )
         self.stdout.write('\nNext steps:')
