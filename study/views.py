@@ -122,17 +122,21 @@ def login_view(request):
     
     if request.method == 'POST':
         form = AuthenticationForm(request, data=request.POST)
-        if form.is_valid():
-            username = form.cleaned_data.get('username')
-            password = form.cleaned_data.get('password')
-            user = authenticate(username=username, password=password)
-            if user is not None:
-                login(request, user)
-                messages.success(request, f'Welcome back, {username}!')
-                return redirect('home')
     else:
         form = AuthenticationForm()
-    
+
+    for field in form.fields.values():
+        field.widget.attrs.setdefault('class', 'form-control')
+
+    if request.method == 'POST' and form.is_valid():
+        username = form.cleaned_data.get('username')
+        password = form.cleaned_data.get('password')
+        user = authenticate(username=username, password=password)
+        if user is not None:
+            login(request, user)
+            messages.success(request, f'Welcome back, {username}!')
+            return redirect('home')
+
     return render(request, 'study/login.html', {'form': form})
 
 

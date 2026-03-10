@@ -1,84 +1,80 @@
 {% extends 'study/base.html' %}
-
-{% block title %}Statistics - Study Platform{% endblock %}
+{% block title %}Statistics — Steward's Path{% endblock %}
+{% block nav_stats %}active{% endblock %}
 
 {% block content %}
-<div>
-    <h1 style="color: #667eea; margin-bottom: 2rem;">Study Statistics</h1>
-    
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1.5rem; margin-bottom: 3rem;">
-        <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 2rem; border-radius: 10px; color: white; text-align: center;">
-            <h3 style="font-size: 1.2rem; margin-bottom: 1rem; opacity: 0.9;">Total Study Sessions</h3>
-            <p style="font-size: 3rem; font-weight: bold;">{{ total_sessions }}</p>
-        </div>
-
-        <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); padding: 2rem; border-radius: 10px; color: white; text-align: center;">
-            <h3 style="font-size: 1.2rem; margin-bottom: 1rem; opacity: 0.9;">Cards Studied</h3>
-            <p style="font-size: 3rem; font-weight: bold;">{{ total_cards }}</p>
-        </div>
-
-        <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); padding: 2rem; border-radius: 10px; color: white; text-align: center;">
-            <h3 style="font-size: 1.2rem; margin-bottom: 1rem; opacity: 0.9;">Average Success Rate</h3>
-            <p style="font-size: 3rem; font-weight: bold;">{{ average_success_rate|floatformat:0 }}%</p>
-        </div>
-
-        <div style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); padding: 2rem; border-radius: 10px; color: white; text-align: center;">
-            <h3 style="font-size: 1.2rem; margin-bottom: 1rem; opacity: 0.9;">Current Streak</h3>
-            <p style="font-size: 3rem; font-weight: bold;">{{ streak }} 📅</p>
-        </div>
-    </div>
-
-    <!-- Badges -->
-    <div style="margin-bottom: 3rem;">
-        <h2 style="color: #667eea; margin-bottom: 1rem;">🏅 Badges</h2>
-        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 0.75rem;">
-            {% for badge in badges %}
-            <div style="padding: 1rem; border-radius: 8px; text-align: center;
-                        background: {% if badge.earned %}white{% else %}#f0f0f0{% endif %};
-                        opacity: {% if badge.earned %}1{% else %}0.4{% endif %};
-                        box-shadow: {% if badge.earned %}0 2px 8px rgba(0,0,0,0.08){% else %}none{% endif %};">
-                <div style="font-size: 2rem; margin-bottom: 0.25rem;">{{ badge.icon }}</div>
-                <div style="font-weight: 600; font-size: 0.9rem; color: #333;">{{ badge.name }}</div>
-                <div style="font-size: 0.75rem; color: #888; margin-top: 0.25rem;">{{ badge.description }}</div>
-                {% if badge.earned %}<div style="font-size: 0.7rem; color: #667eea; margin-top: 0.4rem;">{{ badge.earned_at|date:"M d, Y" }}</div>{% endif %}
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-    
-    {% if recent_sessions %}
-    <div>
-        <h2 style="color: #667eea; margin-bottom: 1rem;">Recent Study Sessions</h2>
-        <div style="background: #f8f9fa; border-radius: 10px; overflow: hidden;">
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="background: #667eea; color: white;">
-                        <th style="padding: 1rem; text-align: left;">Topic</th>
-                        <th style="padding: 1rem; text-align: left;">Course</th>
-                        <th style="padding: 1rem; text-align: center;">Cards Studied</th>
-                        <th style="padding: 1rem; text-align: left;">Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for session in recent_sessions %}
-                    <tr style="border-bottom: 1px solid #dee2e6;">
-                        <td style="padding: 1rem;">{{ session.topic.name }}</td>
-                        <td style="padding: 1rem;">{{ session.topic.course.name }}</td>
-                        <td style="padding: 1rem; text-align: center;">{{ session.cards_studied }}</td>
-                        <td style="padding: 1rem;">{{ session.started_at|date:"M d, Y H:i" }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    {% else %}
-    <div style="text-align: center; padding: 3rem; background: #f8f9fa; border-radius: 10px;">
-        <p style="font-size: 1.2rem; color: #666; margin-bottom: 1.5rem;">
-            No study sessions yet. Start studying to see your progress!
-        </p>
-        <a href="{% url 'course_list' %}" class="btn">Go to Courses</a>
-    </div>
-    {% endif %}
+<div class="page-header">
+  <h1>Study Statistics</h1>
 </div>
+
+<!-- Stat summary cards -->
+<div class="card-grid card-grid--stats mb-8">
+  <div class="card text-center">
+    <p class="stat-label">Total Study Sessions</p>
+    <p class="stat-value">{{ total_sessions }}</p>
+  </div>
+  <div class="card text-center">
+    <p class="stat-label">Cards Studied</p>
+    <p class="stat-value">{{ total_cards }}</p>
+  </div>
+  <div class="card text-center">
+    <p class="stat-label">Average Success Rate</p>
+    <p class="stat-value">{{ average_success_rate|floatformat:0 }}%</p>
+  </div>
+  <div class="card text-center">
+    <p class="stat-label">Current Streak</p>
+    <p class="stat-value">{{ streak }}</p>
+    <p class="text-muted text-xs">days in a row</p>
+  </div>
+</div>
+
+<!-- Badges -->
+{% if badges %}
+<h2 class="mb-4">Badges</h2>
+<div class="card-grid card-grid--badges mb-8">
+  {% for badge in badges %}
+  <div class="card text-center" style="{% if not badge.earned %}opacity: 0.35;{% endif %} padding: 1rem;">
+    <div style="font-size: 2rem; margin-bottom: 0.375rem;">{{ badge.icon }}</div>
+    <p style="font-weight: 600; font-size: 0.875rem; margin-bottom: 0.25rem;">{{ badge.name }}</p>
+    <p class="text-muted text-xs">{{ badge.description }}</p>
+    {% if badge.earned %}
+      <p class="text-accent text-xs mt-2">{{ badge.earned_at|date:"M d, Y" }}</p>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- Recent sessions table -->
+{% if recent_sessions %}
+<h2 class="mb-4">Recent Study Sessions</h2>
+<div class="table-card">
+  <table>
+    <thead>
+      <tr>
+        <th>Topic</th>
+        <th>Course</th>
+        <th style="text-align: center;">Cards Studied</th>
+        <th>Date</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for session in recent_sessions %}
+      <tr>
+        <td>{{ session.topic.name }}</td>
+        <td class="text-muted">{{ session.topic.course.name }}</td>
+        <td style="text-align: center;">{{ session.cards_studied }}</td>
+        <td class="text-muted">{{ session.started_at|date:"M d, Y H:i" }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <p>No study sessions yet. Start studying to see your progress!</p>
+  <a href="{% url 'course_list' %}" class="btn">Go to Courses</a>
+</div>
+{% endif %}
 {% endblock %}

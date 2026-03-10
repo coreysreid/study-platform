@@ -1,82 +1,65 @@
 {% extends 'study/base.html' %}
-
-{% block title %}{{ title }} - Study Platform{% endblock %}
+{% block title %}{{ title }} — Steward's Path{% endblock %}
 
 {% block content %}
-<div style="max-width: 800px; margin: 0 auto;">
-    <h1 style="color: #667eea; margin-bottom: 2rem;">{{ title }}</h1>
-    
-    <form method="post" style="background: #f8f9fa; padding: 2rem; border-radius: 10px;">
-        {% csrf_token %}
-        
-        <div class="form-group">
-            <label for="{{ form.course.id_for_label }}">Course *</label>
-            {{ form.course }}
-            {% if form.course.errors %}
-                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.course.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div class="form-group">
-            <label for="{{ form.name.id_for_label }}">Topic Name *</label>
-            {{ form.name }}
-            {% if form.name.errors %}
-                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.name.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div class="form-group">
-            <label for="{{ form.description.id_for_label }}">Description</label>
-            {{ form.description }}
-            {% if form.description.errors %}
-                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.description.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div class="form-group">
-            <label for="{{ form.order.id_for_label }}">Order</label>
-            {{ form.order }}
-            {% if form.order.errors %}
-                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.order.errors }}</div>
-            {% endif %}
-            <small style="color: #666; font-size: 0.9rem;">Position of this topic in the course (0 for first)</small>
-        </div>
-        
-        <div class="form-group">
-            <label for="{{ form.prerequisites.id_for_label }}">Prerequisites</label>
-            {{ form.prerequisites }}
-            {% if form.prerequisites.errors %}
-                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.prerequisites.errors }}</div>
-            {% endif %}
-            <small style="color: #666; font-size: 0.9rem;">Hold Ctrl/Cmd to select multiple topics</small>
-        </div>
+<div style="max-width: 720px; margin: 0 auto;">
+  <h1 class="mb-6">{{ title }}</h1>
 
-        <div class="form-group">
-            <label for="{{ form.aqf_level.id_for_label }}">AQF Level</label>
-            <small style="color: #666; display: block; margin-bottom: 0.4rem;">
-                Override the course's AQF level for this topic. Leave blank to inherit from the course.
-            </small>
-            {{ form.aqf_level }}
-            {% if form.aqf_level.errors %}
-                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.aqf_level.errors }}</div>
-            {% endif %}
-        </div>
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
 
-        <div class="form-group">
-            <label for="{{ form.star_difficulty.id_for_label }}">Star Difficulty</label>
-            <small style="color: #666; display: block; margin-bottom: 0.4rem;">
-                How hard is this topic relative to others in the same subject? Stars are not globally comparable.
-            </small>
-            {{ form.star_difficulty }}
-            {% if form.star_difficulty.errors %}
-                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.star_difficulty.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-            <button type="submit" class="btn">Save Topic</button>
-            <a href="{% if topic %}{% url 'topic_detail' topic.id %}{% else %}{% url 'course_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
-        </div>
+      <div class="form-group">
+        <label for="{{ form.course.id_for_label }}">Course <span class="text-danger">*</span></label>
+        {{ form.course }}
+        {% if form.course.errors %}<p class="field-error">{{ form.course.errors }}</p>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.name.id_for_label }}">Topic Name <span class="text-danger">*</span></label>
+        {{ form.name }}
+        {% if form.name.errors %}<p class="field-error">{{ form.name.errors }}</p>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.description.id_for_label }}">Description</label>
+        {{ form.description }}
+        {% if form.description.errors %}<p class="field-error">{{ form.description.errors }}</p>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.order.id_for_label }}">Order</label>
+        {{ form.order }}
+        {% if form.order.errors %}<p class="field-error">{{ form.order.errors }}</p>{% endif %}
+        <span class="field-help">Position of this topic in the course (0 for first)</span>
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.prerequisites.id_for_label }}">Prerequisites</label>
+        {{ form.prerequisites }}
+        {% if form.prerequisites.errors %}<p class="field-error">{{ form.prerequisites.errors }}</p>{% endif %}
+        <span class="field-help">Hold Ctrl/Cmd to select multiple topics</span>
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.aqf_level.id_for_label }}">AQF Level</label>
+        <span class="field-help">Override the course's AQF level for this topic. Leave blank to inherit from the course.</span>
+        {{ form.aqf_level }}
+        {% if form.aqf_level.errors %}<p class="field-error">{{ form.aqf_level.errors }}</p>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.star_difficulty.id_for_label }}">Star Difficulty</label>
+        <span class="field-help">How hard is this topic relative to others in the same subject? Stars are not globally comparable.</span>
+        {{ form.star_difficulty }}
+        {% if form.star_difficulty.errors %}<p class="field-error">{{ form.star_difficulty.errors }}</p>{% endif %}
+      </div>
+
+      <div class="flex gap-4 mt-6">
+        <button type="submit" class="btn">Save Topic</button>
+        <a href="{% if topic %}{% url 'topic_detail' topic.id %}{% else %}{% url 'course_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+      </div>
     </form>
+  </div>
 </div>
 {% endblock %}
