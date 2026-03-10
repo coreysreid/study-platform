@@ -1,53 +1,44 @@
 {% extends 'study/base.html' %}
-
-{% block title %}{{ title }} - Study Platform{% endblock %}
+{% block title %}{{ title }} — Steward's Path{% endblock %}
 
 {% block content %}
-<div style="max-width: 800px; margin: 0 auto;">
-    <h1 style="color: #667eea; margin-bottom: 2rem;">{{ title }}</h1>
-    
-    <form method="post" style="background: #f8f9fa; padding: 2rem; border-radius: 10px;">
-        {% csrf_token %}
-        
-        <div class="form-group">
-            <label for="{{ form.name.id_for_label }}">Course Name *</label>
-            {{ form.name }}
-            {% if form.name.errors %}
-                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.name.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div class="form-group">
-            <label for="{{ form.code.id_for_label }}">Course Code</label>
-            {{ form.code }}
-            {% if form.code.errors %}
-                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.code.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div class="form-group">
-            <label for="{{ form.description.id_for_label }}">Description</label>
-            {{ form.description }}
-            {% if form.description.errors %}
-                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.description.errors }}</div>
-            {% endif %}
-        </div>
+<div style="max-width: 720px; margin: 0 auto;">
+  <h1 class="mb-6">{{ title }}</h1>
 
-        <div class="form-group">
-            <label for="{{ form.aqf_level.id_for_label }}">AQF Level</label>
-            <small style="color: #666; display: block; margin-bottom: 0.4rem;">
-                The subject's difficulty on a K–12 + AQF scale (1 = Year 1 primary, 20 = Honours/Masters/Doctorate). Leave blank if unknown.
-            </small>
-            {{ form.aqf_level }}
-            {% if form.aqf_level.errors %}
-                <div style="color: #dc3545; font-size: 0.9rem;">{{ form.aqf_level.errors }}</div>
-            {% endif %}
-        </div>
-        
-        <div style="display: flex; gap: 1rem; margin-top: 2rem;">
-            <button type="submit" class="btn">Save Course</button>
-            <a href="{% if course %}{% url 'course_detail' course.id %}{% else %}{% url 'course_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
-        </div>
+  <div class="card">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="form-group">
+        <label for="{{ form.name.id_for_label }}">Course Name <span class="text-danger">*</span></label>
+        {{ form.name }}
+        {% if form.name.errors %}<p class="field-error">{{ form.name.errors }}</p>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.code.id_for_label }}">Course Code</label>
+        {{ form.code }}
+        {% if form.code.errors %}<p class="field-error">{{ form.code.errors }}</p>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.description.id_for_label }}">Description</label>
+        {{ form.description }}
+        {% if form.description.errors %}<p class="field-error">{{ form.description.errors }}</p>{% endif %}
+      </div>
+
+      <div class="form-group">
+        <label for="{{ form.aqf_level.id_for_label }}">AQF Level</label>
+        <span class="field-help">Difficulty on a K–12 + AQF scale (1 = Year 1 primary, 20 = Honours/Masters/Doctorate). Leave blank if unknown.</span>
+        {{ form.aqf_level }}
+        {% if form.aqf_level.errors %}<p class="field-error">{{ form.aqf_level.errors }}</p>{% endif %}
+      </div>
+
+      <div class="flex gap-4 mt-6">
+        <button type="submit" class="btn">Save Course</button>
+        <a href="{% if course %}{% url 'course_detail' course.id %}{% else %}{% url 'course_list' %}{% endif %}" class="btn btn-secondary">Cancel</a>
+      </div>
     </form>
+  </div>
 </div>
 {% endblock %}

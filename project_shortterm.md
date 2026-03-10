@@ -102,7 +102,7 @@ Migrations 0032 and 0033 and the base.html redesign should be committed and push
 
 ## Immediate Priorities
 
-1. **Commit & push** migrations 0032, 0033 and the `base.html` redesign (currently uncommitted on `main`).
+1. **Commit & push** the full visual overhaul (2026-03-10): `base.html` complete structural rewrite + all 13 content templates converted from inline styles to design system classes. See MEMORY.md for full list.
 2. **Math flashcard content**: 43 topics across SMA101, SMA102, SMA209, SMA212, FOUND101 have zero cards. Need reference material added to `reference/` before writing cards.
 3. **DSP content gaps**: Z-Transform (`005A`), DFT/FFT (`006A`), IIR Filters (`007A`) topics exist but have few or no cards.
 4. **Circuit diagrams**: Start with Circuit Analysis Fundamentals (~8 passive-component diagrams). See `docs/circuit_diagram_plan.md` for build order.

@@ -42,45 +42,48 @@
   {% block extra_css %}{% endblock %}
 </head>
 <body>
-    <header>
-        <nav>
-            <h1>📚 Study Platform</h1>
-            <ul>
-                <li><a href="{% url 'home' %}">Home</a></li>
-                {% if user.is_authenticated %}
-                    <li><a href="{% url 'course_catalog' %}">Course Catalog</a></li>
-                    <li><a href="{% url 'course_list' %}">My Courses</a></li>
-                    <li class="dropdown">
-                        <a href="#" class="dropbtn">My Content ▼</a>
-                        <div class="dropdown-content">
-                            <a href="{% url 'course_create' %}">New Course</a>
-                            <a href="{% url 'topic_create' %}">New Topic</a>
-                        </div>
-                    </li>
-                    <li><a href="{% url 'statistics' %}">Statistics</a></li>
-                    <li><a href="{% url 'accountability_settings' %}">Accountability</a></li>
-                    <li>
-                        <form method="post" action="{% url 'logout' %}" style="display: inline;">
-                            {% csrf_token %}
-                            <button type="submit" style="background: none; border: none; color: #333; font-weight: 500; cursor: pointer; font-size: inherit; font-family: inherit; padding: 0;">Logout ({{ user.username }})</button>
-                        </form>
-                    </li>
-                {% else %}
-                    <li><a href="{% url 'login' %}">Login</a></li>
-                    <li><a href="{% url 'register' %}">Register</a></li>
-                {% endif %}
-            </ul>
-        </nav>
-    </header>
-    
-    <div class="container">
-        {% if messages %}
-            <div class="messages">
-                {% for message in messages %}
-                    <div class="message {{ message.tags }}">
-                        {{ message }}
-                    </div>
-                {% endfor %}
+
+  <!-- ── Navigation ──────────────────────────────────────────────────────── -->
+  <nav class="site-nav" aria-label="Main navigation">
+    <div class="site-nav__inner">
+
+      <!-- Brand -->
+      <a href="{% url 'home' %}" class="site-nav__brand" aria-label="Steward's Path home">
+        <!-- Torch SVG: organic flame, cloth-wrapped head, brown handle -->
+        <svg width="18" height="28" viewBox="0 0 18 28" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect x="7.5" y="16" width="3" height="12" rx="1.5" fill="#92400e"/>
+          <rect x="6" y="11" width="6" height="6" rx="1" fill="#78350f"/>
+          <rect x="5.5" y="13.5" width="7" height="1.5" rx="0.5" fill="#92400e" opacity="0.55"/>
+          <path d="M9 1.5 C6.5 3.5 6 6.5 7.5 10.5 C8.25 8 8.5 5.5 9 3.5 C9.5 5.5 9.75 8 10.5 10.5 C12 6.5 11.5 3.5 9 1.5Z" fill="var(--accent)"/>
+          <path d="M9 4 C7.75 6 7.5 8.5 8.5 10.5 C8.75 9 9 7 9 5.5 C9 7 9.25 9 9.5 10.5 C10.5 8.5 10.25 6 9 4Z" fill="#FEF3C7" opacity="0.5"/>
+        </svg>
+        <span class="site-nav__brand-name">Steward's Path</span>
+      </a>
+
+      <!-- Nav links -->
+      <div class="site-nav__links">
+        <a href="{% url 'home' %}" class="site-nav__link {% block nav_home %}{% endblock %}">Home</a>
+        {% if user.is_authenticated %}
+          <a href="{% url 'course_catalog' %}" class="site-nav__link {% block nav_catalog %}{% endblock %}">Courses</a>
+          <a href="{% url 'course_list' %}" class="site-nav__link {% block nav_my_courses %}{% endblock %}">My Courses</a>
+          <a href="{% url 'statistics' %}" class="site-nav__link {% block nav_stats %}{% endblock %}">Statistics</a>
+          <a href="{% url 'accountability_settings' %}" class="site-nav__link {% block nav_accountability %}{% endblock %}">Accountability</a>
+        {% endif %}
+      </div>
+
+      <!-- Actions -->
+      <div class="site-nav__actions">
+        {% if user.is_authenticated %}
+
+          <!-- My Content dropdown -->
+          <div class="dropdown">
+            <button class="dropdown__trigger">
+              My Content
+              <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+            </button>
+            <div class="dropdown__menu">
+              <div class="dropdown__item"><a href="{% url 'course_create' %}">New Course</a></div>
+              <div class="dropdown__item"><a href="{% url 'topic_create' %}">New Topic</a></div>
             </div>
           </div>
 
@@ -100,6 +103,9 @@
             </div>
           </div>
 
+        {% else %}
+          <a href="{% url 'login' %}" class="site-nav__link">Login</a>
+          <a href="{% url 'register' %}" class="btn btn-sm">Register</a>
         {% endif %}
 
         <!-- Theme toggle -->
