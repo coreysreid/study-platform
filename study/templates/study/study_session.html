@@ -635,7 +635,10 @@
     function markQuality(quality) {
         if (!isFlipped) { revealCard(); return; }
         const card = cards[currentIndex];
+        const capturedIndex = currentIndex;  // capture before any async operation
         postQuality(card.id, card.step_index, quality).then(function(data) {
+            // Discard stale response if the user has already moved to a different card
+            if (currentIndex !== capturedIndex) return;
             if (data.next_review_date) {
                 const badge = document.getElementById('nextReviewBadge');
                 const days = data.interval_days;
@@ -669,17 +672,17 @@
         const url = '/flashcard/' + card.id + '/never-seen/';
         const body = new URLSearchParams({
             csrfmiddlewaretoken: csrfToken,
-            step_index: card.step_index,
         });
         fetch(url, { method: 'POST', body: body })
             .then(r => {
                 if (!r.ok) throw new Error('Network error ' + r.status);
+                // Treat the same as "Again" (quality 1) for session flow,
+                // but only after the reset has completed successfully.
+                markQuality(1);
             })
             .catch(function(err) {
                 console.warn('markNeverSeen failed:', err);
             });
-        // Treat the same as "Again" (quality 1) for session flow
-        markQuality(1);
     }
 
     function showPrereqPanel() {

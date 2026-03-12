@@ -395,8 +395,8 @@ class FlashcardProgress(models.Model):
     # SM-2 spaced repetition fields
     easiness_factor = models.FloatField(
         default=2.5,
-        help_text="SM-2 easiness factor (≥1.3). Higher = longer intervals between reviews.",
-        validators=[MinValueValidator(1.3)],
+        help_text="SM-2 easiness factor (≥1.1). Higher = longer intervals between reviews.",
+        validators=[MinValueValidator(1.1)],
     )
     interval_days = models.IntegerField(
         default=0,

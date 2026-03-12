@@ -399,6 +399,20 @@ def study_session(request, topic_id):
     # Shuffle for variety (due cards first when in review mode is not strictly needed)
     random.shuffle(flashcards)
 
+    # Cap new (never-SM2-reviewed) cards to the user's daily_new_cards setting.
+    # This only applies in normal study mode; review mode already shows only due cards.
+    if not is_review_mode:
+        sr_settings = SpacedRepetitionSettings.objects.filter(user=request.user).first()
+        daily_new_cap = (
+            sr_settings.daily_new_cards
+            if sr_settings
+            else SpacedRepetitionSettings.DEFAULT_DAILY_NEW_CARDS
+        )
+        seen = [f for f in flashcards if progress_map.get(f.id) is not None]
+        new_cards = [f for f in flashcards if progress_map.get(f.id) is None]
+        if len(new_cards) > daily_new_cap:
+            flashcards = seen + new_cards[:daily_new_cap]
+
     # Create study session
     session = StudySession.objects.create(user=request.user, topic=topic)
 
@@ -630,20 +644,34 @@ def update_flashcard_progress(request, flashcard_id):
     else:
         progress.confidence_level = max(0, progress.confidence_level - 1)
 
-    # SM-2 algorithm
+    # SM-2 scheduling is always on the whole-card (step_index=-1) record so that
+    # due_count and review mode (which filter by step_index=-1) see step-by-step cards.
     settings = SpacedRepetitionSettings.objects.filter(user=request.user).first()
-    _apply_sm2(progress, quality, settings)
-
-    progress.save()
-    progress.refresh_from_db()
+    if step_index == -1:
+        _apply_sm2(progress, quality, settings)
+        progress.save()
+        progress.refresh_from_db()
+        sr_progress = progress
+    else:
+        # Save stats-only record for the individual step; apply SM-2 to the whole-card record.
+        progress.save()
+        sr_progress, _ = FlashcardProgress.objects.get_or_create(
+            user=request.user,
+            flashcard=flashcard,
+            step_index=-1,
+        )
+        _apply_sm2(sr_progress, quality, settings)
+        sr_progress.save()
+        sr_progress.refresh_from_db()
+        progress.refresh_from_db()
 
     return JsonResponse({
         'confidence_level': progress.confidence_level,
         'times_reviewed': progress.times_reviewed,
         'next_review_date': (
-            progress.next_review_date.isoformat() if progress.next_review_date else None
+            sr_progress.next_review_date.isoformat() if sr_progress.next_review_date else None
         ),
-        'interval_days': progress.interval_days,
+        'interval_days': sr_progress.interval_days,
         'step_index': step_index,
     })
 
@@ -665,15 +693,9 @@ def mark_card_never_seen(request, flashcard_id):
     if not (is_owner or has_enrollment):
         return JsonResponse({'error': 'No access'}, status=403)
 
-    try:
-        step_index = int(request.POST.get('step_index', '-1'))
-    except (ValueError, TypeError):
-        step_index = -1
-
     FlashcardProgress.objects.filter(
         user=request.user,
         flashcard=flashcard,
-        step_index=step_index,
     ).update(
         times_reviewed=0,
         times_correct=0,
