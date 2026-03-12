@@ -134,6 +134,11 @@
   <div class="flex gap-2 items-center" style="flex-wrap: wrap;">
     {% if flashcards and is_enrolled %}
       <a href="{% url 'study_session' topic.id %}" class="btn">&#9654; Start Studying</a>
+      {% if due_count %}
+        <a href="{% url 'review_session' topic.id %}" class="btn btn-secondary" title="Review {{ due_count }} card{{ due_count|pluralize }} due today">
+          📅 Review Due <span class="badge" style="background:var(--danger);color:#fff;border-radius:var(--radius-pill);padding:0.1rem 0.45rem;font-size:0.78rem;margin-left:0.3rem;">{{ due_count }}</span>
+        </a>
+      {% endif %}
     {% elif flashcards and not is_enrolled and topic.course.created_by != request.user %}
       <a href="{% url 'course_catalog' %}" class="btn">Enroll to Study</a>
     {% endif %}
@@ -142,6 +147,13 @@
     {% endif %}
   </div>
 </div>
+
+{% if is_enrolled and due_count %}
+<div class="banner-info mb-4" style="display:flex; align-items:center; gap:1rem; flex-wrap:wrap;">
+  <span>📅 You have <strong>{{ due_count }} card{{ due_count|pluralize }}</strong> due for review in this topic today.</span>
+  <a href="{% url 'review_session' topic.id %}" class="btn btn-sm">Review Now</a>
+</div>
+{% endif %}
 
 {# "Suggest a card" panel — shown to enrolled non-owners #}
 {% if is_enrolled and topic.course.created_by != request.user %}

@@ -2,7 +2,7 @@ from django.contrib import admin
 from .models import (
     Course, Topic, Flashcard, StudySession, FlashcardProgress,
     Skill, MultipleChoiceOption, CardTemplate, CourseEnrollment,
-    StudyPreference, TopicScore, CardSuggestion
+    StudyPreference, TopicScore, CardSuggestion, SpacedRepetitionSettings
 )
 
 # Register your models here.
@@ -160,3 +160,11 @@ class CardSuggestionAdmin(admin.ModelAdmin):
     def question_preview(self, obj):
         return obj.question[:60] + '…' if len(obj.question) > 60 else obj.question
     question_preview.short_description = 'Question'
+
+
+@admin.register(SpacedRepetitionSettings)
+class SpacedRepetitionSettingsAdmin(admin.ModelAdmin):
+    list_display = ['user', 'ease_modifier', 'max_interval_days', 'daily_new_cards', 'updated_at']
+    list_filter = ['ease_modifier']
+    search_fields = ['user__username']
+    ordering = ['-updated_at']

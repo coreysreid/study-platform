@@ -3,6 +3,7 @@ from django.core.validators import MinValueValidator, MaxValueValidator, MaxLeng
 from django.contrib.auth.models import User
 import secrets
 import string
+import datetime
 
 BADGE_DEFINITIONS = [
     {'slug': 'first_session',      'name': 'First Steps',       'icon': '🎯', 'description': 'Complete your first study session',  'type': 'sessions', 'threshold': 1},
@@ -391,6 +392,28 @@ class FlashcardProgress(models.Model):
         help_text="0-5 confidence level for spaced repetition"
     )
 
+    # SM-2 spaced repetition fields
+    easiness_factor = models.FloatField(
+        default=2.5,
+        help_text="SM-2 easiness factor (≥1.3). Higher = longer intervals between reviews.",
+        validators=[MinValueValidator(1.3)],
+    )
+    interval_days = models.IntegerField(
+        default=0,
+        help_text="Current interval in days (0 = new card, never reviewed via SM-2).",
+        validators=[MinValueValidator(0)],
+    )
+    sm2_repetitions = models.IntegerField(
+        default=0,
+        help_text="Consecutive successful SM-2 recalls (resets to 0 on failure).",
+        validators=[MinValueValidator(0)],
+    )
+    next_review_date = models.DateField(
+        null=True,
+        blank=True,
+        help_text="Date this card is next due for review. Null means the card is new.",
+    )
+
     class Meta:
         unique_together = ['user', 'flashcard', 'step_index']
         ordering = ['-last_reviewed']
@@ -404,8 +427,62 @@ class FlashcardProgress(models.Model):
             return 0
         return (self.times_correct / self.times_reviewed) * 100
 
+    @property
+    def is_due(self):
+        """Return True if the card is due for review today or overdue."""
+        if self.next_review_date is None:
+            return False
+        return self.next_review_date <= datetime.date.today()
 
 
+class SpacedRepetitionSettings(models.Model):
+    """Per-user settings for the SM-2 spaced repetition algorithm."""
+
+    SPEED_CHOICES = [
+        (-2, 'Much slower — review cards very frequently'),
+        (-1, 'Slower — more frequent reviews'),
+        (0,  'Normal — standard SM-2 schedule'),
+        (1,  'Faster — longer gaps between reviews'),
+        (2,  'Much faster — aggressive spacing'),
+    ]
+
+    DEFAULT_EASE_MODIFIER = 0
+    DEFAULT_MAX_INTERVAL_DAYS = 365
+    DEFAULT_DAILY_NEW_CARDS = 20
+
+    user = models.OneToOneField(
+        User,
+        on_delete=models.CASCADE,
+        related_name='sr_settings',
+    )
+    ease_modifier = models.IntegerField(
+        default=DEFAULT_EASE_MODIFIER,
+        choices=SPEED_CHOICES,
+        help_text=(
+            "Shifts how quickly review intervals grow. "
+            "Increase if you remember things faster than average; decrease if slower."
+        ),
+        validators=[MinValueValidator(-2), MaxValueValidator(2)],
+    )
+    max_interval_days = models.IntegerField(
+        default=DEFAULT_MAX_INTERVAL_DAYS,
+        help_text="Maximum days between reviews (30–730). Cap prevents intervals from growing too large.",
+        validators=[MinValueValidator(30), MaxValueValidator(730)],
+    )
+    daily_new_cards = models.IntegerField(
+        default=DEFAULT_DAILY_NEW_CARDS,
+        help_text="Maximum new (never reviewed) cards to introduce per review session (1–100).",
+        validators=[MinValueValidator(1), MaxValueValidator(100)],
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.user.username} SR settings (ease_modifier={self.ease_modifier:+d})"
+
+    def get_min_easiness(self):
+        """Return the minimum easiness factor after applying user's speed modifier."""
+        # Each step shifts min EF by 0.1: -2→1.1, -1→1.2, 0→1.3, +1→1.4, +2→1.5
+        return round(1.3 + self.ease_modifier * 0.1, 1)
 class StudyGoal(models.Model):
     """User's daily card study target"""
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='study_goal')

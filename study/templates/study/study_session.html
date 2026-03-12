@@ -184,6 +184,58 @@
     .mode-challenge .timer-bar {
         display: block;
     }
+
+    /* SM-2 quality buttons */
+    .quality-btn-row {
+        display: none;
+        gap: 0.5rem;
+        justify-content: center;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+    }
+    .quality-btn {
+        border: 2px solid var(--border-strong);
+        border-radius: var(--radius);
+        padding: 0.45rem 1rem;
+        background: var(--surface);
+        color: var(--text-1);
+        cursor: pointer;
+        font-family: var(--font-sans);
+        font-size: 0.875rem;
+        font-weight: 600;
+        transition: background var(--t), border-color var(--t), color var(--t);
+        line-height: 1.3;
+        text-align: center;
+    }
+    .quality-btn small {
+        display: block;
+        font-weight: 400;
+        font-size: 0.75rem;
+        color: var(--text-3);
+        margin-top: 0.1rem;
+    }
+    .quality-btn:hover { opacity: 0.85; }
+    .q-again  { border-color: var(--danger);  background: var(--danger-tint);  color: var(--danger); }
+    .q-hard   { border-color: #f59e0b; background: #fef3c7; color: #92400e; }
+    .q-good   { border-color: var(--accent); background: var(--accent-tint, color-mix(in srgb, var(--accent) 10%, transparent)); color: var(--accent); }
+    .q-easy   { border-color: var(--success); background: var(--success-tint); color: var(--success); }
+
+    /* Never seen / prerequisites bar */
+    .sr-extra-bar {
+        display: none;
+        gap: 0.5rem;
+        justify-content: center;
+        margin-top: 0.5rem;
+        flex-wrap: wrap;
+    }
+    .next-review-badge {
+        display: inline-block;
+        font-size: 0.78rem;
+        color: var(--text-3);
+        margin-top: 0.35rem;
+        text-align: center;
+        width: 100%;
+    }
 </style>
 {% endblock %}
 
@@ -209,8 +261,13 @@
     </a>
 
     <h1 style="text-align: center; margin-bottom: 1rem;">
-        Study Session: {% if topic.code %}<span class="topic-code">{{ topic.code }}</span> · {% endif %}{{ topic.name }}
+        {% if is_review_mode %}📅 Review Session{% else %}Study Session{% endif %}: {% if topic.code %}<span class="topic-code">{{ topic.code }}</span> · {% endif %}{{ topic.name }}
     </h1>
+    {% if is_review_mode %}
+    <p class="text-muted text-sm" style="text-align: center; margin-bottom: 1rem;">
+        Showing cards due for review today. Rate each card honestly to optimise your schedule.
+    </p>
+    {% endif %}
     
     <!-- Study Mode Selector -->
     <div class="study-mode-bar">
@@ -293,12 +350,60 @@
         <button onclick="revealCard()" class="btn btn-lg" id="revealBtn">Reveal Answer</button>
     </div>
 
-    <div style="display: none; gap: 1rem; justify-content: center; margin-top: 1rem; flex-wrap: wrap;" id="resultBtnRow">
-        <button onclick="markResult(true)"  class="btn" style="background: var(--success); border-color: var(--success);" id="gotItBtn">Got it</button>
-        <button onclick="markResult(null)"  class="btn btn-secondary" id="nearlyBtn">Nearly</button>
-        <button onclick="markResult(false)" class="btn btn-danger" id="missedBtn">Missed it</button>
-        <button onclick="nextCard()"        class="btn btn-secondary">Skip</button>
+    <!-- SM-2 quality rating buttons (shown after reveal) -->
+    <div class="quality-btn-row" id="qualityBtnRow">
+        <button onclick="markQuality(1)" class="quality-btn q-again">
+            Again
+            <small>Forgot / reset</small>
+        </button>
+        <button onclick="markQuality(2)" class="quality-btn q-hard">
+            Hard
+            <small>Nearly remembered</small>
+        </button>
+        <button onclick="markQuality(4)" class="quality-btn q-good">
+            Good
+            <small>Got it</small>
+        </button>
+        <button onclick="markQuality(5)" class="quality-btn q-easy">
+            Easy
+            <small>Perfect recall</small>
+        </button>
+        <button onclick="nextCard()" class="quality-btn" style="border-color:var(--border-strong);">
+            Skip
+            <small>No rating</small>
+        </button>
     </div>
+
+    <!-- Next review date hint (shown after rating) -->
+    <p class="next-review-badge" id="nextReviewBadge" style="display:none;"></p>
+
+    <!-- Extra actions: Never seen + prerequisites -->
+    <div class="sr-extra-bar" id="srExtraBar">
+        <button onclick="markNeverSeen()" class="btn btn-ghost btn-sm" id="neverSeenBtn"
+                title="Flag this card as never seen before — it will restart from the beginning">
+            🔄 Never seen this before
+        </button>
+        {% if prerequisites %}
+        <a href="#" onclick="showPrereqPanel(); return false;" class="btn btn-ghost btn-sm">
+            🔗 Show prerequisites
+        </a>
+        {% endif %}
+    </div>
+
+    <!-- Prerequisites panel (hidden until requested) -->
+    {% if prerequisites %}
+    <div id="prereqPanel" style="display:none; max-width:580px; margin: 0.75rem auto;" class="banner-info">
+        <strong>Prerequisite topics for {{ topic.name }}</strong>
+        <ul style="margin: 0.5rem 0 0; padding-left: 1.25rem;">
+        {% for prereq in prerequisites %}
+            <li><a href="{% url 'topic_detail' prereq.id %}">{{ prereq.name }}</a>
+                &mdash; <a href="{% url 'study_session' prereq.id %}">Study now</a>
+            </li>
+        {% endfor %}
+        </ul>
+    </div>
+    {% endif %}
+
     <div style="display: flex; gap: 1rem; justify-content: center; margin-top: 0.5rem; flex-wrap: wrap;">
         <button onclick="showHint()"                class="btn btn-ghost btn-sm" id="hintBtn">Show Hint</button>
         <button onclick="toggleTeacherExplanation()" class="btn btn-ghost btn-sm" id="teacherBtn" style="display:none;">Full Explanation</button>
@@ -371,10 +476,13 @@
         document.getElementById('feedbackBtn').dataset.cardQuestion = card.question;
         document.getElementById('voteBar').style.display = 'none';
 
-        // Show reveal button, hide result buttons for all card types.
-        // revealCard() is responsible for swapping these when the answer is revealed.
+        // Show reveal button, hide quality rating buttons and SR extras
         document.getElementById('revealBtnRow').style.display = 'flex';
-        document.getElementById('resultBtnRow').style.display = 'none';
+        document.getElementById('qualityBtnRow').style.display = 'none';
+        document.getElementById('srExtraBar').style.display = 'none';
+        document.getElementById('nextReviewBadge').style.display = 'none';
+        const prereqPanel = document.getElementById('prereqPanel');
+        if (prereqPanel) prereqPanel.style.display = 'none';
 
         if (card.teacher_explanation) {
             document.getElementById('teacherText').textContent = card.teacher_explanation;
@@ -473,7 +581,8 @@
             document.getElementById('stepReveal').style.display = '';
             document.getElementById('nextStepPrompt').style.display = 'none';
             document.getElementById('revealBtnRow').style.display = 'none';
-            document.getElementById('resultBtnRow').style.display = 'flex';
+            document.getElementById('qualityBtnRow').style.display = 'flex';
+            document.getElementById('srExtraBar').style.display = 'flex';
             if (card.teacher_explanation) {
                 document.getElementById('teacherBtn').style.display = 'inline-block';
             }
@@ -481,7 +590,8 @@
         } else {
             document.getElementById('flashcard').classList.add('flipped');
             document.getElementById('revealBtnRow').style.display = 'none';
-            document.getElementById('resultBtnRow').style.display = 'flex';
+            document.getElementById('qualityBtnRow').style.display = 'flex';
+            document.getElementById('srExtraBar').style.display = 'flex';
             const card = cards[currentIndex];
             if (card.teacher_explanation) {
                 document.getElementById('teacherBtn').style.display = 'inline-block';
@@ -504,32 +614,82 @@
         document.getElementById('hint').style.display = 'block';
     }
 
-    function postProgress(cardId, stepIndex, correct) {
+    function postQuality(cardId, stepIndex, quality) {
         const url = '/flashcard/' + cardId + '/progress/';
         const body = new URLSearchParams({
             csrfmiddlewaretoken: csrfToken,
-            correct: correct ? 'true' : 'false',
+            quality: quality,
             step_index: stepIndex,
         });
-        fetch(url, { method: 'POST', body: body }).catch(function() {});
+        return fetch(url, { method: 'POST', body: body })
+            .then(r => {
+                if (!r.ok) throw new Error('Network error ' + r.status);
+                return r.json();
+            })
+            .catch(function(err) {
+                console.warn('postQuality failed:', err);
+                return {};
+            });
     }
 
-    function markResult(correct) {
+    function markQuality(quality) {
         if (!isFlipped) { revealCard(); return; }
         const card = cards[currentIndex];
-        postProgress(card.id, card.step_index, correct === true);
+        postQuality(card.id, card.step_index, quality).then(function(data) {
+            if (data.next_review_date) {
+                const badge = document.getElementById('nextReviewBadge');
+                const days = data.interval_days;
+                let msg;
+                if (days <= 1) {
+                    msg = '📅 Next review: tomorrow';
+                } else if (days < 7) {
+                    msg = '📅 Next review: in ' + days + ' days';
+                } else if (days < 30) {
+                    msg = '📅 Next review: in ~' + Math.round(days / 7) + ' week' + (days >= 14 ? 's' : '');
+                } else {
+                    msg = '📅 Next review: in ~' + Math.round(days / 30) + ' month' + (days >= 60 ? 's' : '');
+                }
+                badge.textContent = msg;
+                badge.style.display = 'block';
+            }
+        });
         cardsStudied++;
-        if (correct === false) {
-            // Re-queue missed card 3 positions ahead so the user sees it again soon
+        if (quality < 3) {
+            // Forgot — re-queue card 3 positions ahead so user sees it again soon
             const insertAt = Math.min(currentIndex + 3, cards.length);
             cards.splice(insertAt, 0, Object.assign({}, card));
             document.getElementById('cardTotal').textContent = cards.length;
         }
-        moveToNext();
+        // Small delay so the user can read the next-review badge, then advance
+        setTimeout(moveToNext, quality < 3 ? 800 : 300);
+    }
+
+    function markNeverSeen() {
+        const card = cards[currentIndex];
+        const url = '/flashcard/' + card.id + '/never-seen/';
+        const body = new URLSearchParams({
+            csrfmiddlewaretoken: csrfToken,
+            step_index: card.step_index,
+        });
+        fetch(url, { method: 'POST', body: body })
+            .then(r => {
+                if (!r.ok) throw new Error('Network error ' + r.status);
+            })
+            .catch(function(err) {
+                console.warn('markNeverSeen failed:', err);
+            });
+        // Treat the same as "Again" (quality 1) for session flow
+        markQuality(1);
+    }
+
+    function showPrereqPanel() {
+        const panel = document.getElementById('prereqPanel');
+        if (panel) panel.style.display = panel.style.display === 'none' ? '' : 'none';
     }
 
     function moveToNext() {
         stopTimer();
+        document.getElementById('nextReviewBadge').style.display = 'none';
         currentIndex++;
         if (isStepCard) {
             loadCard();

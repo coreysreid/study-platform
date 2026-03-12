@@ -1,0 +1,242 @@
+{% extends 'study/base.html' %}
+{% block title %}Spaced Repetition Settings — Steward's Path{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-card {
+    max-width: 640px;
+    margin: 0 auto;
+}
+.setting-row {
+    margin-bottom: 2rem;
+}
+.setting-label {
+    font-weight: 600;
+    margin-bottom: 0.35rem;
+}
+.setting-description {
+    font-size: 0.875rem;
+    color: var(--text-2);
+    margin-bottom: 0.75rem;
+}
+.speed-options {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+}
+.speed-btn {
+    border: 2px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 0.5rem 1rem;
+    background: var(--surface);
+    color: var(--text-1);
+    cursor: pointer;
+    font-size: 0.875rem;
+    transition: all var(--t);
+    font-family: var(--font-sans);
+}
+.speed-btn.selected,
+.speed-btn:hover {
+    border-color: var(--accent);
+    background: var(--accent-tint, color-mix(in srgb, var(--accent) 10%, transparent));
+    color: var(--accent);
+}
+.range-row {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+.range-row input[type=range] {
+    flex: 1;
+}
+.range-value {
+    font-weight: 600;
+    min-width: 4rem;
+    text-align: right;
+    color: var(--accent);
+}
+.algo-explainer {
+    background: var(--surface-2, var(--surface-3));
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 2rem;
+    font-size: 0.875rem;
+    line-height: 1.6;
+}
+.algo-explainer h3 {
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+}
+.algo-explainer table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 0.75rem;
+}
+.algo-explainer th,
+.algo-explainer td {
+    padding: 0.35rem 0.75rem;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+}
+.algo-explainer th {
+    font-weight: 600;
+    color: var(--text-2);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<a href="{% url 'statistics' %}" class="back-link">&#8592; My Stats</a>
+
+<div class="page-banner mb-6">
+    <h1 style="font-size: 1.75rem; margin-bottom: 0.5rem;">🧠 Spaced Repetition Settings</h1>
+    <p class="text-muted">
+        Customise how the SM-2 algorithm schedules your card reviews.
+        Cards are shown at increasing intervals — the goal is to review each card
+        <em>just before</em> you would forget it.
+    </p>
+</div>
+
+<!-- Algorithm explainer -->
+<div class="algo-explainer settings-card">
+    <h3>How it works</h3>
+    <p>
+        After you reveal a card you rate your recall quality.
+        The algorithm uses that rating to schedule the next review:
+    </p>
+    <table>
+        <thead>
+            <tr>
+                <th>Button</th>
+                <th>What it means</th>
+                <th>Effect on interval</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Again</strong></td>
+                <td>Forgot completely or never seen</td>
+                <td>Reset — review again tomorrow</td>
+            </tr>
+            <tr>
+                <td><strong>Hard</strong></td>
+                <td>Recalled, but barely — significant effort</td>
+                <td>Interval grows slowly</td>
+            </tr>
+            <tr>
+                <td><strong>Good</strong></td>
+                <td>Recalled correctly after brief hesitation</td>
+                <td>Standard interval increase</td>
+            </tr>
+            <tr>
+                <td><strong>Easy</strong></td>
+                <td>Recalled perfectly, no hesitation</td>
+                <td>Larger interval increase</td>
+            </tr>
+        </tbody>
+    </table>
+    <p style="margin-top: 0.75rem;">
+        The first two reviews of a new card come after <strong>1 day</strong> then
+        <strong>6 days</strong>. After that, intervals grow by a multiplier
+        (the <em>easiness factor</em>, starting at 2.5) that adjusts with each review.
+    </p>
+</div>
+
+<div class="card settings-card">
+    <form method="post" action="{% url 'spaced_repetition_settings' %}">
+        {% csrf_token %}
+
+        <!-- Learning speed -->
+        <div class="setting-row">
+            <p class="setting-label">Learning speed</p>
+            <p class="setting-description">
+                Controls the minimum easiness factor — how aggressively intervals grow.
+                If you find cards coming up too rarely (you keep forgetting them), choose
+                a slower speed. If you always remember things easily, choose faster.
+            </p>
+            <div class="speed-options" id="speedOptions">
+                {% for value, label in speed_choices %}
+                <button
+                    type="button"
+                    class="speed-btn {% if settings.ease_modifier == value %}selected{% endif %}"
+                    data-value="{{ value }}"
+                    onclick="selectSpeed(this)"
+                >{{ label }}</button>
+                {% endfor %}
+            </div>
+            <input type="hidden" name="ease_modifier" id="easeModifierInput" value="{{ settings.ease_modifier }}">
+            <p class="text-muted text-sm mt-2">
+                Current minimum ease factor:
+                <strong id="minEfDisplay">{{ settings.get_min_easiness }}</strong>
+                &nbsp;(normal = 1.3)
+            </p>
+        </div>
+
+        <!-- Maximum interval -->
+        <div class="setting-row">
+            <p class="setting-label">Maximum review interval</p>
+            <p class="setting-description">
+                The longest gap between reviews for any single card.
+                Lower this if you want to keep reviewing even well-known cards regularly.
+            </p>
+            <div class="range-row">
+                <input
+                    type="range"
+                    name="max_interval_days"
+                    id="maxIntervalRange"
+                    min="30"
+                    max="730"
+                    step="10"
+                    value="{{ settings.max_interval_days }}"
+                    oninput="document.getElementById('maxIntervalVal').textContent = this.value + ' days'"
+                >
+                <span class="range-value" id="maxIntervalVal">{{ settings.max_interval_days }} days</span>
+            </div>
+        </div>
+
+        <!-- New cards per session -->
+        <div class="setting-row">
+            <p class="setting-label">New cards per review session</p>
+            <p class="setting-description">
+                Maximum number of <em>brand-new</em> (never reviewed) cards to introduce in a
+                single review session. Keeping this low prevents overwhelm; raising it speeds
+                through new material faster.
+            </p>
+            <div class="range-row">
+                <input
+                    type="range"
+                    name="daily_new_cards"
+                    id="newCardsRange"
+                    min="1"
+                    max="100"
+                    step="1"
+                    value="{{ settings.daily_new_cards }}"
+                    oninput="document.getElementById('newCardsVal').textContent = this.value + ' cards'"
+                >
+                <span class="range-value" id="newCardsVal">{{ settings.daily_new_cards }} cards</span>
+            </div>
+        </div>
+
+        <div style="display: flex; gap: 1rem; justify-content: flex-end;">
+            <a href="{% url 'statistics' %}" class="btn btn-secondary">Cancel</a>
+            <button type="submit" class="btn">Save Settings</button>
+        </div>
+    </form>
+</div>
+
+<script>
+const minEfBySpeed = {'-2': 1.1, '-1': 1.2, '0': 1.3, '1': 1.4, '2': 1.5};
+
+function selectSpeed(btn) {
+    document.querySelectorAll('.speed-btn').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    const val = btn.dataset.value;
+    document.getElementById('easeModifierInput').value = val;
+    document.getElementById('minEfDisplay').textContent = minEfBySpeed[val] || '1.3';
+}
+</script>
+{% endblock %}
