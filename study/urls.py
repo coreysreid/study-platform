@@ -34,8 +34,13 @@ urlpatterns = [
     
     # Study Session URLs
     path('study/<int:topic_id>/', views.study_session, name='study_session'),
+    path('study/<int:topic_id>/review/', views.review_session, name='review_session'),
     path('session/<int:session_id>/end/', views.end_study_session, name='end_study_session'),
     path('flashcard/<int:flashcard_id>/progress/', views.update_flashcard_progress, name='update_flashcard_progress'),
+    path('flashcard/<int:flashcard_id>/never-seen/', views.mark_card_never_seen, name='mark_card_never_seen'),
+
+    # Spaced Repetition Settings
+    path('settings/spaced-repetition/', views.spaced_repetition_settings, name='spaced_repetition_settings'),
     
     # Statistics
     path('statistics/', views.statistics, name='statistics'),

@@ -1,4 +1,5 @@
 from django.shortcuts import render, get_object_or_404, redirect
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.models import User
@@ -17,7 +18,8 @@ from .models import (Course, Topic, Flashcard, StudySession, FlashcardProgress,
                      CourseEnrollment, StudyPreference, StudyGoal,
                      AccountabilityLink, AccountabilityRelationship,
                      UserBadge, BADGE_DEFINITIONS, TopicScore,
-                     FlashcardVote, FlashcardComment, CardSuggestion)
+                     FlashcardVote, FlashcardComment, CardSuggestion,
+                     SpacedRepetitionSettings)
 import datetime
 from .forms import CourseForm, TopicForm, FlashcardForm, CustomRegistrationForm
 from .utils import generate_parameterized_card
@@ -313,58 +315,111 @@ def topic_detail(request, topic_id):
         .prefetch_related('comments__user')
     )
 
+    # Count cards due for review today
+    today = datetime.date.today()
+    due_count = FlashcardProgress.objects.filter(
+        user=request.user,
+        flashcard__topic=topic,
+        next_review_date__lte=today,
+        step_index=-1,
+    ).count()
+
     return render(request, 'study/topic_detail.html', {
         'topic': topic,
         'flashcards': flashcards,
         'is_enrolled': enrollment is not None,
         'flag_threshold': VOTE_FLAG_THRESHOLD,
         'is_system_course': topic.course.created_by == system_user,
+        'due_count': due_count,
     })
+
 
 
 
 @login_required
 def study_session(request, topic_id):
-    """Start a study session for a topic - user must be enrolled"""
+    """Start a study session for a topic - user must be enrolled.
+
+    When ?review=1 is passed, only cards due for review today are included.
+    """
     topic = get_object_or_404(Topic.objects.select_related('course'), id=topic_id)
-    
+
     # Check if user is enrolled in this course
     enrollment = CourseEnrollment.objects.filter(user=request.user, course=topic.course).first()
-    
+
     if not enrollment:
         messages.error(request, 'You must be enrolled in this course to study.')
         return redirect('course_catalog')
-    
+
     # Get user's study mode preference
     preference, _ = StudyPreference.objects.get_or_create(user=request.user)
     valid_modes = {choice[0] for choice in StudyPreference.STUDY_MODES}
     mode_param = request.GET.get('mode')
     if mode_param in valid_modes:
-        # Use the requested mode as a temporary override for this session only
         study_mode = mode_param
     else:
         study_mode = preference.study_mode
-    
-    flashcards = list(
-        _annotate_with_votes(
-            topic.flashcards.prefetch_related('skills'),
-            request.user,
+
+    is_review_mode = request.GET.get('review') == '1'
+    today = datetime.date.today()
+
+    if is_review_mode:
+        # Only cards due today
+        due_ids = set(
+            FlashcardProgress.objects.filter(
+                user=request.user,
+                flashcard__topic=topic,
+                next_review_date__lte=today,
+                step_index=-1,
+            ).values_list('flashcard_id', flat=True)
         )
-    )
-    
+        base_qs = topic.flashcards.filter(id__in=due_ids).prefetch_related('skills')
+    else:
+        base_qs = topic.flashcards.prefetch_related('skills')
+
+    flashcards = list(_annotate_with_votes(base_qs, request.user))
+
     if not flashcards:
-        messages.warning(request, 'No flashcards available for this topic.')
+        if is_review_mode:
+            messages.info(request, 'No cards are due for review right now. Great work!')
+        else:
+            messages.warning(request, 'No flashcards available for this topic.')
         return redirect('topic_detail', topic_id=topic_id)
-    
-    # Shuffle flashcards for variety
+
+    # Fetch SR progress for all cards in one query
+    progress_map = {
+        p.flashcard_id: p
+        for p in FlashcardProgress.objects.filter(
+            user=request.user,
+            flashcard__in=flashcards,
+            step_index=-1,
+        )
+    }
+
+    # Shuffle for variety (due cards first when in review mode is not strictly needed)
     random.shuffle(flashcards)
-    
+
+    # Cap new (never-SM2-reviewed) cards to the user's daily_new_cards setting.
+    # This only applies in normal study mode; review mode already shows only due cards.
+    if not is_review_mode:
+        sr_settings = SpacedRepetitionSettings.objects.filter(user=request.user).first()
+        daily_new_cap = (
+            sr_settings.daily_new_cards
+            if sr_settings
+            else SpacedRepetitionSettings.DEFAULT_DAILY_NEW_CARDS
+        )
+        seen = [f for f in flashcards if progress_map.get(f.id) is not None]
+        new_cards = [f for f in flashcards if progress_map.get(f.id) is None]
+        if len(new_cards) > daily_new_cap:
+            flashcards = seen + new_cards[:daily_new_cap]
+
     # Create study session
     session = StudySession.objects.create(user=request.user, topic=topic)
-    
+
     # Process flashcards - expand step_by_step cards into virtual cards
     flashcards_data = []
     for fc in flashcards:
+        prog = progress_map.get(fc.id)
         base = {
             'id': fc.id,
             'hint': fc.hint,
@@ -383,6 +438,10 @@ def study_session(request, topic_id):
             'upvotes': fc.upvotes,
             'downvotes': fc.downvotes,
             'user_vote': fc.user_vote,
+            # SR metadata for display
+            'next_review_date': prog.next_review_date.isoformat() if prog and prog.next_review_date else None,
+            'interval_days': prog.interval_days if prog else 0,
+            'sm2_repetitions': prog.sm2_repetitions if prog else 0,
         }
 
         if fc.question_type == 'step_by_step' and fc.steps:
@@ -430,8 +489,6 @@ def study_session(request, topic_id):
                 'is_parameterized': False,
             })
             flashcards_data.append(base)
-    
-    # Pass flashcards_data directly to template for json_script tag (don't pre-serialize)
 
     nudge_topics = []
     my_score = TopicScore.objects.filter(user=request.user, topic=topic).first()
@@ -452,6 +509,8 @@ def study_session(request, topic_id):
         'study_mode': study_mode,
         'study_modes': StudyPreference.STUDY_MODES,
         'nudge_topics': nudge_topics,
+        'is_review_mode': is_review_mode,
+        'prerequisites': topic.prerequisites.all(),
     })
 
 
@@ -484,10 +543,63 @@ def end_study_session(request, session_id):
     return redirect('home')
 
 
+# ---------------------------------------------------------------------------
+# SM-2 spaced repetition algorithm
+# ---------------------------------------------------------------------------
+
+def _apply_sm2(progress, quality, settings=None):
+    """Apply the SM-2 algorithm to a FlashcardProgress record.
+
+    quality: integer 0–5
+        0 = complete blackout / reset (same effect as 1)
+        1 = wrong answer
+        2 = correct but very hard (nearly forgot)
+        3 = correct with significant effort
+        4 = correct after brief hesitation  ← "Got it / Good"
+        5 = perfect, no hesitation          ← "Easy"
+
+    The record is mutated but NOT saved — the caller must call .save().
+    """
+    min_ef = settings.get_min_easiness() if settings else 1.3
+    max_interval = settings.max_interval_days if settings else 365
+
+    # Update SM-2 easiness factor
+    ef = progress.easiness_factor
+    ef = ef + 0.1 - (5 - quality) * (0.08 + (5 - quality) * 0.02)
+    ef = max(min_ef, ef)
+
+    if quality < 3:
+        # Forgot — reset the learning streak, go back to 1-day interval
+        progress.sm2_repetitions = 0
+        new_interval = 1
+    else:
+        # Remembered correctly
+        reps = progress.sm2_repetitions
+        if reps == 0:
+            new_interval = 1
+        elif reps == 1:
+            new_interval = 6
+        else:
+            new_interval = round(progress.interval_days * ef)
+        new_interval = min(new_interval, max_interval)
+        progress.sm2_repetitions = reps + 1
+
+    progress.easiness_factor = round(ef, 4)
+    progress.interval_days = new_interval
+    progress.next_review_date = (
+        datetime.date.today() + datetime.timedelta(days=new_interval)
+    )
+
+
 @login_required
 @require_POST
 def update_flashcard_progress(request, flashcard_id):
-    """Update per-card (or per-step) progress. Returns JSON."""
+    """Update per-card (or per-step) progress. Returns JSON.
+
+    Accepts either:
+      • quality=<0-5>  (SM-2 quality rating, preferred)
+      • correct=true/false  (legacy — maps to quality 4 or 1)
+    """
 
     flashcard = get_object_or_404(Flashcard, id=flashcard_id)
 
@@ -499,7 +611,20 @@ def update_flashcard_progress(request, flashcard_id):
     if not (is_owner or has_enrollment):
         return JsonResponse({'error': 'No access'}, status=403)
 
-    correct = request.POST.get('correct') == 'true'
+    # Resolve quality (0-5).  Legacy "correct" boolean mapped to 4 / 1.
+    raw_quality = request.POST.get('quality')
+    if raw_quality is not None:
+        try:
+            quality = int(raw_quality)
+            if not (0 <= quality <= 5):
+                raise ValueError
+        except (ValueError, TypeError):
+            return JsonResponse({'error': 'quality must be 0–5'}, status=400)
+    else:
+        # Legacy path
+        correct = request.POST.get('correct') == 'true'
+        quality = 4 if correct else 1
+
     try:
         step_index = int(request.POST.get('step_index', '-1'))
     except (ValueError, TypeError):
@@ -511,19 +636,141 @@ def update_flashcard_progress(request, flashcard_id):
         step_index=step_index,
     )
 
+    # Classic confidence tracking (kept for backwards compatibility)
     progress.times_reviewed = F('times_reviewed') + 1
-    if correct:
+    if quality >= 3:
         progress.times_correct = F('times_correct') + 1
         progress.confidence_level = min(5, progress.confidence_level + 1)
     else:
         progress.confidence_level = max(0, progress.confidence_level - 1)
-    progress.save()
-    progress.refresh_from_db()
+
+    # SM-2 scheduling is always on the whole-card (step_index=-1) record so that
+    # due_count and review mode (which filter by step_index=-1) see step-by-step cards.
+    settings = SpacedRepetitionSettings.objects.filter(user=request.user).first()
+    if step_index == -1:
+        _apply_sm2(progress, quality, settings)
+        progress.save()
+        progress.refresh_from_db()
+        sr_progress = progress
+    else:
+        # Save stats-only record for the individual step; apply SM-2 to the whole-card record.
+        progress.save()
+        sr_progress, _ = FlashcardProgress.objects.get_or_create(
+            user=request.user,
+            flashcard=flashcard,
+            step_index=-1,
+        )
+        _apply_sm2(sr_progress, quality, settings)
+        sr_progress.save()
+        sr_progress.refresh_from_db()
+        progress.refresh_from_db()
 
     return JsonResponse({
         'confidence_level': progress.confidence_level,
         'times_reviewed': progress.times_reviewed,
+        'next_review_date': (
+            sr_progress.next_review_date.isoformat() if sr_progress.next_review_date else None
+        ),
+        'interval_days': sr_progress.interval_days,
         'step_index': step_index,
+    })
+
+
+@login_required
+@require_POST
+def mark_card_never_seen(request, flashcard_id):
+    """Reset a card's SM-2 progress to 'new' (never seen).
+
+    This lets a user flag a card they don't recognise so it is
+    treated as brand-new and re-introduced from the beginning.
+    """
+    flashcard = get_object_or_404(Flashcard, id=flashcard_id)
+    course = flashcard.topic.course
+    is_owner = (course.created_by == request.user)
+    has_enrollment = CourseEnrollment.objects.filter(
+        user=request.user, course=course
+    ).exists()
+    if not (is_owner or has_enrollment):
+        return JsonResponse({'error': 'No access'}, status=403)
+
+    FlashcardProgress.objects.filter(
+        user=request.user,
+        flashcard=flashcard,
+    ).update(
+        times_reviewed=0,
+        times_correct=0,
+        confidence_level=0,
+        easiness_factor=2.5,
+        interval_days=0,
+        sm2_repetitions=0,
+        next_review_date=None,
+    )
+
+    return JsonResponse({'status': 'reset'})
+
+
+@login_required
+def review_session(request, topic_id):
+    """Redirect to the study session restricted to cards that are due for review today."""
+    topic = get_object_or_404(
+        Topic.objects.select_related('course'),
+        id=topic_id,
+    )
+    course = topic.course
+
+    is_owner = (course.created_by == request.user)
+    has_enrollment = CourseEnrollment.objects.filter(
+        user=request.user, course=course,
+    ).exists()
+    if not (is_owner or has_enrollment):
+        messages.warning(request, 'You must be enrolled to review this topic.')
+        return redirect('topic_detail', topic_id=topic_id)
+
+    today = datetime.date.today()
+
+    # Check if any cards are actually due
+    due_count = FlashcardProgress.objects.filter(
+        user=request.user,
+        flashcard__topic=topic,
+        next_review_date__lte=today,
+        step_index=-1,
+    ).count()
+
+    if not due_count:
+        messages.info(request, 'No cards are due for review in this topic right now. Great work!')
+        return redirect('topic_detail', topic_id=topic_id)
+
+    return redirect(reverse('study_session', kwargs={'topic_id': topic_id}) + '?review=1')
+
+
+@login_required
+def spaced_repetition_settings(request):
+    """View and update the user's SM-2 spaced repetition settings."""
+    settings_obj, _ = SpacedRepetitionSettings.objects.get_or_create(user=request.user)
+
+    if request.method == 'POST':
+        try:
+            ease_modifier = int(request.POST.get(
+                'ease_modifier', SpacedRepetitionSettings.DEFAULT_EASE_MODIFIER))
+            max_interval = int(request.POST.get(
+                'max_interval_days', SpacedRepetitionSettings.DEFAULT_MAX_INTERVAL_DAYS))
+            daily_new = int(request.POST.get(
+                'daily_new_cards', SpacedRepetitionSettings.DEFAULT_DAILY_NEW_CARDS))
+        except (ValueError, TypeError):
+            messages.error(request, 'Invalid values — please use the sliders.')
+            return redirect('spaced_repetition_settings')
+
+        # Clamp to model validator bounds
+        settings_obj.ease_modifier = max(-2, min(2, ease_modifier))
+        settings_obj.max_interval_days = max(30, min(730, max_interval))
+        settings_obj.daily_new_cards = max(1, min(100, daily_new))
+        settings_obj.save()
+        messages.success(request, 'Spaced repetition settings saved.')
+        return redirect('spaced_repetition_settings')
+
+    return render(request, 'study/spaced_repetition_settings.html', {
+        'settings': settings_obj,
+        'speed_choices': SpacedRepetitionSettings.SPEED_CHOICES,
     })
 
 

@@ -1,4 +1,5 @@
 import json
+from types import SimpleNamespace
 from django.test import TestCase, TransactionTestCase, Client
 from django.contrib.auth.models import User
 from django.db import connection
@@ -1512,3 +1513,303 @@ class TopicDetailAccessTest(TestCase):
         response = self.client.get(f'/topic/{self.private_topic.id}/')
         self.assertEqual(response.status_code, 302)
         self.assertIn('/catalog/', response.url)
+
+
+# =============================================================================
+# Spaced Repetition (SM-2) tests
+# =============================================================================
+
+import datetime
+from .models import SpacedRepetitionSettings
+from .views import _apply_sm2
+
+
+class SM2AlgorithmTest(TestCase):
+    """Unit tests for the SM-2 spaced repetition algorithm."""
+
+    def _make_progress(self, ef=2.5, interval=0, repetitions=0):
+        """Return an unsaved FlashcardProgress with SM-2 fields set."""
+        p = FlashcardProgress(easiness_factor=ef, interval_days=interval,
+                              sm2_repetitions=repetitions, next_review_date=None)
+        return p
+
+    def _make_settings(self, ease_modifier=0, max_interval_days=365):
+        """Return a mock settings object for testing."""
+        return SimpleNamespace(
+            ease_modifier=ease_modifier,
+            max_interval_days=max_interval_days,
+            get_min_easiness=lambda: round(1.3 + ease_modifier * 0.1, 1),
+        )
+
+    def test_first_correct_review_gives_interval_1(self):
+        """First correct recall (quality 4): interval should be 1 day."""
+        p = self._make_progress()
+        _apply_sm2(p, quality=4)
+        self.assertEqual(p.interval_days, 1)
+        self.assertEqual(p.sm2_repetitions, 1)
+
+    def test_second_correct_review_gives_interval_6(self):
+        """Second consecutive correct recall (quality 4): interval → 6 days."""
+        p = self._make_progress(interval=1, repetitions=1)
+        _apply_sm2(p, quality=4)
+        self.assertEqual(p.interval_days, 6)
+        self.assertEqual(p.sm2_repetitions, 2)
+
+    def test_third_correct_review_uses_ef_multiplier(self):
+        """Third correct recall: interval = round(prev_interval * EF)."""
+        p = self._make_progress(ef=2.5, interval=6, repetitions=2)
+        _apply_sm2(p, quality=4)
+        # EF adjustment for quality=4: +0.1 - 1*0.08 - 1*0.02 = 0
+        # new interval = round(6 * 2.5) = 15
+        self.assertEqual(p.interval_days, 15)
+        self.assertEqual(p.sm2_repetitions, 3)
+
+    def test_forgotten_card_resets_repetitions_and_sets_interval_1(self):
+        """Quality < 3 resets repetitions to 0 and sets interval to 1."""
+        p = self._make_progress(ef=2.5, interval=15, repetitions=3)
+        _apply_sm2(p, quality=1)
+        self.assertEqual(p.sm2_repetitions, 0)
+        self.assertEqual(p.interval_days, 1)
+
+    def test_ef_does_not_drop_below_min(self):
+        """EF never drops below 1.3 (the SM-2 minimum)."""
+        p = self._make_progress(ef=1.3, interval=1, repetitions=0)
+        _apply_sm2(p, quality=0)  # worst quality
+        self.assertGreaterEqual(p.easiness_factor, 1.3)
+
+    def test_ef_increases_on_easy_quality(self):
+        """Quality=5 (easy) should increase the easiness factor."""
+        p = self._make_progress(ef=2.5, interval=1, repetitions=0)
+        _apply_sm2(p, quality=5)
+        self.assertGreater(p.easiness_factor, 2.5)
+
+    def test_next_review_date_is_set(self):
+        """next_review_date should be set to today + interval_days after each call."""
+        p = self._make_progress()
+        _apply_sm2(p, quality=4)
+        expected = datetime.date.today() + datetime.timedelta(days=p.interval_days)
+        self.assertEqual(p.next_review_date, expected)
+
+    def test_max_interval_capped_by_settings(self):
+        """interval_days never exceeds settings.max_interval_days."""
+        settings = self._make_settings(ease_modifier=0, max_interval_days=30)
+
+        p = self._make_progress(ef=3.0, interval=20, repetitions=5)
+        _apply_sm2(p, quality=5, settings=settings)
+        self.assertLessEqual(p.interval_days, 30)
+
+    def test_slower_learner_setting_lowers_min_ef(self):
+        """ease_modifier=-2 drops min EF floor to 1.1."""
+        settings = self._make_settings(ease_modifier=-2)
+        self.assertAlmostEqual(settings.get_min_easiness(), 1.1)
+
+    def test_faster_learner_setting_raises_min_ef(self):
+        """ease_modifier=+2 raises min EF floor to 1.5."""
+        settings = self._make_settings(ease_modifier=2)
+        self.assertAlmostEqual(settings.get_min_easiness(), 1.5)
+
+
+class UpdateFlashcardProgressQualityTest(TestCase):
+    """Tests for the updated update_flashcard_progress view (SM-2 quality path)."""
+
+    def setUp(self):
+        self.system_user, _ = User.objects.get_or_create(
+            username='system', defaults={'email': 'system@system.local'}
+        )
+        self.user = User.objects.create_user(username='sr_test_user', password='pass')
+        self.course = Course.objects.create(name='SR Course', created_by=self.system_user)
+        self.topic = Topic.objects.create(course=self.course, name='SR Topic', order=1)
+        self.flashcard = Flashcard.objects.create(
+            topic=self.topic,
+            question='Q1',
+            answer='A1',
+        )
+        CourseEnrollment.objects.create(user=self.user, course=self.course)
+
+    def _post_quality(self, quality):
+        self.client.login(username='sr_test_user', password='pass')
+        return self.client.post(
+            f'/flashcard/{self.flashcard.id}/progress/',
+            {'quality': quality, 'step_index': -1},
+            secure=True,
+        )
+
+    def test_quality_4_creates_progress_with_sm2_fields(self):
+        response = self._post_quality(4)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('next_review_date', data)
+        self.assertIn('interval_days', data)
+        self.assertIsNotNone(data['next_review_date'])
+
+    def test_quality_1_resets_repetitions(self):
+        """Sending quality=1 should create a progress with interval_days=1."""
+        response = self._post_quality(1)
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['interval_days'], 1)
+
+    def test_invalid_quality_returns_400(self):
+        self.client.login(username='sr_test_user', password='pass')
+        response = self.client.post(
+            f'/flashcard/{self.flashcard.id}/progress/',
+            {'quality': 9, 'step_index': -1},
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 400)
+
+    def test_legacy_correct_true_maps_to_quality_4(self):
+        """The legacy correct=true parameter still works and produces SM-2 output."""
+        self.client.login(username='sr_test_user', password='pass')
+        response = self.client.post(
+            f'/flashcard/{self.flashcard.id}/progress/',
+            {'correct': 'true', 'step_index': -1},
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIn('interval_days', data)
+
+    def test_unauthenticated_user_redirected(self):
+        response = self.client.post(
+            f'/flashcard/{self.flashcard.id}/progress/',
+            {'quality': 4},
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 302)
+
+
+class MarkCardNeverSeenTest(TestCase):
+    """Tests for the mark_card_never_seen view."""
+
+    def setUp(self):
+        self.system_user, _ = User.objects.get_or_create(
+            username='system', defaults={'email': 'system@system.local'}
+        )
+        self.user = User.objects.create_user(username='ns_test_user', password='pass')
+        self.course = Course.objects.create(name='NS Course', created_by=self.system_user)
+        self.topic = Topic.objects.create(course=self.course, name='NS Topic', order=1)
+        self.flashcard = Flashcard.objects.create(
+            topic=self.topic,
+            question='Q1',
+            answer='A1',
+        )
+        CourseEnrollment.objects.create(user=self.user, course=self.course)
+
+    def test_never_seen_resets_progress(self):
+        """Posting to never-seen resets all SM-2 fields on the FlashcardProgress."""
+        # First create some progress
+        FlashcardProgress.objects.create(
+            user=self.user,
+            flashcard=self.flashcard,
+            step_index=-1,
+            easiness_factor=2.0,
+            interval_days=15,
+            sm2_repetitions=3,
+            next_review_date=datetime.date.today() + datetime.timedelta(days=15),
+        )
+        self.client.login(username='ns_test_user', password='pass')
+        response = self.client.post(
+            f'/flashcard/{self.flashcard.id}/never-seen/',
+            {'step_index': -1},
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'reset')
+
+        progress = FlashcardProgress.objects.get(
+            user=self.user, flashcard=self.flashcard, step_index=-1
+        )
+        self.assertEqual(progress.sm2_repetitions, 0)
+        self.assertEqual(progress.interval_days, 0)
+        self.assertIsNone(progress.next_review_date)
+        self.assertAlmostEqual(progress.easiness_factor, 2.5)
+
+    def test_never_seen_non_enrolled_blocked(self):
+        """Non-enrolled users cannot post to never-seen."""
+        other = User.objects.create_user(username='ns_other', password='pass')
+        self.client.login(username='ns_other', password='pass')
+        response = self.client.post(
+            f'/flashcard/{self.flashcard.id}/never-seen/',
+            {'step_index': -1},
+            secure=True,
+        )
+        self.assertEqual(response.status_code, 403)
+
+
+class ReviewSessionViewTest(TestCase):
+    """Tests for the review_session redirect view."""
+
+    def setUp(self):
+        self.system_user, _ = User.objects.get_or_create(
+            username='system', defaults={'email': 'system@system.local'}
+        )
+        self.user = User.objects.create_user(username='rv_test_user', password='pass')
+        self.course = Course.objects.create(name='RV Course', created_by=self.system_user)
+        self.topic = Topic.objects.create(course=self.course, name='RV Topic', order=1)
+        self.flashcard = Flashcard.objects.create(
+            topic=self.topic, question='Q1', answer='A1'
+        )
+        CourseEnrollment.objects.create(user=self.user, course=self.course)
+
+    def test_no_due_cards_redirects_to_topic(self):
+        """When no cards are due, the view redirects back to topic_detail."""
+        self.client.login(username='rv_test_user', password='pass')
+        response = self.client.get(f'/study/{self.topic.id}/review/', secure=True)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn(f'/topic/{self.topic.id}/', response.url)
+
+    def test_with_due_cards_redirects_to_study_session(self):
+        """When cards are due, the view redirects to the study session with ?review=1."""
+        FlashcardProgress.objects.create(
+            user=self.user,
+            flashcard=self.flashcard,
+            step_index=-1,
+            next_review_date=datetime.date.today(),
+        )
+        self.client.login(username='rv_test_user', password='pass')
+        response = self.client.get(f'/study/{self.topic.id}/review/', secure=True)
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('review=1', response.url)
+
+
+class SpacedRepetitionSettingsViewTest(TestCase):
+    """Tests for the spaced_repetition_settings view."""
+
+    def setUp(self):
+        self.user = User.objects.create_user(username='srs_user', password='pass')
+
+    def test_get_shows_default_settings(self):
+        self.client.login(username='srs_user', password='pass')
+        response = self.client.get('/settings/spaced-repetition/', secure=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Spaced Repetition Settings')
+
+    def test_post_saves_settings(self):
+        self.client.login(username='srs_user', password='pass')
+        response = self.client.post('/settings/spaced-repetition/', {
+            'ease_modifier': 1,
+            'max_interval_days': 180,
+            'daily_new_cards': 30,
+        }, secure=True)
+        self.assertEqual(response.status_code, 302)
+        settings = SpacedRepetitionSettings.objects.get(user=self.user)
+        self.assertEqual(settings.ease_modifier, 1)
+        self.assertEqual(settings.max_interval_days, 180)
+        self.assertEqual(settings.daily_new_cards, 30)
+
+    def test_clamps_out_of_range_values(self):
+        self.client.login(username='srs_user', password='pass')
+        self.client.post('/settings/spaced-repetition/', {
+            'ease_modifier': 99,
+            'max_interval_days': 9999,
+            'daily_new_cards': 9999,
+        }, secure=True)
+        settings = SpacedRepetitionSettings.objects.get(user=self.user)
+        self.assertLessEqual(settings.ease_modifier, 2)
+        self.assertLessEqual(settings.max_interval_days, 730)
+        self.assertLessEqual(settings.daily_new_cards, 100)
+
+    def test_unauthenticated_redirected(self):
+        response = self.client.get('/settings/spaced-repetition/', secure=True)
+        self.assertEqual(response.status_code, 302)
